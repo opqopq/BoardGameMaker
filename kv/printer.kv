@@ -1,0 +1,134 @@
+#:import CARD conf.card_format
+#:import PAGE conf.page_format
+
+<IMGPlaceHolder@StencilView+RelativeLayout>:
+    size: CARD.width, CARD.height
+    canvas.after:
+        Color:
+            rgb: 1,0,1
+        Line:
+            rectangle: self.x-1,self.y-1,self.width+2,self.height+2
+            dash_offset: 5
+            dash_length: 3
+
+<BGPrinter>:
+    canvas.before:
+        Color:
+            rgba: .5,.5,.5,.5
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    GridLayout:
+        canvas.after:
+            Line:
+                rectangle: self.x-1,self.y-1,self.width+2,self.height+2
+                dash_offset: 5
+                dash_length: 3
+        id: menubar
+        size_hint: None, None
+        width: 100
+        height: self.parent.height
+        cols: 1
+        y: 0
+        #top: self.parent.height
+        Button:
+            size_hint: None,None
+            size: 100,30
+            #top: self.parent.height
+            text: "Snapshot"
+            on_press: book.current_slide.ids.ssheet.snapshot()
+        GridLayout:
+            size_hint: None, None
+            size: 100, 60
+            rows: 2
+            Label:
+                text:"Width"
+            TextInput:
+                id: card_width
+                text: "6.35"
+            Label:
+                text:"Height"
+            TextInput:
+                id:card_height
+                text: "8.8"
+        Button:
+            size_hint: None,None
+            size: 100,30
+            text: "Reformat"
+            on_press: book.current_slide.ids.ssheet.ResetKV(w=float(card_width.text), h=float(card_height.text))
+        Button:
+            size_hint: None,None
+            size: 100,30
+            text: "Export to PDF"
+            on_press: book.layout()
+
+    BookLayout:
+        id: book
+        x: menubar.right + 20
+
+<SheetLayout>:
+    Widget:
+        opacity: 1 if root.book.next_slide else 0
+        pos: root.right-self.width*2,30
+        canvas:
+            Color:
+                rgb: 1,0,0
+            Line:
+                points: self.x,self.y, self.x+30,self.y, self.x+20,self.y-10, self.x+30,self.y, self.x+20,self.y+10
+                width: 5
+                cap: 'round'
+    Widget:
+        opacity: 1 if root.book.previous_slide else 0
+        pos: root.right-self.width*2-50,30
+        canvas:
+            Color:
+                rgb: 1,0,0
+            Line:
+                points: self.x+30,self.y, self.x,self.y, self.x+10,self.y-10, self.x,self.y, self.x+10,self.y+10
+                width: 5
+                cap: 'round'
+
+    Scatter:
+        do_rotation: False
+        do_scale: False
+        do_translation: False
+        id: ssheet_background
+        scale: .8*root.height/ssheet.height
+        canvas.before:
+            Color:
+                rgba:0.9,0,0.9,0.3
+            Rectangle:
+                size:self.size
+                pos: 0,0
+        Printer:
+            id: ssheet
+    Label:
+        size_hint: None,None
+        height: 1.5*self.texture_size[1]
+        font_size: 25
+        text: "Page %s - %s [Dual]"%(root.number, root.name) if root.Dual else "Page %s - %s [Dual]"%(root.number, root.name)
+        x: 150
+        top: root.top-30
+        canvas.before:
+            Color:
+                rgb:0,0,1
+                Rectangle:
+                    size:(self.width+0,self.height+0)
+                    pos: self.pos
+
+<Printer>:
+    size: PAGE.width, PAGE.height
+
+    canvas.before:
+        Color:
+            rgb:1,1,1
+        Rectangle:
+            size: self.size
+            pos: 0,0
+    canvas.after:
+        Color:
+            rgb: 0,0,0
+        Line:
+            rectangle: PAGE.left,PAGE.bottom, PAGE.width-PAGE.left-PAGE.right, PAGE.height-PAGE.top-PAGE.bottom
+            cap: 'round'
+            width: 2

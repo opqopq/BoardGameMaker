@@ -1,0 +1,14 @@
+<RedSkinKV@BGTemplate>:
+    size: cm(6.35),cm(8.8)
+    ImageField:
+        id: default
+        keep_ratio: True
+        scale: True
+        size: root.size
+    ColorField:
+        id: color
+        rgba: 1,0,0,1
+        opacity: .5
+        size: root.size
+        x: .3*root.width
+        y: .3*root.height

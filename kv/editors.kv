@@ -1,0 +1,378 @@
+#:import resplit re.split
+#:import FileChooserThumbView kivy.garden.filechooserthumbview
+
+##############################################################################
+#                            Popups                                          #
+##############################################################################
+
+#:import KeyboardSpinner utils.keyboard_spinner.KeyboardSpinner
+<FontEditorPopup@Popup>:
+    #size_hint: None, None
+    title: 'Choose Font for %s'%self.name
+    GridLayout:
+        cols:1
+        Label:
+            text: "Chasseur sachant chassez sans son chien !&"'(-_)='
+            font_size: int(font_size.text)
+            font_name: font_name.text
+            italic: cb_italic.active
+            bold: cb_bold.active
+            size_hint_y: None
+            height: 80
+            halign: 'center'
+        GridLayout:
+            size_hint_y: None
+            height: 80
+            cols: 4
+            orientation: "horizontal"
+            Label:
+                text: "Font Name"
+            Label:
+                text: "Font Size"
+            Label:
+                text: "Bold"
+            Label:
+                text: "Italic"
+            KeyboardSpinner:
+                values: sorted(root.choices)
+                text: root.font_name
+                id: font_name
+            KeyboardSpinner:
+                values: [str(i) for i in range(2,130,2)]
+                id: font_size
+                text: str(root.font_size)
+            CheckBox:
+                text: "Bold"
+                id: cb_bold
+                active: root.bold
+            CheckBox:
+                text: 'Italic'
+                id: cb_italic
+                active: root.italic
+        GridLayout:
+            size_hint_y: None
+            height: 60
+            cols: 2
+            Label:
+                text: "Font Path"
+            TextInput:
+                id: font_path
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(root)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
+
+<ColorEditorPopup@Popup>:
+    size_hint: None, None
+    title: 'Choose Color for %s'%self.name
+    GridLayout:
+        cols:1
+        ColorPicker:
+            id: cpicker
+            color: root.color
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(root)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
+<SubmitTreeView>:
+
+<DictChoiceEditorPopup>:
+    size_hint: None, None
+    GridLayout:
+        cols:2
+        SubmitTreeView:
+            size_hint_x: .33
+            id: chooser
+            root_options: {"text":root.name}
+            target: root
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .67
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: picker
+                    cols: 2
+                    Label:
+                        text: "Selection"
+                        size_hint: .1, None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgba: .5,.5,.5,.5
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                    Label:
+                        text: "Name"
+                        size_hint: .9, None
+                        height: 30
+            BoxLayout:
+                size_hint: 1, None
+                height: 30
+                orientation: "horizontal"
+                Button:
+                    text: "Add"
+                    on_press: root.add_item()
+                Button:
+                    text: "Remove"
+                    on_press: root.remove_item()
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute()
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+<ImageChoiceEditorPopup>:
+    size_hint: None, None
+    title: 'Choose Img for %s'%self.name
+    GridLayout:
+        cols:2
+        FileChooserListView:
+            size_hint_x: .33
+            id: imgchooser
+            path: '.'
+            filters: ['*.png','*.jpg','*.jpeg','*.gif']
+            on_submit: root.add_image()
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .67
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: imgpicker
+                    cols: 4
+                    Label:
+                        text: "Selection"
+                        size_hint: .15, None
+                        height: 30
+                    Label:
+                        text: "Name"
+                        size_hint: .2, None
+                        height: 30
+                    Label:
+                        text: "Path"
+                        size_hint: .35, None
+                        height: 30
+                    Label:
+                        text: "Preview"
+                        size_hint: .3, None
+                        height: 30
+            BoxLayout:
+                size_hint: 1, None
+                height: 30
+                orientation: "horizontal"
+                Button:
+                    text: "Add"
+                    on_press: root.add_image()
+                Button:
+                    text: "Remove"
+                    on_press: root.remove_image()
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute() ; root.cb(root.choices)
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+<ColorChoiceEditorPopup>:
+    size_hint: None, None
+    title: 'Choose Color for %s'%self.name
+    GridLayout:
+        cols:2
+        ColorPicker:
+            size_hint_x: .33
+            id: colorchooser
+            #on_submit: root.add_image()
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .67
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: colorpicker
+                    cols: 3
+                    Label:
+                        text: "Selection"
+                        size_hint: .3, None
+                        height: 30
+                    Label:
+                        text: "Name"
+                        size_hint: .3, None
+                        height: 30
+                    Label:
+                        text: "Preview"
+                        size_hint: .4, None
+                        height: 30
+            BoxLayout:
+                size_hint: 1, None
+                height: 30
+                orientation: "horizontal"
+                Button:
+                    text: "Add"
+                    on_press: root.add_color()
+                Button:
+                    text: "Remove"
+                    on_press: root.remove_color()
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute()
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+
+<FileEditorPopup@Popup>:
+    size_hint: None, None
+    title: 'Choose src for %s'%self.name
+    GridLayout:
+        cols:1
+        #FileChooserListView:
+        FileChooserThumbView:
+            id: fpicker
+            path: root.path
+            filters: root.filters
+            #on_success: root.dismiss() ; root.cb(root)
+            #on_canceled: root.dismiss()
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(root)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
+<SubImageEditorPopup@Popup>:
+    size_hint: None, None
+    #size: 400,250
+    title: 'Choose Image Part for %s'%self.name
+    TabbedPanel:
+        id: tabpanel
+        do_default_tab: False
+        TabbedPanelItem:
+            text: "Source"
+            #FileChooserListView:
+            FileChooserThumbView:
+                id: fpicker
+                #:import split os.path.split
+                ##path: split(root.dimension[0])[0] if root.dimension[0] else "."
+                ##selection: [split(root.dimension[0])[1]] or ""
+                filters: ['*.jpg', '*.png','*.jpeg','*.gif']
+                #:import isfile os.path.isfile
+                on_selection: if self.selection and isfile(self.selection[0]): self.parent.parent.switch_to(content); restore_button.on_press()
+        TabbedPanelItem:
+            text: "Part Editor"
+            id: content
+            FloatLayout:
+            #SubImage Filter
+                #size_hint: 1,1
+                id: fl
+                BoxLayout:
+                    canvas.before:
+                        Color:
+                            rgb: 1,1,0
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                    id: sie
+                    pos: fl.pos
+                    #size: content.size
+                    orientation: "vertical"
+                    BoxLayout:
+                        size_hint_y: .5
+                        orientation: 'horizontal'
+                        id: bl
+                        Image:
+                            source: fpicker.selection[0] if fpicker.selection else ""
+                            id: img
+                            size_hint_x: .5
+                            allow_stretch: False
+                            keep_ratio: True
+                        SubImageField:
+                            id: sif_target
+                            #width: bl.width/2
+                            #height: bl.height
+                            #height: {'right':1}
+                            size: fl.width/2, fl.height/2
+                            pos: fl.width/2, fl.y
+                            dimension: (img.source, float(img_x.text), float(img_y.text), float(img_width.text), float(img_height.text) ) if img.source else ["",0,0,1,1]
+                    GridLayout:
+                        size_hint_y: .15
+                        rows: 2
+                        Label:
+                            text: "X Ratio:"
+                            canvas.before:
+                                Color:
+                                    rgb: 0,0,1
+                                Rectangle:
+                                    size: self.size
+                                    pos: self.pos
+                        TextInput:
+                            id: img_x
+                            text: str(root.dimension[1])
+                            #on_text: root.dimension[1] = float(self.text)
+                        Label:
+                            text: "Width Ratio:"
+                        TextInput:
+                            id: img_width
+                            text: str(root.dimension[3])
+                            #on_text: root.dimension[3] = float(self.text)
+                        CheckBox:
+                            text: "Keep Image Ratio"
+                            id: ratio_img
+                        Label:
+                            text: "Y Ratio:"
+                        TextInput:
+                            id: img_y
+                            text: str(root.dimension[2])
+                            #on_text: root.dimension[2] = float(self.text)
+                        Label:
+                            text: "Height Ratio:"
+                        TextInput:
+                            id: img_height
+                            text: str(root.dimension[4])
+                            #on_text: root.dimension[4] = float(self.text)
+                        Button:
+                            text: "Restore Part"
+                            id: restore_button
+                            on_press: overlay.scale = 1,1 ; overlay.size =(img.height * img.image_ratio, img.height); overlay.pos = (img.x + (img.width-overlay.width)/2, img.y)
+                    BoxLayout:
+                        orientation: "horizontal"
+                        size_hint_y: None
+                        height: 40
+                        Button:
+                            text: "Ok"
+                            on_press: root.dismiss(); root.cb(root)
+                        Button:
+                            text: "Cancel"
+                            on_press: root.dismiss()
+                OverlayField:
+                    corner_radius: 5
+                    designed: True
+                    selected: True
+                    id: overlay
+                    name: "Overlay"
+                    line_width: 4
+                    on_pos: root.update_values()
+                    on_size: root.update_values()

@@ -1,0 +1,40 @@
+#:import BANNER scripts.BANNER
+<BGScriptEditor>:
+    orientation: "horizontal"
+    Splitter:
+        size_hint:0.3,1
+        sizable_from: 'right'
+        FileChooserListView:
+            rootpath:"Scripts"
+            on_selection: input_line.text = file(self.selection[0], 'rb').read()
+    BoxLayout:
+        orientation: "vertical"
+
+        Label:
+            id: script_name
+            text: root.script_name + ("*" if root.modified else "")
+            size_hint_y: None
+            height: 30
+        CodeInput:
+            id: input_line
+            text: BANNER
+        REPL:
+            id: repl
+            multiline: False
+            size_hint_y: None
+            height: 30
+            background_color: 0,0,0,1
+            foreground_color: 1,1,1,1
+            env: root.env
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Execute"
+                on_press: repl.exec_code(input_line.text)
+            Button:
+                text: "Save As"
+            Button:
+                text: "Clear"
+                on_press: input_line.text= BANNER

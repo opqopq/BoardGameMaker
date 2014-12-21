@@ -1,0 +1,25 @@
+<theellipse@EllipseField>
+    hue: 2.57
+    default_attr: 'hue'
+	#:import FloatEditor editors.FloatEditor
+	params: {"hue": FloatEditor}
+
+<RoundedRect@BGTemplate>:
+    size: cm(6.35),cm(8.8)
+    RectangleField:
+        id: shape
+        size: root.size
+        rectangle: 50,50,250,300
+        line_width: 5
+        bg_color: 1,1,0,.3
+
+    theellipse:
+        id: bg
+        size: root.size
+        #:import gradient effects.h_gradient
+        #:import gradient effects.v_gradient
+        #:import gradient effects.radial_gradient
+        #:import huexfo effects.hue_transform
+		##texture: huexfo(size=root.size, source='images/judge.jpg', hue = self.hue)
+        texture: gradient(size= root.size)
+

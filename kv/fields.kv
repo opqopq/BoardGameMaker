@@ -1,0 +1,253 @@
+##################################################################
+#                       Fields                                   #
+##################################################################
+
+
+<.designed>
+    designed: True
+    canvas.after:
+        #Border Frame - designer
+        Color:
+            rgba: (.2,.2,.2,1) if self.selected else (0,0,0,0)
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            dash_offset: 3
+            dash_length: 5
+        # Resize Band
+        Line:
+            circle: self.right-5, self.top-5, 2.5
+            width:2
+        Line:
+            width: 2
+            circle: self.right-5, self.y+5, 2.5
+        Line:
+            width: 2
+            circle: self.x+5, self.top-5, 2.5
+        Line:
+            width: 2
+            circle: self.x+5, self.y+5, 2.5
+        Line:
+            circle: self.center_x, self.top-5, 2.5
+            width:2
+        Line:
+            width: 2
+            circle: self.center_x, self.y+5, 2.5
+        Line:
+            width: 2
+            circle: self.x+5, self.center_y, 2.5
+        Line:
+            width: 2
+            circle: self.right-5, self.center_y, 2.5
+    Label:
+        is_context: True
+        size_hint_y: None
+        height: 20
+        shorten: True
+        shorten_from: 'left'
+        halign: 'right'
+        text: root.name if root.name else root.Type
+        pos: (root.x, root.center_y-self.height) if root.Type!='Template' else (0, root.height/2-self.height)
+        color: (1,1,1,1) if root.hovered else (0,0,0,0)
+        canvas.before:
+            Color:
+                rgba: (.7,.7,.7,1) if root.hovered else (0,0,0,0)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+    Image:
+        is_context: True
+        source: "img/%s.png"%root.Type
+        size_hint: None, None
+        size: 24,24
+        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='Template' else (root.center_x-self.width/2, root.y-self.height/2)
+        opacity: 1 if root.designed else 0
+
+
+<Field>:
+    size_hint: None, None
+    size: 100,100
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: self.angle
+            origin: self.center # if scatter self.width/2, self.height/2
+            axis: 0,0,1
+        Color:
+            rgba: self.bg_color
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    canvas.after:
+        PopMatrix
+
+<BGTemplate>:
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: self.angle
+            origin: self.width/2, self.height/2
+            axis: 0,0,1
+    canvas.after:
+        PopMatrix
+
+
+<ImageField>:
+    canvas.before:
+        StencilPush
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            source: self.mask
+        StencilUse
+
+    canvas.after:
+        #Remove mask
+        StencilPop
+
+
+<ColorField>:
+    canvas:
+        Color:
+            rgba:self.rgba
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<ColorChoiceField>:
+    canvas:
+        Color:
+            rgba:self.rgba
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<ColorFieldEditor>:
+    Button:
+        text: "Choose"
+
+<BorderImageField>:
+    canvas.before:
+        Color:
+            rgba: 1,1,1,1
+        BorderImage:
+            source: root.source
+            border: (root.border_width,root.border_width,root.border_width,root.border_width)
+            size:(self.width+2*root.border_width,self.height+2*root.border_width)
+            pos: root.x-root.border_width,root.y-root.border_width
+
+<BorderField>:
+    canvas.before:
+        Color:
+            rgba: self.border_color
+        Line:
+            rectangle: self.x+self.border_width,self.y+self.border_width,self.width-2*self.border_width,self.height-2*self.border_width
+            #if field is scatter: rectangle: self.border_width,self.border_width,self.width-2*self.border_width,self.height-2*self.border_width
+            width: self.border_width
+
+<ImageChoiceField>:
+    source: self.choices[self.selection] if self.selection in self.choices else ""
+
+<SubImageField_OLD>:
+    #w_ratio: float(self.width)/self.sub_width if self.sub_width else 1
+    #h_ratio: float(self.height)/self.sub_height if self.sub_height else 1
+    w_ratio: float(self.width)/float(self.dimension[3]) if self.dimension[3] else 1
+    h_ratio: float(self.height)/float(self.dimension[4]) if self.dimension[4] else 1
+    StencilView:
+        size_hint: 1,1
+        size: root.size
+        pos: root.pos
+        RelativeLayout:
+            Image:
+                size_hint: None, None
+                keep_ratio: False
+                x: -root.dimension[1]*self.texture.width if self.texture else 0
+                y: -root.dimension[2] * self.texture.height if self.texture else 0
+                width: self.texture.width * root.dimension[3] if self.texture else 0
+                height: self.texture.height * root.dimension[4] if self.texture else 0
+                source: root.dimension[0] if root.dimension[0] else None
+
+<SubImageField>:
+    canvas:
+
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            texture: self.texture
+
+<TransfoField>:
+    canvas:
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            texture: self.texture
+
+<SvgField>:
+#The source/filename will be done thourgh on_source, as it is not working directly with canvas
+
+<RectangleField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+
+<CircleLineField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
+
+<EllipseField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Ellipse:
+            pos: self.pos
+            size: self.size
+            angle_start: self.angle_start
+            angle_end: self.angle_end
+            source: self.source
+            texture: self.texture
+
+<FilledRectangleField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: self.source
+            texture: self.texture
+
+<LineField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            points: self.x, self.y, self.x+self.width, self.y+ self.height
+
+<PolygonField>:
+    canvas:
+        Mesh:
+            vertices: self.vertices
+            indices: range(self.side)
+            mode: 'triangle_fan'
+            source: self.source
+            texture: self.texture
+

@@ -1,0 +1,15 @@
+<GridTest@BGTemplate>
+    size: cm(6.35), cm(8.8)
+    ImageField:
+        size: root.size
+        source: 'images/judge.jpg'
+
+    EffectField:
+        id: effect
+        square: 20
+        size: root.size
+        bg_color: 1,0,0,.3
+        #:import effects effects.effects
+        ##effects: effects['grid'](line_color=[.5,1.0,0.3,.8], width=root.width/2 -2, height=root.height/2-2),
+        effects: effects['hexgrid'],
+        #bg_color: 1,0,0,.3

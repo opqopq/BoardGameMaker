@@ -1,0 +1,42 @@
+<.Border>
+    border_rgba: (.2,1,.2,1)
+    border_dash_offset: 3
+    border_dash_length: 5
+    border_width: 10
+    canvas.after:
+        Color:
+            rgba: self.border_rgba
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            dash_offset: self.border_dash_offset
+            dash_length: self.border_dash_length
+            width: self.border_width
+
+<.Cross>
+    cross_color: 1,0,0,1
+    cross_width: 10
+    cross_dash_offset: 3
+    cross_dash_length: 5
+    canvas.after:
+        Color:
+            rgba: self.cross_color
+        Line:
+            points: self.x, self.y, self.x+self.width, self.y+self.height
+            dash_offset: self.cross_dash_offset
+            dash_length: self.cross_dash_length
+            width: self.cross_width
+        Line:
+            points: self.x, self.y + self.height, self.x + self.width, self.y
+            dash_offset: self.cross_dash_offset
+            dash_length: self.cross_dash_length
+            width: self.cross_width
+
+
+<.Shadow>
+    offset: 6
+    CopyField:
+        skip_list: 'pos', 'target', 'name'
+        target: self.parent if self.parent else None
+        pos: (self.parent.x + self.parent.offset, self.parent.y - self.parent.offset) if self.target else (0,0)
+        opacity: .5
+

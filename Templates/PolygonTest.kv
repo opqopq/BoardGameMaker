@@ -1,0 +1,12 @@
+<PolygonTest@BGTemplate>:
+    size: cm(6.35),cm(8.8)
+
+    PolygonField:
+        id: shape
+        default_attr: 'side'
+		#:import cgradient effects.radial_gradient
+		texture: cgradient(border_color=(1,1,1), center_color=(0,0,0))
+        #source: 'images/judge.jpg'
+        size: min(*root.size),min(*root.size)
+        angle_start: 90
+        bg_color: 1,1,1,1

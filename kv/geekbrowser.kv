@@ -1,0 +1,133 @@
+<GamesResults@TreeView>
+    on_selected_node: self.browser.game_details(*args)
+    root_options: {'text': 'Results'}
+    indent_level: 5
+    indent_start: 5
+
+<GameDetails@BoxLayout>
+    orientation: 'vertical'
+    title: "Game Title"
+    activated: True
+    opacity: int(self.activated)
+    canvas.before:
+        Color:
+            rgb: .5,.5,.5
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        size_hint_y: None
+        height: 80
+        AsyncImage:
+            id: thumbnail
+            size_hint_x: .3
+            opacity: 1 if self.source else 0
+        Label:
+            text: root.title
+            font_size: 48
+            valign: 'middle'
+            text_size: self.size
+    GridLayout:
+        cols: 6
+        size_hint_y: None
+        height: 100
+        #padding: 50, 0,0,0
+        canvas.before:
+            Color:
+                rgba: .1,.1,.1,.1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Image:
+            source: 'img/nb_user.png'
+        Label:
+            text: "X-Y"
+            id: nb_user
+        Image:
+            source: 'img/game_duration.png'
+        Label:
+            text: "XXX mns"
+            id: duration
+        Image:
+            source: 'img/minimum_age.png'
+        Label:
+            text: "XXX years"
+            id: minimum_age
+        Image:
+            source: 'img/attached_image.png'
+        Label:
+            text: "-- Pages"
+            id: nb_img_page
+        Image:
+            source: 'img/attached_file.png'
+        Label:
+            text: "-- Pages"
+            id: nb_file_page
+        Image:
+            source: 'img/attached_link.png'
+        Label:
+            text: "-- Pages"
+            id: nb_link_page
+    ScrollView:
+        Label:
+            text: "Game Description"
+            id: description
+            size_hint: None, None
+            size: self.texture_size
+    ScrollView:
+        Label:
+            text: "Game Information"
+            id: information
+            size_hint: None, None
+            size: self.texture_size
+            #:import wrap textwrap.wrap
+            #on_size: print "width is ", self.width/self.font_size ; self.text = "\n".join(wrap(self.text, width = 50+int(self.width/self.font_size)))
+            #text_size: self.width, None
+    BoxLayout:
+        size_hint_y: None
+        height: 30
+        Button:
+            text: "Create Game Folder"
+            on_press: root.browser.create_game_folder()
+        Button:
+            text: "Create Gallery"
+            on_press: root.browser.prepare_gallery()
+
+<BGGeekBrowser>
+    orientation: 'vertical'
+    BoxLayout:
+        size_hint_y: None
+        height: 30
+        TextInput:
+            id: search_field
+            multiline: False
+            size_hint_x: .8
+            text: 'mascarade'
+            on_text_validate: root.search_game(self.text) if self.text else ""
+        Button:
+            text: 'Search'
+            on_press: root.search_game(search_field.text) if search_field.text else ""
+            size_hint_x: .2
+    BoxLayout:
+        Splitter:
+            sizable_from: 'right'
+            size_hint_x: .2
+            ScrollView:
+                canvas.before:
+                    Color:
+                        rgb: .6,.6,.6
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                GamesResults:
+                    on_minimum_height: self.height = self.minimum_height
+                    size_hint_y: None
+                    id: results
+                    browser: root
+        GameDetails:
+            id: details
+            browser: root
+    Label:
+        size_hint_y: None
+        height: 40
+        id: status

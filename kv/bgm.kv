@@ -1,0 +1,79 @@
+#:import VirtualScreenManagerStack utils.virtual_screen.VirtualScreenManagerStack
+#:import VirtualScreenManagerGrid utils.virtual_screen.VirtualScreenManagerGrid
+#:import kivy_data_dir kivy.kivy_data_dir
+#:import join os.path.join
+
+#:import BGGDeck deck.BGDeckMaker
+
+<Template>:
+    do_rotation: False
+    do_scale: False
+    do_translation: True,True
+    center: self.parent.center if self.parent else (600,150)
+    #pos: 250,200
+    #size: 700,100
+    pos_hint: 0,0
+    canvas.before:
+        Color:
+            rgba:1,.3,.3,.8
+        Rectangle:
+            size:(self.width+0,self.height+0)
+#             pos: (-5,-5)
+
+<ImageButton@ButtonBehavior+BoxLayout>:
+    source: None
+    text: ""
+    Image:
+        source: root.source
+        size_hint_x: .2
+    Label:
+        text: root.text
+        size_hint_x: .8
+
+<LabelButton@ButtonBehavior+Label>:
+
+#Main Widget
+<RootWidget>:
+    orientation: "vertical"
+    wait_mode: False
+    BoxLayout:
+        pos_hint: {'top':1}
+        size_hint_y: None
+        height: 40
+        id: message_bar
+        ImageButton:
+            id: app_action
+            size_hint_x: None
+            width: 200
+            on_press: content.activated = not(content.activated)
+            source: 'img/%s.png'%content.current_screen.name
+            text: 'Board Game Maker: '
+        Spinner:
+            size_hint_x: None
+            width: 100
+            on_text: root.screen_name = self.text
+            text: 'Deck'
+            values: 'Deck','Browser','PrintPreview','Layout','Console','Script','Designer'
+        LabelButton:
+            id: message
+            on_press: app.alert('')# dismiss message
+        Image:
+            size_hint_x: None
+            width: 20
+            source: join(kivy_data_dir, 'images', 'image-loading.gif') if root.wait_mode else "img/blank.png"
+            canvas.before:
+                Color:
+                    rgba: (0.3,0.3,1,.5) if root.wait_mode else (0,0,0,1)
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+    VirtualScreenManagerGrid:
+        orientation: 'horizontal'
+        spacing: 20
+        use_keyboard_shortcut: True
+        scancode: 32 #space
+        modifiers: ['ctrl']
+        id: content
+        BGDeckMaker:
+            id: deck
+            name: 'Deck'

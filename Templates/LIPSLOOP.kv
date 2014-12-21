@@ -1,0 +1,30 @@
+<LIPSLOOP@BGTemplate>:
+	size: 250, 250.0
+	#:import TextEditor editors.TextEditor
+	vars: {'text': TextEditor}
+	text: "placeholder"
+	CircleField:
+		line_width: 10
+		dash_offset: 2
+		dash_length: 2
+		size: root.size
+
+	EllipseField:
+		opacity: 0.50
+		editable: False
+		id: bg
+		source: "images/judge.jpg"
+		size: root.size
+
+	EllipseField:
+		source: bg.source
+		angle_start: 180
+		id: overlay
+		size: root.size
+		default_attr: 'angle_start'
+
+    TextField:
+        editable: False
+        text: root.text
+        color: 1,0,0, 1
+        bold: False

@@ -1,0 +1,28 @@
+<magic@BGTemplate>:
+    size: '6.3cm','8.8cm'
+
+    ImageField:
+        id: image
+        size_hint: 0.83, 0.375
+        pos_hint: {'x':0.083,'y':0.562}
+        allow_stretch: True
+        keep_ratio: False
+        
+    TextField:
+        id: rule
+        size_hint: 0.66, 0.375
+        pos_hint: {'x':0.166, 'y':0.125}
+        
+
+        canvas.before:
+            Color:
+                rgba: 0,0,0,0.3
+            Rectangle:
+                pos:self.pos
+                size:self.size
+    
+    TextField:
+        id: title
+        size_hint: .33, .0625
+        pos_hint: {'x':.5833, 'y':.9375}
+        halign: "center"

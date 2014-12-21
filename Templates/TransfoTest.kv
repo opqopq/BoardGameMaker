@@ -1,0 +1,15 @@
+<TransfoTest@BGTemplate>:
+	size: cm(6.35), cm(8.80)
+	TransfoField:
+		id: xfo
+		size: 240, 333
+		#:import gs img_xfos.h_flip
+		#:import vs img_xfos.v_flip
+		#:import ID img_xfos.identity
+		#:import GOCV img_xfos.grey_opencv
+		xfos: [gs,vs, GOCV]
+		source: 'images/judge.jpg'
+		bg_color: 1,1,1,.99
+
+		ColorField:
+			rgba: 1,0,0,1

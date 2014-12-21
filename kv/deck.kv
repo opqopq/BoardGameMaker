@@ -1,0 +1,243 @@
+#:kivy 1.0
+#:import TEMPLATES template.templateList
+#:import CARD conf.card_format
+#:import GAMEPATH conf.gamepath
+#:import HoverBehavior utils.hoverable.HoverBehavior
+#:import alert conf.alert
+
+<TreeViewField>:
+    size_hint_y: None
+    height: 35
+
+<Icon@HoverBehavior+Button>:
+    source:""
+    size_hint:None,None
+    size: 60,60
+    opacity: 1 if self.hovered else .5
+    Image:
+        source: self.parent.source
+        allow_stretch: False
+        center: self.parent.center
+
+
+<IntNode@TreeViewNode+BoxLayout>:
+    size_hint_y: None
+    height: 30
+    text: "Qt:"
+    callback: None
+    orientation: 'horizontal'
+    Label:
+        text: root.text
+        size_hint_x: .3
+    TextInput:
+        id: value
+        on_text: root.callback(self.text) if root.callback else None
+
+<BoolNode@TreeViewNode+BoxLayout>:
+    size_hint_y: None
+    height: 30
+    text: "Dual"
+    callback: None
+    orientation: 'horizontal'
+    Label:
+        text: root.text
+        size_hint_x: .3
+    CheckBox:
+        id: value
+        on_active: root.callback(self.active) if root.callback else None
+
+<BGDeckMaker>:
+    canvas.before:
+        Color:
+            rgba: .8,.8,.8,.2
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    #The Left tab with files/templates & values
+    TabbedPanel:#was FoldedTabbedPOanek
+        ##folded: False
+        do_default_tab: False
+        tab_pos: 'right_top'
+        size_hint_x: None
+        width: 280
+        id: options
+        TabbedPanelItem:
+            text: 'Stack'
+            ScrollView:
+                TreeView:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: stackview
+                    root_options: {'text': 'Stack'}
+                    on_selected_node: root.set_display(self.selected_node)
+        TabbedPanelItem:
+            text: 'Templates'
+            ScrollView:
+                TemplateTree:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: tmpl_tree
+                    root_options: {'text': 'Templates'}
+                    #:import templateList template.templateList
+                    current_tmpl_name: 'Default'
+                    on_selected_node: if hasattr(self.selected_node,'templateName'): root.update_tmpl(self.selected_node.text)
+        TabbedPanelItem:
+            text: "Files"
+            FileChooserListView:
+                id: file_chooser
+                dirselect: True
+                rootpath: GAMEPATH
+                filters: ['*.jpg','*.png','*.gif']
+                on_selection: root.update_image(args[1][0])
+                on_submit: root.load_folder(args[1][0])
+        TabbedPanelItem:
+            text: 'Format'
+            GridLayout:
+                cols: 1
+                GridLayout:
+                    cols: 2
+                    row_force_default: True
+                    row_default_height: 40
+                    size_hint_y: None
+                    height: 180
+                    Label:
+                        text: "Current Scale"
+                    Button:
+                        text: "Reset View"
+                        on_press: image.scale = 1 ; image.rotation=0
+                        size_hint: 1, None
+                        height: 30
+                    Label:
+                        text: "Card Width:"
+                    TextInput:
+                        id: cw
+                        text: str(int(CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                    Label:
+                        text: "Card Height:"
+                    TextInput:
+                        id: ch
+                        text: str(int(CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                    Label:
+                        text: "Unit:"
+                    Spinner:
+                        id: unit
+                        values: ['cm','px']
+                        text: "px"
+                Button:
+                    text: 'Apply'
+                    on_press: root.update_card_format()
+                    size_hint_y: None
+                    height: 30
+
+                #Bottom options when adding card
+                GridLayout:
+                    cols: 2
+                    size_hint_y: None
+                    Label:
+                        text:"Qt:"
+                    TextInput:
+                        id: qt
+                        text: "1"
+                    Label:
+                        text:"Dual"
+                    CheckBox:
+                        id: dual
+                    Label:
+                        text:"Rotated"
+                    CheckBox:
+                        id: rotated
+
+        TabbedPanelItem:
+            text:"Scripts"
+            #Bottom options when adding card
+            #:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
+            BoxLayout:
+                orientation: "vertical"
+                WatchedFolderTree:
+#                    id: script_tree
+#                    on_selected_node: root.update_script(self.selected_node.text)
+                Splitter:
+                    sizable_from: 'top'
+                    ScriptTree
+
+    #The right action buttons
+    Accordion:
+        right: root.right
+        size_hint: None, 1
+        width: 60
+        orientation: 'vertical'
+        canvas.before:
+            Color:
+                rgb: .4,.4,.4
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        AccordionItem:
+            title: 'Pack'
+            collapse: False
+            GridLayout:
+                cols: 1
+                Icon:
+                    source: 'img/tbadd.png'
+                    on_press: root.add_pack()
+                    on_enter: alert('Add Pack')
+                Icon:
+                    source: 'img/tbupdate.png'
+                    on_press: root.update_card()
+                    on_enter: "Update Card"
+                Icon:
+                    source: 'img/tbdelete.png'
+                    on_press: root.delete_pack()
+                    on_enter: alert('Delete Pack')
+        AccordionItem:
+            title: 'Stack'
+            GridLayout:
+                cols: 1
+                Icon:
+                    source: 'img/filenew2.png'
+                    on_press: root.new_stack()
+                    on_enter: alert('New Stack')
+                Icon:
+                    source: "img/tbexport.png"
+                    on_press: root.export_stack()
+                    on_enter: alert('Export Stack')
+                Icon:
+                    source: "img/file_open.png"
+                    on_press: root.load_stack()
+                    on_enter: alert('Load Stack')
+                Icon:
+                    source: "img/filesaveas2.png"
+                    on_press: root.save_stack()
+                    on_enter: alert('Save Stack')
+        AccordionItem:
+            title: 'Misc'
+            GridLayout:
+                cols: 1
+                Icon:
+                    source: "img/designer.png"
+                    on_press: app.root.screen_name = 'Designer'; app.root.ids.designer.load(tmpl_tree.current_tmpl_name)
+                    on_enter: alert('Design Template')
+                Icon:
+                    source: 'img/tbprint.png'
+                    on_enter: alert('Print Current Card')
+                    #:import start_file conf.start_file
+                    on_press: image.children[0].export_to_image('print.png'); start_file('print.png')
+
+    #The actual templated image
+    Scatter:
+        do_rotation: False
+        pos: 300, 100
+        size_hint: None, None
+        size: CARD.width, CARD.height
+
+        canvas.after:
+            #PushMatrix
+            Color:
+                rgba: 1,1,0,1
+            Line:
+                rectangle: self.x-1,self.y-1,(self.width+2)*self.scale,(self.height+2)*self.scale
+                dash_offset: 5
+                dash_length: 3
+            #PopMatrix
+        id: image
