@@ -1,0 +1,51 @@
+I've been building a card/tiles making software for some time now. Before releasing it, I'd like to see whether there is a need for it and what kind of features it should have.
+
+So far, the program I have made (python langage based) have the following features:
+1) create ready to print Card/Tiles sheets, placing images on a sheet in order to ease dual printing of image
+
+This feature is the most important one. It allows to simply create a deck of card or tiles from existing images, saving this deck in CSV/Excel format.
+You can simply change their quantity and format them to the same size, creating dual printing pages if asked.
+
+This is the "raison d'être" of the software. At the time, I wanted to be able to easily print some card proxy for my Collectible Card Game sessions.
+
+- now partially woring in current version.
+
+2) Add simple image transformation to your deck
+Software comes with a bunch of template to transform your image before creating printing sheet. Think what some inkscape scripts would do.
+Some examples of implemented features:
+- add a custom border to an image
+- divide the image in several sub-ones (especially useful to split a board into several card-sized pictures)
+- transforming an image to an origami-dice shaped one
+
+
+
+3) Add some simple script to create & fill your deck
+Think what nandeck would do here. Software can understand script in order to directly add card.
+Some example of implemented script:
+- cut an existing picture in 6 subimage and create an origami dice for it
+- duplicate an existing deck to add greyscale dual copy of each card
+
+
+This feature comes next to the first one. I wanted to be able to create easy card games easily, with an high level program langage.
+Something like:
+for color in (red,blue,green):
+for value in (2,3,4):
+deck.AddCard(color,value)
+That is what those scripts do.
+
+
+4) Creating your own High Level Template
+Once you have mastered the basic usages, you can launch the template designer, which is a WYSIWIG interface to create template, like the one existing in Magic Set Editor software. Contrary to magic set software, template are created from the GUI.
+With such template, you can create a simple excel/CSV file holding the data from your deck. The software will create the image for you.
+Think cardmaker software, here.
+
+
+This feature cames with me playing with the Magic Set Editor Software. I wanted to do the same things, without being obliged to re-learn the text-based template system. As a side effect, my software is able to export is template to Magic Set Editor Format.
+
+5) Directly enhance the program script & template throught python langage.
+
+Sometime, you just want to directly code your solution. Program is designed to allow for template & script coding, directly in Python.
+
+--------------------------------------------------------------------
+
+This is a lot to read. The program is ready, but in alpha quality.
