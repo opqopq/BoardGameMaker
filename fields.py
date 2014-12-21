@@ -81,14 +81,16 @@ class Field(FloatLayout, HoverBehavior):
     editable = BooleanProperty(True)
     # True if we are in designer mode. If yes, I'm movable/scalable & rotatable
     designed = BooleanProperty(False)
-    #List of attributes I'm mapping when having an editor linked
-    attrs = OrderedDict()
+
     #angle of rotation, centered on my center
     angle = NumericProperty(0)
     bg_color= ListProperty([0,0,0,0])
     name = StringProperty()
     #Attributes that are only used in designed mode
-    attrs=OrderedDict([("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor), ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)])
+    attrs=OrderedDict([
+            ("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor),
+            ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
+    ])
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
@@ -104,6 +106,12 @@ class Field(FloatLayout, HoverBehavior):
 
     #Black list: as params, this set aggregats the not_exported info from base classes
     black_list = set(not_exported)
+
+    #Menu is an ordered dict  listing which attributes needs to be in which sub tree for editors
+    #_menu work for current instance
+    # menu aggregate parent info
+    _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','opacity','angle','bg_color'])])
+
 
     Type = 'Field'
 
@@ -142,16 +150,20 @@ class Field(FloatLayout, HoverBehavior):
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
         super(Field, self).__init__(**kwargs)
-        self.compute_params()
+        self.derive_infos()
 
-    def compute_params(self):
-        self.params = OrderedDict()
+    def derive_infos(self):
+        #Compute menu & params
         import inspect
+        self.params = OrderedDict()
+        self.menu = OrderedDict()
         for klass in reversed(inspect.getmro(self.__class__)):
             if not issubclass(klass, Field):
                 continue
             for k,v in klass.attrs.items():
                 self.params[k] = v
+            for k,v in klass._menu.items():
+                self.menu[k] = v
         self.default_attr_values = self.params.keys()
 
     def __repr__(self):
@@ -561,7 +573,7 @@ class SvgField(Field):
 class ShapeField(Field):
     dash_length = NumericProperty()
     dash_offset = NumericProperty()
-    line_width = NumericProperty(1.0)
+    line_width = NumericProperty(1)
     line_color = ListProperty([1,1,1,1])
     cap = StringProperty('round')
     cap_values = ['round','none','square']
@@ -569,14 +581,16 @@ class ShapeField(Field):
     joint_values = ["none", "miter", "bevel",'round']
     default_attr = 'line_width'
     attrs = OrderedDict([
-                        ('dash_length', IntEditor),
-                        ('dash_offset', IntEditor),
-                        ('line_width', IntEditor),
+                        ('dash_length', AdvancedIntEditor),
+                        ('dash_offset', AdvancedIntEditor),
+                        ('line_width', AdvancedIntEditor),
                         ('line_color', ColorEditor),
                         ('cap',ChoiceEditor),
                         ('joint', ChoiceEditor)
                         ])
     not_exported = ['joint_values','cap_values']
+
+    _menu = {'Line':attrs.keys()}
 
 class LineField(ShapeField):
     #Just goigng from lower left to upper right. is it even useful ?
@@ -658,50 +672,6 @@ class CopyField(LinkedField):
             #print 'forwarding %s (%s) from %s to %s / %s' % (attr,value, src, instance, dst)
             setattr(dst, attr, value)
         return inner
-
-    def OLDon_target(self, instance, target):
-        target = target.__self__
-        class Patched(target.__class__, CopyField):
-            pass
-        reflists=[]
-        for k, prop in target.properties().items():
-            if k in self.properties(): continue
-            prop.link(self, k)
-            try:
-                prop.link_deps(self, k)
-            except KeyError:
-                reflists.append((k,prop))
-            #self.__properties[k] = prop
-            setattr(self.__class__, k, prop)
-        for k,prop in reflists:
-            prop.link_deps(self,k)
-        instance.__class__ = Patched
-        #Rebuild PArams
-        instance.compute_params()
-
-        #print self.__class__
-        #print target.__class__, instance.__class__
-        #print Builder.match(self.target)
-        #print Builder.match(self)
-        for attr in target.params:
-            if not attr in target.properties():
-                continue
-            try:
-                target.unbind(attr=self.setter(attr))
-            except KeyError: #binding does not exists
-                pass
-            #Copy value
-            try:
-                setattr(self, attr, getattr(target,attr))
-            except Exception,E:
-                import traceback
-                print 'On duplucating ', self, attr, getattr(target,attr), ' Exception raised:',E
-                traceback.print_exc()
-            if attr in self.skip_list:
-                continue
-            #kw={attr:self.setter(attr)}
-            kw = {attr: self.cb(attribute=attr)}
-            target.bind(**kw)
 
     def on_target(self, instance, target):
         blank = target.__class__()

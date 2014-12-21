@@ -185,17 +185,22 @@ class BGDesigner(FloatLayout):
         #Way to come back
         child.target = target
         #Now, for each attributes, add it to the list
-        #Create 2 groups: Shapes related, coming from Field params and the others
-        shape_node = self.ids.fields.add_node(TreeViewLabel(text="Shape"), child)
-        for attr in target.params:
-            if attr == 'styles':
-                continue
-            if attr in Field.attrs:
-                self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), shape_node)
-            else:
-                self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), child)
-        #Now for style
+        #Create Nodes based on the menu info of the fields
+        nodes_done = set()
+        nodes_done.add('styles')
+        for subNodeName in target.menu:
+            subNode = self.ids.fields.add_node(TreeViewLabel(text=subNodeName), child)
+            for attr in target.menu[subNodeName]:
+                self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), subNode)
+                nodes_done.add(attr)
+        #Style Node
         self.insert_styles(target, child)
+        #Now for the attributes without menu
+        for attr in target.params:
+            if attr in nodes_done:
+                continue
+            self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), child)
+
         return child
 
     def insert_styles(self, target, child):
