@@ -17,6 +17,26 @@ from fields import Field
 from template import BGTemplate, templateList
 from conf import card_format
 from deck import TreeViewField
+
+def compare_to_root(rootsize,fieldsize):
+    "Take 2 size or pos tuple and return a string made of b/a ratio as string, rounded to 2 digits float"
+    xa, ya = rootsize
+    xb, yb = fieldsize
+    assert xa and ya
+    xratio = float(xb)/float(xa)
+    yratio = float(yb)/float(ya)
+    rounded_x = round(xratio,2)
+    rounded_y = round(yratio,2)
+    if rounded_y == 1:
+        str_y = 'root.height'
+    else:
+        str_y = '%.2f * root.height' % rounded_y
+    if rounded_x== 1:
+        str_x = 'root.width'
+    else:
+        str_x = '%.2f * root.width' % rounded_x
+    return "%s, %s" % (str_x, str_y)
+
 class RuledScatter(ScatterLayout):
 
     def __init__(self, **kwargs):
@@ -78,6 +98,9 @@ class BGDesigner(FloatLayout):
             tfe = TFE()
             tfe.target = self
             self.ids.fields_stack.add_widget(tfe)
+            #Forcing current template default size. do not know why
+            self.current_template.size = card_format.size
+
         Clock.schedule_once(build)
 
     def add_parent_field(self, field):
@@ -253,11 +276,12 @@ class BGDesigner(FloatLayout):
         self.current_template = BGTemplate()
         self.ids.tmplName.text = 'TMPL'
         from conf import card_format
+        self.current_template.size = card_format.size
         self.ids.content.size = card_format.width, card_format.height
         self.ids.tmpl_width.text = "%.2f"%card_format.width
         self.ids.tmpl_height.text = "%.2f"%card_format.height
 
-    def export_field(self, field, tmpls, imports, level):
+    def export_field(self, field, tmpls, imports, level, save_cm, relativ):
         from fields import LinkedField
         prepend = '\t'*level
         #Remove field from any not desired attrbiute for export
@@ -268,22 +292,27 @@ class BGDesigner(FloatLayout):
             imports.append(field.src)
         for attr in field.getChangedAttributes(restrict=True):
             #convert name to ID
+            value = getattr(field,attr)
+            vtype = type(value)
             if attr == 'name':
-                tmpls.append('%sid: %s'%(prepend,getattr(field,attr)))
-            elif type(getattr(field, attr))==type(""):
+                tmpls.append('%sid: %s'%(prepend,value))
+            elif vtype == type(""):
                 tmpls.append('%s%s: "%s"'%(prepend,attr, getattr(field,attr)))
-            elif type(getattr(field, attr))==type(1.0):
+            elif vtype == type(1.0):
                 tmpls.append('%s%s: %.2f'%(prepend, attr, getattr(field,attr)))
-            elif type(getattr(field, attr))==type({}):
+            elif vtype == type({}):
                 tmpls.append('%s%s: %s'%(prepend, attr,getattr(field,attr)))
-            elif type(getattr(field, attr)) in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
-                if attr == "size" and field.size == self.current_template.size:
-                    print "size is root.size"
-                    tmpls.append('%ssize: root.size'%prepend)
-                    continue
+            elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
+                if attr in ("size","pos"):
+                    if relativ:
+                        tmpls.append('%s%s: %s'%(prepend, attr, compare_to_root(self.current_template.size,value)))
+                        continue
+                    if save_cm:
+                        tmpls.append('%s%s: '%(prepend,attr)+', '.join(["cm(%.2f)"%(v/cm(1)) for v in value]))
+                        continue
                 #Looping and removing bracket
                 sub = []
-                for item in getattr(field,attr):
+                for item in value:
                     if isinstance(item, float):
                         sub.append('%.2f'%item)
                     elif isinstance(item, basestring):
@@ -292,7 +321,7 @@ class BGDesigner(FloatLayout):
                         sub.append(str(item))
                 tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
             else:
-                tmpls.append('%s%s: %s'%(prepend, attr, getattr(field, attr)))
+                tmpls.append('%s%s: %s'%(prepend, attr, value))
         if isinstance(field, LinkedField):
             for child_field in field.children:
                 if hasattr(child_field, 'is_context') and child_field.is_context:
@@ -300,29 +329,19 @@ class BGDesigner(FloatLayout):
                 print 'todo: child to process', child_field
         tmpls.append('')
 
-    def save(self,*args):
-        imports = list()
-        if not self.current_template.name:
-            self.current_template.name = "TMPL"
-        tmpls=["<%s@BGTemplate>:"%self.current_template.name]
-        from kivy.metrics import cm
-        if self.ids.tmpl_unit.text == 'cm':
-            #Save the size in cm
-            w,h = "cm(%.2f)"%(self.current_template.width/cm(1)), "cm(%.2f)"%(self.current_template.height/cm(1))
+    def save(self,PATH=None,*args):
+        from os.path import isfile
+        if PATH is None:
+            PATH = 'Templates/%s.kv'%self.current_template.name
+        overwrite = self.ids.cb_overwrite.active
+        exists = isfile(PATH)
+        kv = self.export_kv()
+        if overwrite or not exists:
+            file('Templates/%s.kv'%self.current_template.name,'wb').write(kv)
         else:
-            w,h = self.current_template.size
-        tmpls.append('\tsize: %s, %s'%(w,h))
-        for node in self.ids.fields.root.nodes:
-            field = node.target
-            self.export_field(field, tmpls, imports, level=2)
-        #Prepend include
-        if imports:
-            tmpls.insert(0, "")
-            for imp in imports:
-                tmpls.insert(0,"#:include %s"%imp)
-        from os import linesep
-        kv = linesep.join(tmpls)
-        file('Templates/%s.kv'%self.current_template.name,'wb').write(kv)
+            from conf import alert
+            alert('Template %s already exists !'%PATH)
+            return
         templateList.register(BGTemplate.FromText(kv))
         from conf import alert
         alert('Template %s saved'%self.current_template.name)
@@ -331,6 +350,32 @@ class BGDesigner(FloatLayout):
         deck = App.get_running_app().root.ids.deck
         if deck.ids.tmpl_tree.current_tmpl_name == self.current_template.name:
             deck.update_tmpl(self.current_template.name)
+
+    def export_kv(self):
+        relativ = self.ids.cb_relative.active
+        save_cm = self.ids.cb_cm.active
+        imports = list()
+        if not self.current_template.name:
+            self.current_template.name = "TMPL"
+        tmpls=["<%s@BGTemplate>:"%self.current_template.name]
+        from kivy.metrics import cm
+        #if self.ids.tmpl_unit.text == 'cm':
+        if save_cm:
+            #Save the size in cm
+            w,h = "cm(%.2f)"%(self.current_template.width/cm(1)), "cm(%.2f)"%(self.current_template.height/cm(1))
+        else:
+            w,h = self.current_template.size
+        tmpls.append('\tsize: %s, %s'%(w,h))
+        for node in self.ids.fields.root.nodes:
+            field = node.target
+            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ)
+        #Prepend include
+        if imports:
+            tmpls.insert(0, "")
+            for imp in imports:
+                tmpls.insert(0,"#:include %s"%imp)
+        from os import linesep
+        return linesep.join(tmpls)
 
     def on_selection(self, instance, selection):
         tasks = self.ids.tasks
