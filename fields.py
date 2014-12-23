@@ -100,7 +100,6 @@ class Field(FloatLayout, HoverBehavior):
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
     vars = DictProperty()
 
-
     #Styles: dynaic list of appliyed style. .KLass kv file rules
     styles = ListProperty()
 
@@ -111,7 +110,6 @@ class Field(FloatLayout, HoverBehavior):
     #_menu work for current instance
     # menu aggregate parent info
     _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','opacity','angle','bg_color'])])
-
 
     Type = 'Field'
 
@@ -248,6 +246,12 @@ class Field(FloatLayout, HoverBehavior):
                     cx,cy = self.center
                     touch.ud['LEFT'] = ox<cx
                     touch.ud['DOWN'] = oy<cy
+                    if pos in [(self.center_x,self.y+5), (self.center_x, self.top-5)]:
+                        touch.ud['movement'] = 'y'
+                    if pos in [(self.x+5, self.center_y), (self.right-5,self.center_y)]:
+                        touch.ud['movement'] = 'x'
+                    if pos in [(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5, self.top-5), (self.right-5,self.y+5)]:
+                        touch.ud['movement']= 'xy'
                     return True
             if self.collide_point(*touch.pos):
                 touch.grab(self)
@@ -275,17 +279,20 @@ class Field(FloatLayout, HoverBehavior):
             if touch.ud['do_resize']: #Resize
                 LEFT = touch.ud['LEFT']
                 DOWN = touch.ud['DOWN']
-                if DOWN:
-                    self.y += touch.dy
-                    self.height -= touch.dy
-                else:
-                    self.height += touch.dy
-                if LEFT:
-                    self.x += touch.dx
-                    self.width -= touch.dx
-
-                else:
-                    self.width += touch.dx
+                MOV_X = 'x' in touch.ud['movement']
+                MOV_Y = 'y' in touch.ud['movement']
+                if MOV_Y:
+                    if DOWN:
+                        self.y += touch.dy
+                        self.height -= touch.dy
+                    else:
+                        self.height += touch.dy
+                if MOV_X:
+                    if LEFT:
+                        self.x += touch.dx
+                        self.width -= touch.dx
+                    else:
+                        self.width += touch.dx
             else:#Move
                 self.x += touch.dx
                 self.y += touch.dy
@@ -630,6 +637,8 @@ class PolygonField(SourceShapeField):
     angle_start = NumericProperty(0)
     vertices = ListProperty()
 
+    not_exported = ['vertices']
+
     def on_pos(self, instance,pos):
         if hasattr(ShapeField, 'on_pos'):
             super(PolygonField, self).on_pos(instance, pos)
@@ -652,8 +661,8 @@ class PolygonField(SourceShapeField):
             self.vertices.extend([
                 cx + cos(radians(self.angle_start) + i * a) * float(self.width)/2,
                 cy + sin(radians(self.angle_start) + i * a) * float(self.height)/2,
-                cos(radians(self.angle_start) + i * a),
-                sin(radians(self.angle_start) + i * a)
+                .5+ 0.5*cos(radians(self.angle_start) + i * a), #cos(radians(self.angle_start) + i * a),
+                .5-.5*sin(radians(self.angle_start) + i * a),#sin(radians(self.angle_start) + i * a)
             ])
 
 class LinkedField(Field):

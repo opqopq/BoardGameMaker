@@ -34,7 +34,7 @@ class TreeViewField(TreeViewNode,BoxLayout):
             bl.add_widget(Label(size_hint_x=.25, halign='left', shorten=True, text=self.pre_label))
             bl.add_widget(self.editor.create(self.pre_label, self.name,size_hint_x=.75))
         else:
-            bl.add_widget(Label(size_hint_x=.25, halign='left', shorten=True, text=self.name))
+            bl.add_widget(Label(size_hint_x=.4, halign='left', shorten=True, text=self.name))
             bl.add_widget(self.editor.create(self.name, self.name,size_hint_x=.75))
 
 class TemplateTree(FSWatcherBehavior,TreeView):

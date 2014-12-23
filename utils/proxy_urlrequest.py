@@ -1,16 +1,13 @@
-__author__ = 'HO.OPOYEN'
+__author__ = 'Olivier POYEN'
 ''''
 Url Request with proxy support.
-Also contains an AsyncImage with proxy support
-
-So far, prxy is hard coded at the begiining of the module
+So far, prxy is hard coded at the beginning of the module
 '''
 
-PROXY = '10.120.1.1'
+PROXY_NAME = '10.120.1.1' #as string like '10.120.50.60'
 PROXY_PORT = 8080
 
 from kivy.network.urlrequest import UrlRequest, urlparse
-from kivy.uix.image import AsyncImage
 
 class UrlRequest(UrlRequest):
 
@@ -48,7 +45,7 @@ class UrlRequest(UrlRequest):
             args['timeout'] = timeout
 
         if self._useproxy:
-            req = cls('10.120.1.1',8080)
+            req = cls(PROXY_NAME,PROXY_PORT)
         else:
             req = cls(host, port, **args)
 

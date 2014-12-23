@@ -149,7 +149,7 @@
             Slider:
                 range:0.01,2
                 value: 1
-                on_value: content.scale = self.value; content.pos= 150,50
+                on_value: content.scale = self.value#; content.pos= 150,50
                 size_hint: None, None
                 size: .7*self.parent.width if self.parent else 100, 25
                 orientation: 'horizontal'
@@ -199,93 +199,134 @@
             size_hint: .33,1
             sizable_from: 'left'
             max_size: 0.5*root.width
-            GridLayout:
-                #size_hint_y: None
-                cols: 1
-                BoxLayout:
-                    orientation: "horizontal"
-                    size_hint_y: None
-                    height: 30
-                    Label:
-                        text: "Name: "
-                        size_hint_x: None
-                        width: 50
-                    TextInput:
-                        id: tmplName
-                        text: "TMPL"
-                        on_text: if root.current_template: root.current_template.name = tmplName.text
-                BoxLayout:
-                    orientation: 'horizontal'
-                    size_hint_y: None
-                    height: 30
-                    canvas.before:
-                        Color:
-                            rgb: .3,.3,.9,.5
-                        Rectangle:
-                            size: self.size
-                            pos: self.pos
-                    FieldTaskButton:
-                        size_hint_x: .25
-                        source: 'img/filenew.png'
-                        on_press: root.new()
-                        radius: .8*self.parent.height
-                    FieldTaskButton:
-                        size_hint_x: .25
-                        source: 'img/filesave.png'
-                        on_press: root.save(); app.set_screen('Deck')
-                        radius: .8*self.parent.height
-                    FieldTaskButton:
-                        size_hint_x: .25
-                        source: 'img/filesaveas.png'
-                        on_press: root.save()
-                        radius: .8*self.parent.height
-                    FieldTaskButton:
-                        size_hint_x: .25
-                        source: 'img/fileopen.png'
-                        radius: .8*self.parent.height
-                BoxLayout:
-                    orientation: 'horizontal'
-                    size_hint_y: None
-                    height: 30
-                    Label:
-                        text: "W:"
-                        size_hint_x: .1
-                    TextInput:
-                        id: tmpl_width
-                        text: "%.2f"%CARD.width
-                        on_text: root.update_tmpl_size()
-                        size_hint_x: .3
-                    Label:
-                        text: "H:"
-                        size_hint_x: .1
-                    TextInput:
-                        id: tmpl_height
-                        text: "%.2f"%CARD.height
-                        on_text: root.update_tmpl_size()
-                        size_hint_x: .3
-                    Spinner:
-                        values: 'px','cm'
-                        text: 'px'
-                        on_text: root.change_tmpl_unit()
-                        size_hint_x: .2
-                        id: tmpl_unit
-                ScrollView:
-                    FieldTreeView:
-                        designer: root
-                        indent_level: 0
-                        size_hint_y: None
-                        #size_hint_x: None
-                        width: self.parent.width if self.parent else 200
-                        on_minimum_height: self.height = self.minimum_height
-                        on_minimum_width: self.width= self.minimum_width
-                        id: fields
-                        root_options: {'text': 'Fields'}
-                        canvas.before:
-                            Color:
-                                rgb: .2,.2,.2
-                            Rectangle:
-                                size: self.size
-                                pos: self.pos
+            TabbedPanel:
+                do_default_tab: False
+
+                TabbedPanelItem:
+                    text: 'Fields'
+                    GridLayout:
+                        #size_hint_y: None
+                        cols: 1
+                        ScrollView:
+                            FieldTreeView:
+                                designer: root
+                                indent_level: 0
+                                hide_root: True
+                                size_hint_y: None
+                                #size_hint_x: None
+                                width: self.parent.width if self.parent else 200
+                                on_minimum_height: self.height = self.minimum_height
+                                on_minimum_width: self.width= self.minimum_width
+                                id: fields
+                                root_options: {'text': 'Fields'}
+                                canvas.before:
+                                    Color:
+                                        rgb: .2,.2,.2
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+
+
+                TabbedPanelItem:
+                    text: 'File'
+                    GridLayout:
+                        #size_hint_y: None
+                        cols: 1
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: 30
+                            canvas.before:
+                                Color:
+                                    rgb: .3,.3,.9,.5
+                                Rectangle:
+                                    size: self.size
+                                    pos: self.pos
+                            FieldTaskButton:
+                                size_hint_x: .25
+                                source: 'img/filenew.png'
+                                on_press: root.new()
+                                radius: .8*self.parent.height
+                            FieldTaskButton:
+                                size_hint_x: .25
+                                source: 'img/filesave.png'
+                                on_press: root.save(); app.set_screen('Deck')
+                                radius: .8*self.parent.height
+                            FieldTaskButton:
+                                size_hint_x: .25
+                                source: 'img/filesaveas.png'
+                                on_press: root.save()
+                                radius: .8*self.parent.height
+                            FieldTaskButton:
+                                size_hint_x: .25
+                                source: 'img/fileopen.png'
+                                radius: .8*self.parent.height
+                        BoxLayout:
+                            orientation: "horizontal"
+                            size_hint_y: None
+                            height: 30
+                            Label:
+                                text: "Name: "
+                                size_hint_x: None
+                                width: 50
+                            TextInput:
+                                id: tmplName
+                                text: "TMPL"
+                                on_text: if root.current_template: root.current_template.name = tmplName.text
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: 30
+                            Label:
+                                text: "W:"
+                                size_hint_x: .1
+                            TextInput:
+                                id: tmpl_width
+                                text: "%.2f"%CARD.width
+                                on_text: root.update_tmpl_size()
+                                size_hint_x: .3
+                            Label:
+                                text: "H:"
+                                size_hint_x: .1
+                            TextInput:
+                                id: tmpl_height
+                                text: "%.2f"%CARD.height
+                                on_text: root.update_tmpl_size()
+                                size_hint_x: .3
+                            Spinner:
+                                values: 'px','cm'
+                                text: 'px'
+                                on_text: root.change_tmpl_unit()
+                                size_hint_x: .2
+                                id: tmpl_unit
+                        BoxLayout:
+                            size_hint_y: None
+                            height: 30
+                            CheckBox:
+                                id: cb_overwrite
+                                size_hint_x: .1
+                            Label:
+                                text: "Overwrite on save"
+                        BoxLayout:
+                            size_hint_y: None
+                            height: 30
+                            CheckBox:
+                                id: cb_relative
+                                active: True
+                                size_hint_x: .1
+                            Label:
+                                text: "Save relative Size/Pos"
+                        Button:
+                            text: "Export"
+                            on_press: root.save()
+                            size_hint_y: None
+                            height: 30
+                        Button:
+                            text: "Return to Deck"
+                            on_press: app.set_screen('Deck')
+                            size_hint_y: None
+                            height: 30
+
 
 <TmplChoicePopup>:
     BoxLayout:

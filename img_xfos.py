@@ -22,7 +22,6 @@ def grey_opencv(img):
     gimage = cv2.cvtColor(oimage, cv2.COLOR_BGR2GRAY)
     return Image.fromarray(gimage)
 
-
 def v_flip(img):
     return img.transpose(Image.FLIP_TOP_BOTTOM)
 

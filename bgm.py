@@ -17,8 +17,7 @@ todos= [
     'for field d&d/move, apply rotation effect to angle when calcultaing the drama',
     'bug: export/saveas templtate does not work '
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
-    'bug: subimg and trasfo img needs white bg to work ',
-    'find a way to get auto texture of each widget. derive field from fbowidget ?'
+    'find a way to get auto texture of each widget. derive field from fbowidget ?',
 ]
 
 for i,todo in enumerate(todos):
@@ -29,10 +28,8 @@ from kivy.logger import Logger
 Logger.setLevel('WARNING')
 
 ##############################################
-
 from kivy.lang import Builder
 Builder.load_file('kv/bgm.kv')
-
 ##############################################
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty
@@ -101,7 +98,7 @@ class BGMApp(App):
             Clock.schedule_once(cb, 2)
 
     def set_screen(self, screen_name):
-        self.root.ids.content.set_screen(screen_name)
+        self.root.ids.screen_spinner.text = screen_name
 
 if __name__ == '__main__':
     BGMApp().run()

@@ -196,7 +196,7 @@
             dash_offset: self.dash_offset
             rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
 
-<CircleLineField>:
+<CircleField>:
     canvas:
         Color:
             rgba: self.line_color
@@ -244,10 +244,13 @@
 
 <PolygonField>:
     canvas:
+        Color:
+            rgba: self.line_color
         Mesh:
             vertices: self.vertices
             indices: range(self.side)
             mode: 'triangle_fan'
             source: self.source
+            #source: 'images/judge.jpg'
             texture: self.texture
 

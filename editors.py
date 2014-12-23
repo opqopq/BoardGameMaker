@@ -209,14 +209,14 @@ class MetricEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.spinner import Spinner
-        t= BoxLayout(orientation='horizontal')
-        ti=TextInput(text=str(getattr(self.target, keyname)))
-        ts= Spinner(text='px', values=('cm','px'))
+        t = BoxLayout(orientation='horizontal')
+        ti = TextInput(text=str(getattr(self.target, keyname)))
+        ts = Spinner(text='px', values=('cm','px'), size_hint_x=None, width=40)
         t.add_widget(ti)
         t.add_widget(ts)
-        def cb(instance,value):
+        def cb(instance, value):
             try:
-                #First remove the binding to avoid update loop
+                # First remove the binding to avoid update loop
                 args={keyname:xcb}
                 self.target.unbind(**args)
                 if ts.text != "px":
@@ -225,8 +225,8 @@ class MetricEditor(Editor):
                 else:
                     setattr(self.target, keyname, int(round(float(value))))
                     t.stored_value = int(round(float(value)))
-                #Now, rebind it
-                args={keyname:xcb}
+                # Now, rebind it
+                args = {keyname: xcb}
                 self.target.bind(**args)
             except ValueError,E:
                 from conf import log
@@ -374,12 +374,9 @@ class AdvancedRangeEditor(RangeEditor):
         from kivy.uix.textinput import TextInput
         from kivy.uix.boxlayout import BoxLayout
         from utils.stickybutton import StickyButton
-
         r = RangeEditor.getWidgets(self, name, keyname, **kwargs)
-        r.size_hint_x = .8
-
-        ti = TextInput(text = "%.2f"%getattr(self.target, keyname), size_hint_x = .3)
-
+        ti = TextInput(text = "%.2f"%getattr(self.target, keyname))
+        ti.size_hint_x = .5
         t = BoxLayout(orientation = 'horizontal')
 
         def string_setter(instance, value):
