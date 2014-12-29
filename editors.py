@@ -62,7 +62,9 @@ class ColorEditor(Editor):
 class BooleanEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.checkbox import CheckBox
-        t = CheckBox(active = getattr(self.target, keyname))
+        from kivy.uix.switch import Switch
+        #t = CheckBox(active = getattr(self.target, keyname))
+        t = Switch(active = getattr(self.target, keyname))
         def cb(instance,value):
             setattr(self.target, keyname,value)
             t.stored_value = value

@@ -1,0 +1,134 @@
+[
+    {
+        "type": "title",
+        "title": "Debug"
+    },
+    {
+        "type": "options",
+        "title": "debug_level",
+        "desc": "Debug Level of the application",
+        "options": ["INFO","DEBUG","WARN"],
+        "section": "Debug",
+        "key": "debug_level"
+    },
+    {
+        "type": "title",
+        "title": "Path"
+    },
+    {
+        "type": "path",
+        "title": "gamepath",
+        "desc": "Path of Game's Library",
+        "section": "Path",
+        "key": "gamepath"
+    },
+    {
+    "type": "string",
+    "title": "last_file",
+    "desc": "Last Opened File",
+    "section": "Path",
+    "key": "last_file"
+    },
+    {
+        "type": "title",
+        "title": "Proxy"
+    },
+    {
+    "type": "bool",
+    "title": "Proxy",
+    "desc": "Use Proxy",
+    "section": "Proxy",
+    "key": "USE_PROXY"
+    },
+    {
+        "type": "title",
+        "title": "Print"
+    },
+    {
+    "type": "options",
+    "title": "Print Format",
+    "desc": "Export for image, between jpg & png",
+    "section": "Print",
+    "key": "format",
+    "options": ["jpg","png"]
+    },
+    {
+        "type": "title",
+        "title": "Format"
+    },
+    {
+    "type": "numeric",
+    "title": "Card Width",
+    "desc": "Default Card Width",
+    "section": "Card",
+    "key": "width"
+    },
+    {
+    "type": "numeric",
+    "title": "Card Height",
+    "desc": "Default Card Height",
+    "section": "Card",
+    "key": "height"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Width",
+    "desc": "Default Page Width",
+    "section": "Page",
+    "key": "Width"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Height",
+    "desc": "Default Page Height",
+    "section": "Page",
+    "key": "height"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Left",
+    "desc": "Default Page Left border",
+    "section": "Page",
+    "key": "left"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Right",
+    "desc": "Default Page Rightborder",
+    "section": "Page",
+    "key": "right"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Top",
+    "desc": "Default Page top border",
+    "section": "Page",
+    "key": "top"
+    },
+    {
+    "type": "numeric",
+    "title": "Page Bottom",
+    "desc": "Default Page bottom border",
+    "section": "Page",
+    "key": "bottom"
+    },
+    {
+        "type": "title",
+        "title": "Magic Set Editor"
+    },
+
+    {
+    "type": "path",
+    "title": "MSE",
+    "desc": "Mse Path",
+    "section": "MSE",
+    "key": "path"
+    },
+    {
+    "type": "string",
+    "title": "Version",
+    "desc": "Mse Version",
+    "section": "MSE",
+    "key": "version"
+    }
+]

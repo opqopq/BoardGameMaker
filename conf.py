@@ -1,8 +1,17 @@
 __author__ = 'opq'
 from os.path import isdir
+from kivy.config import ConfigParser
+from kivy.config import platform
 
+if platform() == 'win': #work
+    fname = 'bgm.ini'
+else:
+    fname = 'bgm_home.ini'
 
-gamepath = "C:\Users\mrs.opoyen\SkyDrive\\Games"
+CP = ConfigParser(name='BGM')
+CP.read(fname)
+
+gamepath = CP.getdefault('Path', 'gamepath', r'C:\Users\mrs.opoyen\SkyDrive\Games')
 if not isdir(gamepath):
     gamepath = "../../../../OneDrive/Games"
 if not isdir(gamepath):
@@ -10,12 +19,11 @@ if not isdir(gamepath):
     Logger.warn('No Existing Game Path found')
 
 
-USE_PROXY = True
-USE_PROXY = False
+USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 
 from kivy.logger import Logger
 if USE_PROXY:
-    Logger.warn('Using Proxy')
+    Logger.info('Using Proxy')
 
 
 from kivy.metrics import cm
@@ -24,31 +32,27 @@ from kivy.lang import Observable
 from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty
 
 class CardFormat(EventDispatcher):
-    width = NumericProperty(cm(6.35))
-    height = NumericProperty(cm(8.8))
+    width = NumericProperty(cm(CP.getfloat('Card', 'width')))
+    height = NumericProperty(cm(CP.getfloat('Card', 'height')))
     size = ReferenceListProperty(width, height)
 
 card_format = CardFormat()
 
-
 class PageFormat(EventDispatcher):
-    width = NumericProperty(cm(21))
-    height = NumericProperty(cm(29.7))
-    left = NumericProperty(cm(.8))
-    right = NumericProperty(cm(.8))
-    bottom = NumericProperty(cm(1))
-    top = NumericProperty(cm(1))
+    width = NumericProperty(cm(CP.getfloat('Page','width')))
+    height = NumericProperty(cm(CP.getfloat('Page','height')))
+    left = NumericProperty(cm(CP.getfloat('Page','left')))
+    right = NumericProperty(cm(CP.getfloat('Page','right')))
+    bottom = NumericProperty(cm(CP.getfloat('Page','bottom')))
+    top = NumericProperty(cm(CP.getfloat('Page','top')))
 
 page_format = PageFormat()
 
 #This cache will get a copy of last opened dir for each file browser to simplify history
 dir_cache = dict()
 
-#import watchdog.events
-#watchdog.events.FileCreatedEvent
 
 from kivy.properties import DictProperty
-
 class BGMCache(Observable):
     folder= StringProperty('.')
     cache= DictProperty()
@@ -99,3 +103,11 @@ def fill_env(*args):
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)
+
+
+def CreateConfigPanel():
+    from kivy.uix.settings import SettingsWithTabbedPanel as Settings
+    settings = Settings(name='Settings')
+    settings.add_json_panel('BGM', CP, filename='params.json')
+    settings.add_kivy_panel()
+    return settings

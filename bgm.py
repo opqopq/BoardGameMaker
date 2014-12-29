@@ -57,9 +57,12 @@ class RootWidget(BoxLayout):
             elif name == 'Designer':
                 from designer import BGDesigner
                 self.ids['designer'] = last = BGDesigner(name=name)
+            elif name =='Settings':
+                from conf import CreateConfigPanel
+                self.ids['settings'] = last = CreateConfigPanel()
             else:
-                raise ValueError('No screen named %s'%name)
-            self.ids.content.add_widget(last,name)
+                raise ValueError('No screen named %s' % name)
+            self.ids.content.add_widget(last, name)
             last.name = name
         if set_screen:
             self.ids.content.set_screen(name)
