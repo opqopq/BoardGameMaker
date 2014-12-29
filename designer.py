@@ -65,6 +65,8 @@ class BGDesigner(FloatLayout):
     current_template = ObjectProperty(BGTemplate(size=card_format.size))
     selection = ListProperty(rebind=True)
     nodes = DictProperty()
+    #Place Holder when copying size/pos of a widget
+    _do_copy = None
 
     def __init__(self, **kwargs):
         super(BGDesigner,self).__init__(**kwargs)
@@ -233,7 +235,7 @@ class BGDesigner(FloatLayout):
         self.ids.fields.add_node(TreeViewField(name='styles', editor=target.params['styles'](target),size_hint_y= None, height=30), style_node)
         for style in target.styles:
             from styles import getStyle
-            s_node= self.ids.fields.add_node(TreeViewLabel(text=style), style_node)
+            s_node = self.ids.fields.add_node(TreeViewLabel(text=style), style_node)
             sklass = getStyle(style)
             if sklass:
                 for param, editor in sklass.attrs.items():
@@ -381,6 +383,14 @@ class BGDesigner(FloatLayout):
         tasks = self.ids.tasks
         tasks.clear_widgets()
         if self.selection:
+            #First, check if we are copying a pos/size from an old selection
+            if self._do_copy:
+                field = self.selection[0]
+                typ,unit = self._do_copy
+                setattr(unit,typ,getattr(field,typ))
+                self._do_copy = None
+                #Reselect the old one
+                self.selection = [unit]
             #Just make sure that the dos are aligned on the widget
             field = self.selection[0]
             children = self.ids.content.content.children
@@ -397,18 +407,14 @@ class BGDesigner(FloatLayout):
             from kivy.uix.label import Label
             #Now for the big show
             text = field.name if field.name else field.Type
+            if text.lower().endswith('field'):
+                text= text[:-5]
             label = Label(text=text, size_hint_x=None, width = 100)
             tasks.add_widget(label)
 
             ftb = Factory.get('FieldTaskButton')
             data=[
-                #(self.expand_selection, 'img/expand2.png'),
-                #(self.center_selection, 'img/center.png'),
-                (self.center_vertical_selection, 'img/btn_center_vertical.png'),
-                (self.center_horizontal_selection,'img/btn_center_horizontal.png'),
-                (self.maximize_height, 'img/maximize_height.png'),
-                (self.maximize_width, 'img/maximize_width.png'),
-                (self.remove_selection, 'img/DeleteRed.png'),
+                (self.remove_selection, 'img/Deleteblack.png'),
                 (self.duplicate_selection, 'img/duplicate.png'),
             ]
             for cb, img in data:
@@ -417,62 +423,74 @@ class BGDesigner(FloatLayout):
                 _button.bind(on_press=cb)
                 _button.designer = self
                 tasks.add_widget(_button)
-            #Move Up/Down for z index
-            if field in children:
-                mub = ftb()
-                mub.source = 'img/arrow_up.png'
-                if not children.index(field):#
-                    mub.disabled = True
-                    mub.opacity = .5
-                else:
-                    mub.bind(on_press=self.move_up_selection)
-                mdb = ftb()
-                mdb.source = 'img/arrow_down.png'
-                if children.index(field)+1 == len(children):
-                    #Last one
-                    mdb.disable = True
-                    mdb.opacity = .5
-                else:
-                    mdb.bind(on_press=self.move_down_selection)
-                #Resume
-                tasks.add_widget(mub)
-                tasks.add_widget(mdb)
+            self.insertMoveUpDownButton()
+            IMGS = Factory.get('ImageSpinner')
+            img_spinner = IMGS(text='Position')
+            img_spinner.bind(text = self.position_selection)
+            tasks.add_widget(img_spinner)
+            img_spinner.values=['Left', 'Right', 'Top', 'Bottom', 'Center H', 'Center V', 'Copy']
+            img_spinner = IMGS(text='Size')
+            img_spinner.bind(text = self.align_selection)
+            tasks.add_widget(img_spinner)
+            img_spinner.values=['Max H', 'Max V', 'Copy']
             if len(self.selection)>1:
                 #Add alignement button
                 pass
 
-    def expand_selection(self,*args):
-        if self.selection:
-            unit= self.selection[0]
-            unit.size = unit.parent.size
-            unit.pos = unit.parent.pos
+    def insertMoveUpDownButton(self):
+        from kivy.factory import Factory
+        field = self.selection[0]
+        children = self.ids.content.content.children
+        ftb = Factory.get('FieldTaskButton')
+        tasks = self.ids.tasks
+        #Move Up/Down for z index
+        if field in children:
+            mub = ftb()
+            mub.source = 'img/arrow_up.png'
+            if not children.index(field):#
+                mub.disabled = True
+                mub.opacity = .5
+            else:
+                mub.bind(on_press=self.move_up_selection)
+            mdb = ftb()
+            mdb.source = 'img/arrow_down.png'
+            if children.index(field)+1 == len(children):
+                #Last one
+                mdb.disable = True
+                mdb.opacity = .5
+            else:
+                mdb.bind(on_press=self.move_down_selection)
+            #Resume
+            tasks.add_widget(mub)
+            tasks.add_widget(mdb)
 
-    def maximize_height(self,*args):
-        if self.selection:
-            unit= self.selection[0]
-            unit.height= unit.parent.height
-            unit.y= unit.parent.y
-
-    def maximize_width(self,*args):
-        if self.selection:
-            unit= self.selection[0]
-            unit.width= unit.parent.width
-            unit.x = unit.parent.x
-
-    def center_selection(self,*args):
-        if self.selection:
-            unit= self.selection[0]
-            unit.center = unit.parent.center
-
-    def center_horizontal_selection(self, *args):
+    def position_selection(self,*args):
+        pos= args[1]
+        conv ={'Left': 'x', 'Bottom': 'y', 'Center H': 'center_x', 'Center V': 'center_y'}
+        attr = conv.get(pos, pos.lower())
         if self.selection:
             unit = self.selection[0]
-            unit.center_x = unit.parent.center_x
+            if attr=='copy':
+                from conf import alert
+                alert('Choose target to copy pos from')
+                self._do_copy =('pos', unit)
+            else:
+                setattr(unit, attr, getattr(unit.parent,attr))
 
-    def center_vertical_selection(self, *args):
+    def align_selection(self, *args):
+        pos = args[1]
         if self.selection:
             unit = self.selection[0]
-            unit.center_y = unit.parent.center_y
+            if pos == 'Max H':
+                unit.width = unit.parent.width
+                unit.x = unit.parent.x
+            elif pos == 'Max V':
+                unit.height= unit.parent.height
+                unit.y= unit.parent.y
+            elif pos == 'Copy':
+                from conf import alert
+                alert('Choose target to copy size from')
+                self._do_copy =('size', unit)
 
     def duplicate_selection(self,*args):
         if self.selection:

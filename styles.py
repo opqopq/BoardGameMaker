@@ -3,7 +3,6 @@ __author__ = 'opq'
 
 
 
-
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
 from kivy.properties import DictProperty, StringProperty, ListProperty, NumericProperty, BooleanProperty
@@ -22,12 +21,19 @@ class Border(Style):
     border_width = NumericProperty(10)
     attrs = {'border_rgba': ColorEditor, 'border_dash_offset': AdvancedIntEditor,'border_dash_length': AdvancedIntEditor, 'border_width': AdvancedIntEditor}
 
+class Cross(Style):
+    kvname = 'cross'
+    cross_color = ListProperty([1,0,0,1])
+    cross_width = NumericProperty(10)
+    cross_dash_offset = NumericProperty(3)
+    cross_dash_length =  NumericProperty(5)
+    attrs = {'cross_color': ColorEditor, 'cross_dash_offset': AdvancedIntEditor,'cross_dash_length': AdvancedIntEditor, 'cross_width': AdvancedIntEditor}
+
 class Shadow(Style):
     kvname = 'shadow'
-    delta = NumericProperty(6)
-    attrs = {'delta': AdvancedIntEditor}
-
-
+    offset = NumericProperty(6)
+    shadow_opacity = NumericProperty(.5)
+    attrs = {'offset': AdvancedIntEditor, 'shadow_opacity': FloatEditor}
 
 class StyleList(EventDispatcher):
     styles = DictProperty()

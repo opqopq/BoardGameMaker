@@ -49,3 +49,7 @@ Sometime, you just want to directly code your solution. Program is designed to a
 --------------------------------------------------------------------
 
 This is a lot to read. The program is ready, but in alpha quality.
+
+Designer Features:
+- auto correct & round size & pos versus template size on export
+-

@@ -24,6 +24,9 @@ Builder.load_file('kv/fields.kv')
 
 from editors import *
 
+#Pre-import styles to register them all
+from styles import getStyle
+
 ###############################################
 #        Field                                #
 ###############################################
@@ -114,11 +117,11 @@ class Field(FloatLayout, HoverBehavior):
     Type = 'Field'
 
     def on_styles(self, instance, styles):
-        #Ensure styles are register
         before = set(self.cls)
         now = set([x.lower() for x in styles])
         new = now-before
         rules = [x for x in Builder.rules if x[0].key in new]
+        rsnames = [x[0].key for x in Builder.rules]
         for rule in rules:
             try:
                 Builder._apply_rule(self, rule[1], rule[1])

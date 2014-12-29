@@ -34,9 +34,10 @@
 
 <.Shadow>
     offset: 6
+    shadow_opacity: .5
     CopyField:
-        skip_list: 'pos', 'target', 'name'
+        #skip_list: 'name'
         target: self.parent if self.parent else None
         pos: (self.parent.x + self.parent.offset, self.parent.y - self.parent.offset) if self.target else (0,0)
-        opacity: .5
+        opacity: root.shadow_opacity
 

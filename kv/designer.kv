@@ -5,6 +5,8 @@
 
 <FieldTaskButton@ButtonBehavior+HoverBehavior+Image>
     radius: 40
+    size_hint_x: None
+    width: 50
     canvas.before:
         Color:
             rgb: 1,1,1
@@ -100,9 +102,24 @@
         shorten: True
 
 
-<FieldPlaceHolder>:
-    do_rotation: True
-    size_hint: None, None
+<ImageSpinnerOption@SpinnerOption>:
+    size_hint_x: None
+    halign: 'right'
+    valign: 'middle'
+    text_size: .9*root.width, root.height#root.size
+    font_size: '14dp'
+    width: 80
+    Image:
+        source: "img/%s.png"%root.text if root.text else ""
+        size: root.size[0]/2,root.size[1]/2
+        #size: root.size
+        pos: root.x-root.width/16,root.y+root.height/4
+
+<ImageSpinner@Spinner>:
+    option_cls: "ImageSpinnerOption"
+    size_hint_x: None
+    width: 80
+    background_color: 0,.2,1,.6
 
 <BGDesigner>:
     BoxLayout:
@@ -194,7 +211,7 @@
                     on_minimum_width: self.width= self.minimum_width
                     id: tasks
                     size_hint_x:  None
-                    col_default_width: 50
+                    #col_default_width: 60
         Splitter:
             size_hint: .33,1
             sizable_from: 'left'
