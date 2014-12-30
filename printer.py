@@ -136,21 +136,7 @@ class PDFPage:
             res['back']=dual
             dual.ph_per_page = self.ph_per_page
         for index_h in range(int(round((W-left-right)/w))):
-            #Line:
-            #    points: cm({{left + index_h * w }}),cm({{up}}),cm({{left + index_h*w}}),cm({{(H/h)|round|int * h + up }})
-            #    cap: 'round'
-            #    width: 1
             for index_v in range(int(round((H-bottom-top)/h))):
-            #Line:
-            #    points: cm({{left }}),cm({{up + index_v*h}}),cm({{left + w*(W/w)|round|int }}),cm({{up + index_v*h}})
-            #    cap: 'round'
-            #    width: 1
-        #Color:
-        #    rgb: 0,0,0
-        #Line:
-        #    rectangle: cm({{left}}),cm({{up}}), cm({{W-left - right}}), cm({{H-top-up}})
-        #    cap: 'round'
-        #    width: 2
                 self.phs.append(PDFPlaceHolder(
                     pos = (left+index_h*w, bottom+index_v*h),#here if dual, then change it
                     size = (w,h),
@@ -159,10 +145,11 @@ class PDFPage:
                 )
                 if withDual:
                     dual.phs.append(PDFPlaceHolder(
-                        pos = (left+index_h*w,bottom+index_v*h)),
+                        pos = (W-(1+index_h)*w-right,bottom+index_v*h),
                         size = (w,h),
                         angle = 0
                     )
+                )
         return res
 
 def center(x,y,w,h):
@@ -196,7 +183,7 @@ class PDFBook:
             front_pages=list()
             back_pages=list()
             for cardlist, mode, target_list in zip((fps,bps),(False,True),(front_pages,back_pages)):
-                #print 'loop:', "card list: %s"%cardlist, 'mode %s'%mode,"target_list : %s"%target_list
+                print 'loop:', "card list: %s"%cardlist, 'mode %s'%mode,"target_list : %s"%target_list
                 if cardlist:
                     index = 0
                     pf = self.AddPage(mode, target_list)

@@ -17,7 +17,9 @@ if not isdir(gamepath):
 if not isdir(gamepath):
     from kivy.logger import Logger
     Logger.warn('No Existing Game Path found')
-
+else:
+    from kivy.resources import resource_add_path
+    resource_add_path(gamepath)
 
 USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 

@@ -66,7 +66,7 @@ class ImgPack:
         return txt
 
     def copy(self):
-        return ImgPack(self.template,self.size,self.dual,**self.values)
+        return ImgPack(self.template,self.size,self.dual,self.values)
 
     def to_dict(self):
         res = {'size': self.size, 'dual':self.dual,'template': self.template.name}
@@ -79,6 +79,7 @@ class ImgPack:
         if fname is None:
             fname = 'build/%s.png'%id(self)
         blank.export_to_image(fname)
+        return fname
 
     @classmethod
     def from_dict(cls, other):

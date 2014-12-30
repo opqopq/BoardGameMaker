@@ -314,6 +314,7 @@
                             #width: bl.width/2
                             #height: bl.height
                             #height: {'right':1}
+                            bg_color: 1,1,1,1
                             size: fl.width/2, fl.height/2
                             pos: fl.width/2, fl.y
                             dimension: (img.source, float(img_x.text), float(img_y.text), float(img_width.text), float(img_height.text) ) if img.source else ["",0,0,1,1]
@@ -354,9 +355,16 @@
                             text: str(root.dimension[4])
                             #on_text: root.dimension[4] = float(self.text)
                         Button:
-                            text: "Restore Part"
+                            text: "Reset"
                             id: restore_button
-                            on_press: overlay.scale = 1,1 ; overlay.size =(img.height * img.image_ratio, img.height); overlay.pos = (img.x + (img.width-overlay.width)/2, img.y)
+                            on_press:
+                                overlay.scale = 1,1
+                                overlay.size =img.height * img.image_ratio, img.height
+                                overlay.pos = img.x + (img.width-overlay.width)/2, img.y
+                                img_x.text= "0.0"
+                                img_y.text= "0.0"
+                                img_width.text= "1.0"
+                                img_height.text='1.0'
                     BoxLayout:
                         orientation: "horizontal"
                         size_hint_y: None

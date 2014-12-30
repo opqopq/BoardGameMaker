@@ -16,7 +16,6 @@ class BGTemplate(Field, RelativeLayout):
     # dpi = NumericProperty(150, name="DPI")
     name = "TMPL"
     source = OptionProperty('text', options=['file', 'text'])
-
     not_exported = ['ids', 'src']
 
     def __repr__(self):

@@ -60,10 +60,8 @@ class TemplateTree(FSWatcherBehavior,TreeView):
             last_op = operations[-1]
             if not last_op.is_directory and last_op.event_type in('created', 'modified'): #it is a new file !
                 if last_op.event_type == 'modified':
-                    print 'if Mac OSX, does not work: skipping'
+                    print 'Watchdog Modify event detected. Skipping it for now'
                     return
-                else:
-                    print 'else', last_op.event_type
                 fname = last_op.src_path
                 if fname.endswith('.kv'):
                     #Load it !

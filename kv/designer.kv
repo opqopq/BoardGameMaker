@@ -124,128 +124,53 @@
 <BGDesigner>:
     BoxLayout:
         orientation: "horizontal"
-        #Field Grid
-        Accordion:
-            id: left_accordion
-            size_hint: .2,1
-            canvas.before:
-                Color:
-                    rgb: .6,.6,.6,
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            orientation: 'vertical'
-            AccordionItem:
-                title: 'Fields'
-                collapse: False
-                ScrollView:
-                    GridLayout:
-                        cols: 1
-                        id: fields_stack
-                        size_hint_y: None
-                        on_minimum_height: self.height = self.minimum_height
-            AccordionItem:
-                title: "Shapes"
-                GridLayout:
-                    cols: 1
-                    id: shapes_stack
-            AccordionItem:
-                title: "Linked"
-                GridLayout:
-                    cols: 1
-                    id: effects_stack
-        FloatLayout
-            size_hint: .65,1
-            id: background
-            canvas.before:
-                Color:
-                    rgb: 1,1,1
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            Slider:
-                range:0.01,2
-                value: 1
-                on_value: content.scale = self.value#; content.pos= 150,50
-                size_hint: None, None
-                size: .7*self.parent.width if self.parent else 100, 25
-                orientation: 'horizontal'
-                pos: background.center_x-self.width/2, 10
-                canvas.before:
-                    Color:
-                        rgba: .2,.2,.2,.2
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-
-            RuledScatter:
-                id: content
-                do_rotation: False
-                do_scale: False
-                pos: left_accordion.right+50,50
-                size_hint: None, None
-                size: CARD.width, CARD.height
-                canvas.before:
-                    Color:
-                        rgba: .5,.5,.5,.5
-                    Rectangle:
-                        pos: 0,0
-                        size: self.size
-                    Color:
-                        rgb: 0,0,0
-                    Line:
-                        rectangle: 0,0,self.width,self.height
-            ScrollView:
-                pos: background.x, background.top - self.height
-                size_hint: None, None
-                height: 50
-                width: background.width
-                canvas.before:
-                    Color:
-                        rgba: (0,0,1,.6) if root.selection else (0,0,0,0)
-                    Rectangle:
-                        size: self.size
-                        pos: self.pos
-                GridLayout:
-                    rows: 1
-                    on_minimum_width: self.width= self.minimum_width
-                    id: tasks
-                    size_hint_x:  None
-                    #col_default_width: 60
         Splitter:
-            size_hint: .33,1
-            sizable_from: 'left'
+            size_hint: .24,1
+            sizable_from: 'right'
             max_size: 0.5*root.width
             TabbedPanel:
                 do_default_tab: False
+                #tab_pos: 'left_top'
 
                 TabbedPanelItem:
-                    text: 'Fields'
+                    text: 'Widgets'
                     GridLayout:
                         #size_hint_y: None
                         cols: 1
-                        ScrollView:
-                            FieldTreeView:
-                                designer: root
-                                indent_level: 0
-                                hide_root: True
-                                size_hint_y: None
-                                #size_hint_x: None
-                                width: self.parent.width if self.parent else 200
-                                on_minimum_height: self.height = self.minimum_height
-                                on_minimum_width: self.width= self.minimum_width
-                                id: fields
-                                root_options: {'text': 'Fields'}
-                                canvas.before:
-                                    Color:
-                                        rgb: .2,.2,.2
-                                    Rectangle:
-                                        size: self.size
-                                        pos: self.pos
+                        #Field Grid
+                        Accordion:
+                            id: left_accordion
+                            #size_hint: .2,1
+                            canvas.before:
+                                Color:
+                                    rgb: .6,.6,.6,
+                                Rectangle:
+                                    size: self.size
+                                    pos: self.pos
+                            orientation: 'vertical'
+                            AccordionItem:
+                                title: 'Fields'
+                                collapse: False
+                                ScrollView:
+                                    GridLayout:
+                                        cols: 1
+                                        id: fields_stack
+                                        size_hint_y: None
+                                        on_minimum_height: self.height = self.minimum_height
+                            AccordionItem:
+                                title: "Shapes"
+                                GridLayout:
+                                    cols: 1
+                                    id: shapes_stack
+                            AccordionItem:
+                                title: "Linked"
+                                GridLayout:
+                                    cols: 1
+                                    id: effects_stack
 
 
                 TabbedPanelItem:
-                    text: 'File'
+                    text: 'Template'
                     GridLayout:
                         #size_hint_y: None
                         cols: 1
@@ -360,6 +285,115 @@
                             size_hint_y: None
                             height: 30
 
+
+                        BoxLayout:
+                            size_hint_y: None
+                            height: 30
+                            Label:
+                                text: "Zoom:"
+                                padding_x: 20
+                                size_hint_x: .1
+                                width: 30
+                            Slider:
+                                range:0.01,2
+                                value: 1
+                                on_value: content.scale = self.value#; content.pos= 150,50
+                                orientation: 'horizontal'
+                                canvas.before:
+                                    Color:
+                                        rgba: .2,.2,.2,.2
+                                    Rectangle:
+                                        pos: self.pos
+                                        size: self.size
+
+                        ScrollView:
+                            FieldTreeView:
+                                designer: root
+                                indent_level: 0
+                                #hide_root: True
+                                size_hint_y: None
+                                #size_hint_x: None
+                                width: self.parent.width if self.parent else 200
+                                on_minimum_height: self.height = self.minimum_height
+                                on_minimum_width: self.width= self.minimum_width
+                                id: fields
+                                root_options: {'text': 'Fields'}
+                                canvas.before:
+                                    Color:
+                                        rgb: .2,.2,.2
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+        #Center layout, with template
+        FloatLayout
+            size_hint: .65,1
+            id: background
+            canvas.before:
+                Color:
+                    rgb: 1,1,1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+            #Top control scroll, activated when a selection is made
+            ScrollView:
+                pos: background.x, background.top - self.height
+                size_hint: None, None
+                height: 50
+                width: background.width
+                canvas.before:
+                    Color:
+                        rgba: (0,0,1,.6) if root.selection else (0,0,0,0)
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                GridLayout:
+                    rows: 1
+                    on_minimum_width: self.width= self.minimum_width
+                    id: tasks
+                    size_hint_x:  None
+                    #col_default_width: 60
+            #Bottom params details, activated when a selection is made
+            Splitter:
+                keep_within_parent: True
+                sizable_from: 'top'
+                height: 0 if not root.selection else 100
+                x: background.x
+                size_hint: None, None
+                #height: 100
+                width: background.width
+                ScrollView:
+                    canvas.before:
+                        Color:
+                            rgba: (.3,.3,.3,1) if root.selection else (0,0,0,0)
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    TreeView:
+                        #rows: 1
+                        on_minimum_height: self.height= self.minimum_height
+                        id: params
+                        size_hint_y:  None
+                        #hide_root: bool(root.selection)
+                        root_options: {'text' : "%s: %s"%(root.selection[0].Type,root.selection[0].name)} if root.selection else {}
+
+            RuledScatter:
+                id: content
+                do_rotation: False
+                do_scale: False
+                pos: background.x+50,150
+                size_hint: None, None
+                size: CARD.width, CARD.height
+                canvas.before:
+                    Color:
+                        rgba: .5,.5,.5,.5
+                    Rectangle:
+                        pos: 0,0
+                        size: self.size
+                    Color:
+                        rgb: 0,0,0
+                    Line:
+                        rectangle: 0,0,self.width,self.height
 
 <TmplChoicePopup>:
     BoxLayout:

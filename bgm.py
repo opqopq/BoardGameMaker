@@ -5,17 +5,14 @@ todos= [
     'P3: change virtual screen stack',
     "P2: repair autofit for the last simple error in the +1 in fit size",
     'P2: find a way to have common dir for all file browser',
-    "P3: template designer: h align of many widget; is it useful ? ",
     "P3: bgg browser v2 - file & links + nonproxy version",
     "P3: designer: add a way to import kivy object + display the resulting kv file in real time",
     "P3: may be change the autofit label to growth until BOTH width & hieght are depassed",
-    'P1: understand why order are reversed in display of designer',
-    'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
+   'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
     'import template field in template - almost, except for values in valuetree',
     'super bug: card format <-> tabbedpanel bug',
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
     'for field d&d/move, apply rotation effect to angle when calcultaing the drama',
-    'bug: export/saveas templtate does not work '
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
     'find a way to get auto texture of each widget. derive field from fbowidget ?',
 ]

@@ -1,18 +1,6 @@
 [
     {
         "type": "title",
-        "title": "Debug"
-    },
-    {
-        "type": "options",
-        "title": "debug_level",
-        "desc": "Debug Level of the application",
-        "options": ["INFO","DEBUG","WARN"],
-        "section": "Debug",
-        "key": "debug_level"
-    },
-    {
-        "type": "title",
         "title": "Path"
     },
     {

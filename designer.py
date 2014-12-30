@@ -209,37 +209,39 @@ class BGDesigner(FloatLayout):
         self.nodes[target] = child
         #Way to come back
         child.target = target
-        #Now, for each attributes, add it to the list
+        return child
+
+    def display_field_attributes(self,target):
         #Create Nodes based on the menu info of the fields
         nodes_done = set()
         nodes_done.add('styles')
+        params = self.ids.params
+        params.clear_widgets()
+        params.nodes = dict()
+        params.root.nodes = [] # as clear widgets does not works
         for subNodeName in target.menu:
-            subNode = self.ids.fields.add_node(TreeViewLabel(text=subNodeName), child)
+            subNode = self.ids.params.add_node(TreeViewLabel(text=subNodeName))
             for attr in target.menu[subNodeName]:
-                self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), subNode)
+                self.ids.params.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), subNode)
                 nodes_done.add(attr)
         #Style Node
-        self.insert_styles(target, child)
+        self.insert_styles(target)
         #Now for the attributes without menu
         for attr in target.params:
             if attr in nodes_done:
                 continue
-            self.ids.fields.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30), child)
+            self.ids.params.add_node(TreeViewField(name=attr, editor=target.params[attr](target),size_hint_y= None, height=30))
 
-        return child
-
-    def insert_styles(self, target, child):
-        style_node = self.ids.fields.add_node(TreeViewLabel(text="Style"), child)
-        for node in style_node.nodes:
-            self.ids.fields.remove_node(node)
-        self.ids.fields.add_node(TreeViewField(name='styles', editor=target.params['styles'](target),size_hint_y= None, height=30), style_node)
+    def insert_styles(self, target):
+        style_node = self.ids.params.add_node(TreeViewLabel(text="Style"))
+        self.ids.params.add_node(TreeViewField(name='styles', editor=target.params['styles'](target),size_hint_y= None, height=30), style_node)
         for style in target.styles:
             from styles import getStyle
-            s_node = self.ids.fields.add_node(TreeViewLabel(text=style), style_node)
+            s_node = self.ids.params.add_node(TreeViewLabel(text=style), style_node)
             sklass = getStyle(style)
             if sklass:
                 for param, editor in sklass.attrs.items():
-                    self.ids.fields.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
+                    self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
         print 'see if there is a better way to moving the template around. maybe a copy ?'
@@ -433,9 +435,8 @@ class BGDesigner(FloatLayout):
             img_spinner.bind(text = self.align_selection)
             tasks.add_widget(img_spinner)
             img_spinner.values=['Max H', 'Max V', 'Copy']
-            if len(self.selection)>1:
-                #Add alignement button
-                pass
+            #Now load the specific attributes matrix/tree for field
+            self.display_field_attributes(field)
 
     def insertMoveUpDownButton(self):
         from kivy.factory import Factory

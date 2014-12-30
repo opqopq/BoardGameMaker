@@ -28,6 +28,10 @@ from fields import Field
 class Script(Field):
     name = 'SCRIPT'
 
+    def __init__(self):
+        Field.__init__(self)
+        scriptList.register(self)
+
     def execute(self):
         pass
 
@@ -111,47 +115,6 @@ class Idle(Script):
     def execute(self):
         print 'idel executed'
 
-class GreyBack(Script):
-    name = "GreyBack"
-    help = "Duplicate each entry with a back with optionnal GreyScale Effect"
-    greyscale= BooleanProperty(True)
-
-    vars = {'greyscale' : BooleanEditor}
-
-    def execute(self):
-        from conf import ENV, fill_env
-        fill_env()
-        from template import BGTemplate, templateList
-        from fields import EffectField
-        from models import ImgPack
-        #sub_tmpl = templateList.register(BGTemplate.FromField(SubImageField()))
-        sub_tmpl_text='''
-<SplitTMPL@BGTemplate>
-#:import CARD conf.card_format
-    size: CARD.size
-    SubImageField:
-        size: root.size
-        id: default'''
-        sub_tmpl = BGTemplate.FromText(sub_tmpl_text)
-        templateList.register(sub_tmpl)
-        print sub_tmpl.__class__
-        try:
-            img_path = ENV['file_selector'].selection[0]
-        except Exception, E:
-            from conf import alert
-            alert('Select an image first')
-            return
-
-        W_ratio = 1.0/self.num_col
-        H_ratio = 1.0/self.num_row
-        for i in range(self.num_col):
-            for j in range(self.num_row):
-                values = dict()
-                values['default.dimension'] = [img_path,i*W_ratio,j*H_ratio, W_ratio, H_ratio]
-                pack = ImgPack(sub_tmpl, ENV['Qt'], ENV['Dual'], values)
-                ENV['stack'].append(pack)
-
-
 class SplitMaker(Script):
     name = "SplitMaker"
     help = "Split selected image into X*Y sub images"
@@ -193,8 +156,24 @@ class SplitMaker(Script):
                 pack = ImgPack(sub_tmpl, ENV['Qt'], ENV['Dual'], values)
                 ENV['stack'].append(pack)
 
+class MirrorBackground(Script):
+    name = "Add Mirror Background"
+    help = "Duplicate each entry as dual, optionnaly greyscale"
+    grey_mode = BooleanProperty(False)
+
+    vars = {'grey_mode' : BooleanEditor}
+
+    def execute(self):
+        from conf import ENV, fill_env
+        fill_env()
+        if self.grey_mode:
+            print 'outch'
+        for p in ENV['stack'][:]:
+            pack = p.copy()
+            pack.dual = True
+            ENV['stack'].append(pack)
 
 
-
-scriptList.register(Idle())
-scriptList.register(SplitMaker())
+scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x,Script) and x is not Script]
+for s in scripts:
+    scriptList.register(s())

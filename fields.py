@@ -748,6 +748,12 @@ class OverlayField(RectangleField):
                     cx, cy = self.center
                     touch.ud['LEFT'] = ox<cx
                     touch.ud['DOWN'] = oy<cy
+                    if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
+                        touch.ud['movement'] = 'y'
+                    if pos in [(self.x+5, self.center_y), (self.right-5,self.center_y)]:
+                        touch.ud['movement'] = 'x'
+                    if pos in [(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5, self.top-5), (self.right-5,self.y+5)]:
+                        touch.ud['movement'] = 'xy'
                     return True
             if self.collide_point(*touch.pos):
                 touch.grab(self)

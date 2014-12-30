@@ -335,16 +335,17 @@ class SubImageEditor(Editor):
             #popup.ids.fpicker.selection = [split(dimension[0])[1]]
             if isfile(dimension[0]):
                 popup.ids.img.source = dimension[0]
-                print 'is file !!!!'
             from kivy.clock import Clock
             def mover(*args):
                 overlay = popup.ids.overlay
                 img = popup.ids.img
-                print 'img size ', img.size, img.pos
+                popup.ids.tabpanel.switch_to(popup.ids.content.__self__)
                 overlay.size =(img.height * img.image_ratio, img.height)
                 overlay.pos = (img.x + (img.width-overlay.width)/2, img.y)
-                popup.ids.tabpanel.switch_to(popup.ids.content.__self__)
-                #popup.ids.restore_button.on_press()
+                popup.ids.img_x.text = str(dimension[1])
+                popup.ids.img_y.text = str(dimension[2])
+                popup.ids.img_width.text = str(dimension[3])
+                popup.ids.img_height.text = str(dimension[4])
             Clock.schedule_once(mover,.1)
             popup.open()
         t.bind(on_press=button_callback)
@@ -665,7 +666,7 @@ class StyleEditor(Editor):
         t=Button(text="Define")
         def cbimg(value):
             try:
-                print 'attr', self.target, keyname, value, type(value)
+                #print 'attr', self.target, keyname, value, type(value)
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
