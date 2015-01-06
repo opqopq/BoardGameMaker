@@ -102,6 +102,11 @@ def fill_env(*args):
     ENV['file_selector'] = root.ids.deck.ids.file_chooser
     ENV['Dual'] = root.ids.deck.ids.dual.active
     ENV['Qt'] = int(root.ids.deck.ids.qt.text)
+    ENV['alert'] = alert
+    ENV['log'] = log
+    from template import templateList
+    ENV['tmpls'] = templateList
+    ENV['DEFAULT_TEMPLATE'] = templateList['Default']
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)

@@ -267,23 +267,6 @@ class MetricEditor(Editor):
         self.target.bind(**args)
         return t
 
-class BorderEditor(Editor):
-    def getWidgets(self, name, keyname, **kwargs):
-        t = TextInput(text=str(self.target.border_width), **kwargs)
-        t.target_key = keyname
-        def cb(instance,value):
-            instance.background_color=1,1,1,1
-            try:
-                t.stored_value = int(value)
-                setattr(self.target,keyname,int(value))
-            except ValueError:
-                t.background_color=1,0,0,1
-        t.bind(text=cb)
-        t.target_key = keyname
-        t.target_attr = name
-        t.stored_value =  None
-        return t
-
 class FileEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from os.path import split
@@ -415,6 +398,34 @@ class ChoiceEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
+class PointListEditor(Editor):
+    def getWidgets(self, name, keyname, **kwargs):
+        from os.path import split
+        t = Button(text="Define", **kwargs)
+        #Create a callback for the modal frame
+        def cbimg(points):
+            setattr(self.target, keyname, points)
+            t.stored_value = points
+            t.text = "%d Point%s"%(len(points)/2,min(len(points),1)*'s')
+        #Create callback for button that would start a modal
+        def button_callback(instance):
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)*.9
+            cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
+            popup = PointListEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg)
+            #Once constructed.....
+            popup.target = self.target
+            popup.load_points(getattr(self.target, keyname))
+            popup.open()
+        t.bind(on_press=button_callback)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
+
 
 from kivy.uix.spinner import SpinnerOption
 
@@ -585,7 +596,7 @@ class FontChoiceEditor(ChoiceEditor):
             fdirs = ['/system/fonts']
         from glob import glob
         fonts =  dict()
-        fonts['DroidSans'] = 'DroidSans.ttf'
+        fonts['DroidSans.ttf'] = 'DroidSans.ttf'
         for folder in fdirs:
             path = join(folder, '*.ttf')
             for x in glob(path):
@@ -923,6 +934,131 @@ class ColorChoiceEditorPopup(Popup):
             color = cs[3*i+2+3].colorlist
             self.choices[txt] = color
         self.cb(self.choices)
+
+from kivy.uix.widget import Widget
+from kivy.uix.behaviors import DragBehavior
+from kivy.vector import Vector
+
+class Point(Widget):
+    color = ListProperty([1,0,0,1])
+    popup = ObjectProperty()
+
+    def on_touch_down(self, touch):
+        if Vector(touch.pos).distance(self.pos)<15:
+            touch.grab(self)
+            self.color=[1,1,0,1]
+        return super(Point, self).on_touch_down(touch)
+
+    def on_touch_move(self, touch):
+        if touch.grab_current is self:
+            self.x += touch.dx
+            self.y += touch.dy
+            #Here, i should recompute all daddy's points
+            self.popup.compute()
+            self.parent.points = self.popup.points
+
+        return super(Point,self).on_touch_move(touch)
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.color=[1,0,0,1]
+        return super(Point, self).on_touch_up(touch)
+
+
+class PointListEditorPopup(Popup):
+    name = StringProperty()
+    cb = ObjectProperty()
+    points = ListProperty()
+    target = ObjectProperty()
+
+    def on_target(self, instance, target):
+        #Ensure the copy won't have designes styles rules
+        target.designed = False
+        canvas = target.Copy()
+        target.designed = True
+        canvas.pos = 0,0
+        #canvas.bg_color = [1-a for a in target.bg_color]
+        ph = self.ids.placeholder
+        ph.add_widget(canvas)
+        self.ids['canvas'] = canvas
+
+    def load_points(self, points):
+        self.points = points
+        for pindex in range(0,len(points),2):
+            x,y = points[pindex], points[pindex+1]
+            self.add_point(x,y)
+        #Copy points to target canvas
+        target = self.ids['canvas']
+        target.points = points
+
+    def remove_point(self):
+        grid = self.ids.point_grid
+        cs = list(reversed(grid.children[:]))
+        to_remove = list()
+        point_to_remove = list()
+        for i in reversed(range((len(grid.children)-3)/3)):
+            cb = cs[i*3+3]
+            if cb.active:
+                to_remove.extend(cs[i*3+3:i*3+6])
+                point_to_remove.append(cb.point)
+        for elt in to_remove:
+            grid.remove_widget(elt)
+        for elt in point_to_remove:
+            self.ids.canvas.remove_widget(elt)
+        self.compute()
+        target = self.ids['canvas']
+        target.points = self.points
+
+    def add_point(self, x=.01, y= .01):
+        from kivy.uix.textinput import TextInput
+        from kivy.uix.widget import Widget
+        from kivy.uix.checkbox import CheckBox
+        grid = self.ids.point_grid
+        canvas = self.ids.canvas
+        point = Point(pos=(x*canvas.width, y*canvas.height))
+        canvas.add_widget(point)
+        cb = CheckBox(size_hint=(.2, None), height= 30)
+        cb.point = point
+        grid.add_widget(cb)
+        labelx = str(x)
+        labely = str(y)
+        #Transfer to relative mode
+        labelx = "%.2f" % x
+        labely = "%.2f" % y
+        tx = TextInput(text=labelx, size_hint=(.2, None), height=30)
+        ty = TextInput(text=labely, size_hint=(.2, None), height=30)
+        def setx(instance,value):
+            point.x = float(value) * canvas.width
+        def sety(instance, value):
+            point.y = float(value) * canvas.height
+        tx.bind(text=setx)
+        ty.bind(text=sety)
+        grid.add_widget(tx)
+        grid.add_widget(ty)
+        point.tx = tx
+        point.ty = ty
+        def tsetx(instance, value):
+            value /= canvas.width
+            tx.text = "%.2f" % value
+        def tsety(instance, value):
+            value /= canvas.height
+            ty.text = "%.2f" % value
+        point.bind(x=tsetx)
+        point.bind(y=tsety)
+        point.popup = self
+        self.compute()
+        target = self.ids['canvas']
+        target.points = self.points
+
+    def compute(self):
+        grid = self.ids.point_grid
+        cs = list(reversed(grid.children[:]))
+        self.points = list()
+        for i in reversed(range((len(grid.children)-3)/3)):
+            x = float(cs[3*i+1+3].text)
+            y = float(cs[3*i+2+3].text)
+            self.points.extend([x, y])
 
 class SubImageEditorPopup(Popup):
     name = StringProperty()

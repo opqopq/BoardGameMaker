@@ -195,8 +195,18 @@
             dash_length: self.dash_length
             dash_offset: self.dash_offset
             rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+<FRectangleField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: self.source
+            texture: self.texture
 
-<CircleField>:
+
+<EllipseField>:
     canvas:
         Color:
             rgba: self.line_color
@@ -208,7 +218,7 @@
             dash_offset: self.dash_offset
             ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
 
-<EllipseField>:
+<FEllipseField>:
     canvas:
         Color:
             rgba: self.line_color
@@ -217,16 +227,6 @@
             size: self.size
             angle_start: self.angle_start
             angle_end: self.angle_end
-            source: self.source
-            texture: self.texture
-
-<FilledRectangleField>:
-    canvas:
-        Color:
-            rgba: self.line_color
-        Rectangle:
-            pos: self.pos
-            size: self.size
             source: self.source
             texture: self.texture
 
@@ -243,6 +243,42 @@
             points: self.x, self.y, self.x+self.width, self.y+ self.height
 
 <PolygonField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Mesh:
+            vertices: self.vertices
+            indices: range(self.side)
+            mode: 'triangle_fan'
+            source: self.source
+            #source: 'images/judge.jpg'
+            texture: self.texture
+
+<WireField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            points: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
+
+<BezierField>:
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            bezier: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
+            #bezier: self.points
+<MeshField>:
     canvas:
         Color:
             rgba: self.line_color

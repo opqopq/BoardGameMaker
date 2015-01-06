@@ -263,6 +263,62 @@
                 text: "Cancel"
                 on_press: root.dismiss()
 
+
+<Point>:
+    canvas:
+        Color:
+            rgb: self.color
+        Point:
+            points: self.x, self.y
+            pointsize: 5
+
+<PointListEditorPopup>:
+    size_hint: None, None
+    title: 'Choose Points for %s'%self.name
+    GridLayout:
+        cols:2
+        RelativeLayout:
+            id: placeholder
+            size_hint_x: .65
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .35
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: point_grid
+                    cols: 3
+                    Label:
+                        text: "Selection"
+                        size_hint: .3, None
+                        height: 30
+                    Label:
+                        text: "X"
+                        size_hint: .35, None
+                        height: 30
+                    Label:
+                        text: "Y"
+                        size_hint: .35, None
+                        height: 30
+            BoxLayout:
+                size_hint: 1, None
+                height: 30
+                orientation: "horizontal"
+                Button:
+                    text: "Add"
+                    on_press: root.add_point()
+                Button:
+                    text: "Remove"
+                    on_press: root.remove_point()
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute(); root.cb(root.points)
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+
 <SubImageEditorPopup@Popup>:
     size_hint: None, None
     #size: 400,250

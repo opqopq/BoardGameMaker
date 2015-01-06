@@ -46,6 +46,9 @@
         id: value
         on_active: root.callback(self.active) if root.callback else None
 
+<FoldedTabbedPanelItem@TabbedPanelItem>:
+    on_touch_down: if args[1].is_double_tap: self.panel.folded = not(self.panel.folded)
+
 <BGDeckMaker>:
     canvas.before:
         Color:
@@ -53,16 +56,16 @@
         Rectangle:
             pos: self.pos
             size: self.size
-
     #The Left tab with files/templates & values
-    TabbedPanel:#was FoldedTabbedPOanek
-        ##folded: False
+    FoldedTabbedPanel:
+        folded: True
         do_default_tab: False
         tab_pos: 'right_top'
         size_hint_x: None
-        width: 280
+        width: 280 if not self.folded else 0
         id: options
-        TabbedPanelItem:
+        FoldedTabbedPanelItem:
+            panel: options
             text: 'Stack'
             ScrollView:
                 TreeView:
@@ -88,7 +91,7 @@
                 id: file_chooser
                 dirselect: True
                 rootpath: GAMEPATH
-                filters: ['*.jpg','*.png','*.gif']
+                filters: ['*.jpg','*.jpeg', '*.png','*.gif']
                 on_selection: root.update_image(args[1][0])
                 on_submit: root.load_folder(args[1][0])
         TabbedPanelItem:
@@ -155,11 +158,13 @@
             BoxLayout:
                 orientation: "vertical"
                 WatchedFolderTree:
+                    root_options: {'text': 'Script Folders'}
 #                    id: script_tree
 #                    on_selected_node: root.update_script(self.selected_node.text)
                 Splitter:
                     sizable_from: 'top'
-                    ScriptTree
+                    ScriptTree:
+                        root_options: {'text': 'Library'}
 
     #The right action buttons
     Accordion:
@@ -216,7 +221,7 @@
                 cols: 1
                 Icon:
                     source: "img/designer.png"
-                    on_press: app.root.screen_name = 'Designer'; app.root.ids.designer.load(tmpl_tree.current_tmpl_name)
+                    on_press: app.set_screen('Designer'); app.root.ids.designer.load(tmpl_tree.current_tmpl_name)
                     on_enter: alert('Design Template')
                 Icon:
                     source: 'img/tbprint.png'

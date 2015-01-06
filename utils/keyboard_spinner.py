@@ -14,7 +14,7 @@ class KeyboardSpinner(FocusBehavior, Spinner):
         if keycode[1] == 'up':
             self.text = self.values[max(0,self.values.index(self.text)-1)]
         elif keycode[1] == 'down':
-            self.text = self.values[min(self.values.index(self.text)+1, len(self.values))]
+            self.text = self.values[min(self.values.index(self.text)+1, len(self.values)-1)]
         else:
             self.text = self.values[find_char(keycode[1], self.values) or self.values.index(self.text)]
         return True

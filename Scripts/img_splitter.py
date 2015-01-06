@@ -1,3 +1,6 @@
 __author__ = 'opq'
 
-img_path = file_selector.selection[0]
+if not file_selector.selection:
+    alert('Choose file first')
+else:
+    img_path = file_selector.selection[0]

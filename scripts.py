@@ -3,21 +3,26 @@ __author__ = 'HO.OPOYEN'
 from kivy.lang import Builder
 from kivy.uix.codeinput import CodeInput
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import BooleanProperty, StringProperty, DictProperty, ObjectProperty
 from kivy.factory import Factory
+from kivy._event import EventDispatcher
+from kivy.properties import *
+from editors import *
 
 from conf import ENV
 
 BANNER = """#Local Script Editor
 #Available Globals are:
-#   env: the current main window (Virtual Screen Manager) poiting to all widget
-#   stack: current Stack
-#   layout: current layout
+#   env: Main Window
+#   stack: Current Stack
+#   layout: Current Layout
 #   tmpl_tree: Main Window Tree of Loaded template
 #   file_selector: MainWindow File Selector
 #   tmpls: Dict of registered template
 #   ImgPack: ImagePack Class, for creating dynamic ones
 #   os, os.path
+#   alert & log: debug
+#   DEFAULT_TEMPLATE: empty template
+
 
 """
 
@@ -35,6 +40,16 @@ class Script(Field):
     def execute(self):
         pass
 
+class FileScript(Script):
+    source = StringProperty()
+    vars = {'source': FileEditor}
+    name = "File Loader"
+
+    def execute(self):
+        from conf import ENV, fill_env
+        fill_env()
+        if self.source:
+            execfile(self.source, ENV)
 
 class BGScriptEditor(BoxLayout):
     modified = BooleanProperty(False)
@@ -56,6 +71,7 @@ class REPL(CodeInput):
         from template import templateList as tmpls
         from models import ImgPack
         import os, os.path
+        from conf import alert, log
         self.load_locals(locals())
 
     def load_locals(self, locals):
@@ -75,9 +91,6 @@ Factory.register('REPL',REPL)
 Builder.load_file('kv/scripts.kv')
 
 #Now define the cache foundry for all templates
-from kivy._event import EventDispatcher
-from kivy.properties import *
-from editors import *
 class ScriptList(EventDispatcher):
     scripts = DictProperty()
 
@@ -174,6 +187,6 @@ class MirrorBackground(Script):
             ENV['stack'].append(pack)
 
 
-scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x,Script) and x is not Script]
+scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]
 for s in scripts:
     scriptList.register(s())

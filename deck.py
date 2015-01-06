@@ -8,11 +8,17 @@ from template import templateList
 from kivy.uix.floatlayout import FloatLayout
 
 # #Now the GUI parts of the template
-from kivy.properties import ObjectProperty, ListProperty, DictProperty, StringProperty
-from models import ImgPack
+from kivy.properties import ObjectProperty, ListProperty, DictProperty, StringProperty, BooleanProperty
 from kivy.uix.treeview import TreeView, TreeViewLabel, TreeViewNode
 from kivy.uix.boxlayout import BoxLayout
+from kivy.factory import Factory
 from fields import Field
+from kivy.uix.tabbedpanel import TabbedPanel
+from models import ImgPack
+
+class FoldedTabbedPanel(TabbedPanel):
+    folded = BooleanProperty(False)
+Factory.register('FoldedTabbedPanl',FoldedTabbedPanel)
 
 Builder.load_file('kv/deck.kv')
 

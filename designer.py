@@ -216,9 +216,15 @@ class BGDesigner(FloatLayout):
         nodes_done = set()
         nodes_done.add('styles')
         params = self.ids.params
+        #Check if it alreaady exists & if it is me. if yes: skip
+        if params.current_field == target:
+            return
+        params.current_field == target
         params.clear_widgets()
         params.nodes = dict()
         params.root.nodes = [] # as clear widgets does not works
+        params.root.text = "%s: %s"%(target.Type,target.name)
+
         for subNodeName in target.menu:
             subNode = self.ids.params.add_node(TreeViewLabel(text=subNodeName))
             for attr in target.menu[subNodeName]:
@@ -425,7 +431,7 @@ class BGDesigner(FloatLayout):
                 _button.bind(on_press=cb)
                 _button.designer = self
                 tasks.add_widget(_button)
-            self.insertMoveUpDownButton()
+            ##self.insertMoveUpDownButton()
             IMGS = Factory.get('ImageSpinner')
             img_spinner = IMGS(text='Position')
             img_spinner.bind(text = self.position_selection)
@@ -435,8 +441,8 @@ class BGDesigner(FloatLayout):
             img_spinner.bind(text = self.align_selection)
             tasks.add_widget(img_spinner)
             img_spinner.values=['Max H', 'Max V', 'Copy']
-            #Now load the specific attributes matrix/tree for field
-            self.display_field_attributes(field)
+            #Now load the specific attributes matrix/tree for field 6> activated by a double tap on the field
+            ##self.display_field_attributes(field)
 
     def insertMoveUpDownButton(self):
         from kivy.factory import Factory
@@ -580,6 +586,7 @@ class FieldTreeView(TreeView):
         if selected_node:
             if hasattr(selected_node,'target'):
                 self.designer.selection = [selected_node.target]
+                self.designer.display_field_attributes(selected_node.target)
 
 #Need to put it at the end because klass needed in kv
 Builder.load_file('kv/designer.kv')

@@ -1,4 +1,4 @@
-"Contains all the diffrents fields for template"
+"""Contains all the diffrents fields for template"""
 
 from collections import OrderedDict
 
@@ -9,6 +9,7 @@ from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.texture import Texture
 from PIL import Image as PILImage
+from kivy.uix.behaviors import FocusBehavior
 
 from utils.hoverable import HoverBehavior
 from img_xfos import img_modes
@@ -24,7 +25,7 @@ Builder.load_file('kv/fields.kv')
 
 from editors import *
 
-#Pre-import styles to register them all
+# Pre-import styles to register them all
 from styles import getStyle
 
 ###############################################
@@ -34,50 +35,10 @@ from styles import getStyle
 class BaseField(FloatLayout):
     pass
 
-class OBaseField(FloatLayout):
+from kivy.uix.widget import Widget
 
-    inner_texture = ObjectProperty(None, allownone=True)
-
-    def __init__(self, **kwargs):
-        self.canvas = Canvas()
-        with self.canvas:
-            self.fbo = Fbo(size=self.size)
-            Color(1, 1, 1)
-            self.fbo_rect = Rectangle()
-
-        # wait that all the instructions are in the canvas to set texture
-        self.inner_texture = self.fbo.texture
-        super(BaseField, self).__init__(**kwargs)
-
-    def add_widget(self, *largs):
-        # trick to attach graphics instructino to fbo instead of canvas
-        canvas = self.canvas
-        self.canvas = self.fbo
-        ret = super(BaseField, self).add_widget(*largs)
-        self.canvas = canvas
-        return ret
-
-    def remove_widget(self, *largs):
-        canvas = self.canvas
-        self.canvas = self.fbo
-        super(BaseField, self).remove_widget(*largs)
-        self.canvas = canvas
-
-    def on_size(self, instance, value):
-        value = [int(round(x)) for x in self.size]
-        self.fbo.size = value
-        self.inner_texture = self.fbo.texture
-        self.fbo_rect.size = value
-
-    def on_pos(self, instance, value):
-        value = [int(round(x)) for x in self.pos]
-        self.fbo_rect.pos = value
-
-    def on_inner_exture(self, instance, value):
-        self.fbo_rect.texture = value
-
-class Field(FloatLayout, HoverBehavior):
-    "Element class represent any component of a template (fields, font, transformation....)"
+class Field(HoverBehavior, FloatLayout):
+    """Element class represent any component of a template (fields, font, transformation....)"""
     selected = BooleanProperty(False)
     z = NumericProperty(0)
     # Shown is false when we don't want the template params to be showed in the deck panel
@@ -87,7 +48,7 @@ class Field(FloatLayout, HoverBehavior):
 
     #angle of rotation, centered on my center
     angle = NumericProperty(0)
-    bg_color= ListProperty([0,0,0,0])
+    bg_color= ListProperty([0, 0, 0, 0])
     name = StringProperty()
     #Attributes that are only used in designed mode
     attrs=OrderedDict([
@@ -249,12 +210,12 @@ class Field(FloatLayout, HoverBehavior):
                     cx,cy = self.center
                     touch.ud['LEFT'] = ox<cx
                     touch.ud['DOWN'] = oy<cy
-                    if pos in [(self.center_x,self.y+5), (self.center_x, self.top-5)]:
+                    if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
                         touch.ud['movement'] = 'y'
-                    if pos in [(self.x+5, self.center_y), (self.right-5,self.center_y)]:
+                    if pos in [(self.x+5, self.center_y), (self.right-5, self.center_y)]:
                         touch.ud['movement'] = 'x'
-                    if pos in [(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5, self.top-5), (self.right-5,self.y+5)]:
-                        touch.ud['movement']= 'xy'
+                    if pos in [(self.x+5, self.y+5),(self.x+5, self.top-5), (self.right-5, self.top-5), (self.right-5,self.y+5)]:
+                        touch.ud['movement'] = 'xy'
                     return True
             if self.collide_point(*touch.pos):
                 touch.grab(self)
@@ -266,6 +227,9 @@ class Field(FloatLayout, HoverBehavior):
                 if self.designer.selection and self.designer.selection[0] is not self:
                     self.designer.selection[0].selected = False
                 self.designer.selection = [self]
+                #Display params if duoble tap
+                if touch.is_double_tap:
+                    self.designer.display_field_attributes(self)
                 return True
             else:
                 self.selected = False
@@ -314,7 +278,7 @@ class Field(FloatLayout, HoverBehavior):
 
     def add_widget(self, widget, index=0):
         #replacing index by z-index
-        super(FloatLayout, self).add_widget(widget, getattr(widget,'z',0))
+        super(Field, self).add_widget(widget, getattr(widget,'z',0))
         #Re order them according to z elt:
         cs = self.children[:]
         cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
@@ -348,6 +312,7 @@ class TextField(Label, Field):
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
         ('font', FontChoiceEditor) ])
     # ('font_size', IntEditor), ('font_name', FontChoiceEditor), ('bold', BooleanEditor),  ('italic', BooleanEditor)])
+    #Keep old static font size
     static_font_size = NumericProperty()
     default_attr = "text"
 
@@ -413,7 +378,7 @@ class BorderField(Field):
     "Draw 4 lines around parent"
     border_width=NumericProperty(1)
     border_color=ListProperty((1,1,1,1))
-    attrs={'border_width': BorderEditor , 'border_color': ColorEditor}
+    attrs={'border_width': AdvancedIntEditor , 'border_color': ColorEditor}
     default_attr = 'border_color'
 
 class ImgChoiceField(Image, Field):
@@ -602,11 +567,19 @@ class ShapeField(Field):
 
     _menu = {'Line':attrs.keys()}
 
+class SourceShapeField(ShapeField):
+    skip_designer = True
+    source = StringProperty(None)
+    source_filters = ('*.png', '*.jpg', '*.jpeg', '*.gif')
+    texture = ObjectProperty(None, allownone=True)
+    attrs = {'source': FileEditor}
+    default_attr = 'source'
+
 class LineField(ShapeField):
     #Just goigng from lower left to upper right. is it even useful ?
     pass
 
-class CircleField(ShapeField):
+class EllipseField(ShapeField):
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
     attrs = OrderedDict([('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
@@ -616,24 +589,35 @@ class RectangleField(ShapeField):
     default_attr = 'corner_radius'
     attrs = {'corner_radius': AdvancedIntEditor}
 
-class SourceShapeField(ShapeField):
-    skip_designer = True
-    source = StringProperty(None)
-    source_filters = ('*.png', '*.jpg', '*.jpeg', '*.gif')
-    texture = ObjectProperty(None, allownone=True)
-    attrs = {'source': FileEditor}
-    default_attr = 'source'
+class FRectangleField(SourceShapeField):
+    skip_designer = False
 
-class EllipseField(SourceShapeField):
+
+class FEllipseField(SourceShapeField):
     skip_designer = False
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
     attrs = OrderedDict([('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
 
-class FilledRectangleField(SourceShapeField):
-    skip_designer = False
 
+class WireField(ShapeField):
+    attrs = {'points': PointListEditor}
+    default_attr = 'points'
+    points = ListProperty()
+
+class MeshField(SourceShapeField):
+    skip_designer = False
+    attrs = {'points': PointListEditor}
+    default_attr= 'points'
+    vertices = ListProperty()
+    not_exported = ['vertices']
+    points = ListProperty()
+
+    def on_points(self, instance, points):
+        print 'creating vertices from points', points
 class PolygonField(SourceShapeField):
+    #Mesh field with predefined points for regular polygon
+
     skip_designer = False
     attrs = {'side': AdvancedIntEditor, 'angle_start': AdvancedIntEditor}
     side = NumericProperty(4)
@@ -667,6 +651,16 @@ class PolygonField(SourceShapeField):
                 .5+ 0.5*cos(radians(self.angle_start) + i * a), #cos(radians(self.angle_start) + i * a),
                 .5-.5*sin(radians(self.angle_start) + i * a),#sin(radians(self.angle_start) + i * a)
             ])
+
+class BezierField(ShapeField):
+    #Unfilled Bezier
+    attrs = {'points': PointListEditor}
+    default_attr = 'points'
+    points = ListProperty()
+
+class FBezier(SourceShapeField):
+    pass
+
 
 class LinkedField(Field):
     "Abstrat class usedd to point out field that have children"

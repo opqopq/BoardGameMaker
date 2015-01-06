@@ -1,3 +1,5 @@
+#:import FAIcon utils.font_awesome.FAIcon
+
 <GamesResults@TreeView>
     on_selected_node: self.browser.game_details(*args)
     root_options: {'text': 'Results'}
@@ -38,33 +40,45 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-        Image:
-            source: 'img/nb_user.png'
+        FAIcon:
+            icon: 'group'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "X-Y"
             id: nb_user
-        Image:
-            source: 'img/game_duration.png'
+        FAIcon:
+            icon: 'clock-o'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "XXX mns"
             id: duration
-        Image:
-            source: 'img/minimum_age.png'
+        FAIcon:
+            icon: 'child'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "XXX years"
             id: minimum_age
-        Image:
-            source: 'img/attached_image.png'
+        FAIcon:
+            icon: 'camera'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "-- Pages"
             id: nb_img_page
-        Image:
-            source: 'img/attached_file.png'
+        FAIcon:
+            icon: 'file'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "-- Pages"
             id: nb_file_page
-        Image:
-            source: 'img/attached_link.png'
+        FAIcon:
+            icon: 'link'
+            font_size: 48
+            color: 0,0,0,1
         Label:
             text: "-- Pages"
             id: nb_link_page
