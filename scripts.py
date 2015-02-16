@@ -22,7 +22,7 @@ BANNER = """#Local Script Editor
 #   os, os.path
 #   alert & log: debug
 #   DEFAULT_TEMPLATE: empty template
-
+#   prepare_pdf(stack, dst='test.pdf') : export stack to pdf dst
 
 """
 

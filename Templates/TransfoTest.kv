@@ -2,7 +2,7 @@
 	size: cm(6.35), cm(8.80)
 	TransfoField:
 		id: xfo
-		size: 240, 333
+		size: root.width/2, root.height
 		#:import gs img_xfos.h_flip
 		#:import vs img_xfos.v_flip
 		#:import ID img_xfos.identity
@@ -12,3 +12,16 @@
 		bg_color: 1,1,1,.99
 		ColorField:
 			rgba: 1,0,0,1
+
+	TransfoField:
+		id: perspective
+		size: root.width/2, root.height
+		x: root.width/2
+		#:import pt img_xfos.perspective_transform
+		points: [56.0/500,65.0/500,368.0/500,52.0/500,28.0/500,387.0/500,389.0/500,390.0/500]
+		xfos: [pt(self.size,self.points),]
+		source: 'images/judge.jpg'
+		bg_color: 1,1,1,.99
+		default_attr: 'points'
+		#:import PLE editors.PointListEditor
+		params: {'points': PLE}

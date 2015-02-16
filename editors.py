@@ -302,9 +302,9 @@ class SubImageEditor(Editor):
         #Create a callback for the modal frame
         def cbimg(instance):
             s = instance.ids
-            if s.fpicker.selection:
-                setattr(self.target, keyname, [s.fpicker.selection[0], float(s.img_x.text),float(s.img_y.text), float(s.img_width.text), float(s.img_height.text)])
-                t.stored_value = [s.fpicker.selection[0], float(s.img_x.text),float(s.img_y.text), float(s.img_width.text), float(s.img_height.text)]
+            setattr(self.target, keyname, s.sif_target.dimension)
+            t.stored_value = s.sif_target.dimension
+            #[s.fpicker.selection[0], float(s.img_x.text),float(s.img_y.text), float(s.img_width.text), float(s.img_height.text)]
         #Create callback for button that would start a modal
         def button_callback(instance):
             from kivy.core.window import Window
@@ -425,8 +425,6 @@ class PointListEditor(Editor):
         t.target_attr = name
         return t
 
-
-
 from kivy.uix.spinner import SpinnerOption
 
 class ColorOption(SpinnerOption):
@@ -489,8 +487,10 @@ class ImgOption(SpinnerOption):
         if not self.choices:
             return
         #add some widget
+        if self.text not in self.choices:
+            return
         from kivy.uix.image import Image
-        self.add_widget(Image(source=self.choices[self.text], size = self.size, pos = (self.x-self.width/4,self.y)))
+        self.add_widget(Image(source=self.choices[self.text], size=self.size, pos=(self.x-self.width/4,self.y)))
 
 class ImgOptionEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -942,6 +942,7 @@ from kivy.vector import Vector
 class Point(Widget):
     color = ListProperty([1,0,0,1])
     popup = ObjectProperty()
+    target = ObjectProperty()
 
     def on_touch_down(self, touch):
         if Vector(touch.pos).distance(self.pos)<15:
@@ -955,7 +956,7 @@ class Point(Widget):
             self.y += touch.dy
             #Here, i should recompute all daddy's points
             self.popup.compute()
-            self.parent.points = self.popup.points
+            self.target.points = self.popup.points
 
         return super(Point,self).on_touch_move(touch)
 
@@ -974,12 +975,18 @@ class PointListEditorPopup(Popup):
 
     def on_target(self, instance, target):
         #Ensure the copy won't have designes styles rules
-        target.designed = False
-        canvas = target.Copy()
-        target.designed = True
-        canvas.pos = 0,0
-        #canvas.bg_color = [1-a for a in target.bg_color]
         ph = self.ids.placeholder
+        od = target.designed
+        target.designed = False
+        canvas = target.Copy(with_children=True)
+        target.designed = od
+        canvas.x = 0
+        canvas.y = ph.y
+        #canvas.bg_color = [1-a for a in target.bg_color]
+        #Identify border
+        canvas.styles = ['border',]
+        canvas.border_width = 1
+        #canvas.border_rgba: (.2,1,.2,1)
         ph.add_widget(canvas)
         self.ids['canvas'] = canvas
 
@@ -1005,7 +1012,7 @@ class PointListEditorPopup(Popup):
         for elt in to_remove:
             grid.remove_widget(elt)
         for elt in point_to_remove:
-            self.ids.canvas.remove_widget(elt)
+            self.ids.placeholder.remove_widget(elt)
         self.compute()
         target = self.ids['canvas']
         target.points = self.points
@@ -1016,8 +1023,11 @@ class PointListEditorPopup(Popup):
         from kivy.uix.checkbox import CheckBox
         grid = self.ids.point_grid
         canvas = self.ids.canvas
-        point = Point(pos=(x*canvas.width, y*canvas.height))
-        canvas.add_widget(point)
+        point = Point(pos=(x*canvas.width, y*canvas.height), target = canvas)
+        ph = self.ids.placeholder
+        #canvas.add_widget(point, len(canvas.children)-1)
+        ph.add_widget(point, len(ph.children)-1)
+
         cb = CheckBox(size_hint=(.2, None), height= 30)
         cb.point = point
         grid.add_widget(cb)

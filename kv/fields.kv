@@ -195,7 +195,8 @@
             dash_length: self.dash_length
             dash_offset: self.dash_offset
             rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
-<FRectangleField>:
+
+<RectangleFField>:
     canvas:
         Color:
             rgba: self.line_color
@@ -218,7 +219,7 @@
             dash_offset: self.dash_offset
             ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
 
-<FEllipseField>:
+<EllipseFField>:
     canvas:
         Color:
             rgba: self.line_color
@@ -278,15 +279,44 @@
             dash_offset: self.dash_offset
             bezier: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
             #bezier: self.points
+
 <MeshField>:
     canvas:
         Color:
             rgba: self.line_color
         Mesh:
             vertices: self.vertices
-            indices: range(self.side)
-            mode: 'triangle_fan'
+            indices: range(len(self.vertices)/4)
+            mode: self.mode
             source: self.source
-            #source: 'images/judge.jpg'
             texture: self.texture
 
+<MaskField>:
+    canvas.before:
+        StencilPush
+        Mesh:
+            vertices: self.vertices
+            indices: range(len(self.vertices)/4)
+            mode: self.mode
+            #source: self.source
+            #texture: self.texture
+        StencilUse
+    canvas.after:
+        #Remove mask
+        StencilPop
+
+
+<Root2Widget>:
+    size: cm(5), cm(8)
+    canvas.before:
+        StencilPush
+        Mesh:
+            vertices: self.vertices
+            indices: range(len(self.vertices)/4)
+            mode: 'triangle_fan'
+            #source: self.source
+            #texture: self.texture
+        StencilUse
+    canvas.after:
+        #Remove mask
+        StencilPop

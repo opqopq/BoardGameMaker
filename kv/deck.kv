@@ -93,7 +93,7 @@
                 rootpath: GAMEPATH
                 filters: ['*.jpg','*.jpeg', '*.png','*.gif']
                 on_selection: root.update_image(args[1][0])
-                on_submit: root.load_folder(args[1][0])
+                #on_submit: root.load_folder(args[1][0])
         TabbedPanelItem:
             text: 'Format'
             GridLayout:
@@ -228,7 +228,11 @@
                     on_enter: alert('Print Current Card')
                     #:import start_file conf.start_file
                     on_press: image.children[0].export_to_image('print.png'); start_file('print.png')
-
+                Icon:
+                    source: 'img/PrintPreview.png'
+                    on_enter: alert('Export All Stack to build folder')
+                    #:import start_file conf.start_file
+                    on_press: for p in root.stack:  blank = p.template.blank(); blank.apply_values(p.values); blank.export_to_image('build/%s.png'%id(p))
     #The actual templated image
     Scatter:
         do_rotation: False

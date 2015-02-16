@@ -23,7 +23,7 @@ class Border(Style):
 
 class Cross(Style):
     kvname = 'cross'
-    cross_color = ListProperty([1,0,0,1])
+    cross_color = ListProperty([1, 0, 0, 1])
     cross_width = NumericProperty(10)
     cross_dash_offset = NumericProperty(3)
     cross_dash_length =  NumericProperty(5)

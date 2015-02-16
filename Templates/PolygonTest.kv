@@ -5,8 +5,17 @@
         id: shape
         default_attr: 'side'
 		#:import cgradient effects.radial_gradient
-		##texture: cgradient(border_color=(1,1,1), center_color=(0,0,0))
+		#texture: cgradient(border_color=(1,1,1), center_color=(0,0,0))
         source: 'images/judge.jpg'
         size: min(*root.size),min(*root.size)
         angle_start: 90
         bg_color: 1,1,1,1
+
+    MeshField:
+        width: root.width
+        top: root.top
+        height: root.height-shape.height
+        source: 'images/judge.jpg'
+        #default_attr: 'mode'
+        id: mesh
+        points: .25,0.0,  .75,.0, 1.0,.25, 1.0,.75, .75,1.0, .25,1.0, 0.0,.75, 0.0,.25

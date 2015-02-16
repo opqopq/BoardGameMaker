@@ -1,4 +1,4 @@
-<.Border>
+<.Border>:
     border_rgba: (.2,1,.2,1)
     border_dash_offset: 3
     border_dash_length: 5
@@ -12,7 +12,7 @@
             dash_length: self.border_dash_length
             width: self.border_width
 
-<.Cross>
+<.Cross>:
     cross_color: 1,0,0,1
     cross_width: 10
     cross_dash_offset: 3
@@ -32,7 +32,7 @@
             width: self.cross_width
 
 
-<.Shadow>
+<.Shadow>:
     offset: 6
     shadow_opacity: .5
     CopyField:
@@ -40,4 +40,3 @@
         target: self.parent if self.parent else None
         pos: (self.parent.x + self.parent.offset, self.parent.y - self.parent.offset) if self.target else (0,0)
         opacity: root.shadow_opacity
-

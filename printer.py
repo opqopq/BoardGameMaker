@@ -241,54 +241,14 @@ class PDFBook:
         self.pdf.line(x-step,y+h+pagging, x+w+step, y+h+pagging)
         self.pdf.line(x+w-pagging,y-step, x+w-pagging, y+h+step)
 
-def layout(book, dst, deckname,fitting_size, guicallback=True):
-    #Arrange book page
-    book.ReArrange()
-    #First, compute any warnings
-    warning=""
-    if book.ContainsDual():
-        f,b=book.SlotsLength(dualmode=True)
-        if f!=b:
-            warning ='WARNING: No the same number of image & back (%d fronts vs %d backs)'%(f,b)
-    max=book.SlotsLength()
-    if config.DEBUG:
-        print '[Info]: Formatting Deck %s with render %s. %d items'%(deckname,PRINT_ENGINE,max)
-    if guicallback:
-        import wx
-        dlg = wx.ProgressDialog("Formating Progress Dialog", "\n".join(["Image Generation Status",warning]), maximum = max,parent=None,style = 0| wx.PD_APP_MODAL| wx.PD_CAN_ABORT| wx.PD_ELAPSED_TIME| wx.PD_REMAINING_TIME| wx.PD_AUTO_HIDE)
-        dlg.keepGoing=True
-        dlg.count = 0
-        def feedback():
-            if dlg.keepGoing:
-                dlg.count += 1
-                wx.Yield()
-                (dlg.keepGoing, skip) = dlg.Update(dlg.count,"\n".join(["Generating Image %d on %d - %d %% done."%(dlg.count,max,100*dlg.count/max),warning]))
-            else:
-                raise AbortError()
-    else:
-        def feedback():
-            pass
-    #Book is ready now
-    try:
-        for page in book.pages:
-            renderer.CreatePage()
-            from datetime import date
-            text="Printed on the %s. fitting size: %s"%(date.today().strftime('%d/%m/%y'),fitting_size)
-            renderer.AddInfo(text)
-            if page.Dual:
-                pass
-            for slot in page.layout.slots:
-                _card=page.layout.slots[slot]
-                if _card:
-                    img=_card.GenerateImage()
-                    renderer.AddImage(img,slot)
-                    feedback()
-        
-            if config.DRAW_LINE:
-                renderer.AddLines(page.GetLines())
-            renderer.SavePage(page)
-    except AbortError:
-        pass
-    if guicallback:
-        dlg.Destroy()
-    renderer.SaveBook()
+
+def prepare_pdf(stack, dst='test.pdf'):
+    for p in stack:
+        blank = p.template.blank()
+        blank.apply_values(p.values)
+        blank.export_to_image('build/%s.png'%id(p))
+    def process(*args):
+        book = PDFBook()
+        book.generate_pdf(stack, dst=dst)
+    from kivy.clock import Clock
+    Clock.schedule_once(process, .3)

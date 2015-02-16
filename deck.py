@@ -231,7 +231,21 @@ class BGDeckMaker(FloatLayout):
                          values["%s.%s"%(child.target_attr, key)] = sv
         src = self.ids['file_chooser']
         if src.selection:
-            values['default.source']=src.selection[0]
+            #Load dir
+            from os.path import isdir, join
+            from os import listdir
+            if isdir(src.selection[0]):
+                for fname in listdir(src.selection[0]):
+                    values['default.source']=join(src.selection[0],fname)
+                    pack = ImgPack(tmpl, int(self.ids['qt'].text), self.ids['dual'].active, values.copy())
+                    self.stack.append(pack)
+                #Add it the the printpreview
+                from kivy.app import App
+                App.get_running_app().root.layout(self.stack)
+                return
+            else:
+                values['default.source']=src.selection[0]
+
         pack = ImgPack(tmpl, int(self.ids['qt'].text), self.ids['dual'].active, values)
         self.stack.append(pack)
         #Add it the the printpreview
@@ -324,6 +338,7 @@ class BGDeckMaker(FloatLayout):
         from kivy.uix.scrollview import ScrollView
         from kivy.uix.image import Image
         from utils.hoverable import HoverBehavior
+        from kivy.uix.behaviors import ButtonBehavior
         scatter = self.ids.image
         scatter.clear_widgets()
         scatter.size = scatter.parent.width - self.ids.options.width - 60, scatter.parent.height
@@ -334,17 +349,23 @@ class BGDeckMaker(FloatLayout):
         sc.add_widget(sl)
         scatter.add_widget(sc)
         from glob import glob
-        from os.path import join
+        from os.path import join, split
         from kivy.properties import StringProperty
         from conf import alert
-        class HImage(HoverBehavior, Image):
+        class HImage(HoverBehavior, ButtonBehavior, Image):
             text= StringProperty()
 
-            def on_enter(self):
-                alert(self.text, keep=True)
+            def on_enter(iself):
+                alert(iself.text, keep=True)
 
-            def on_leave(self):
+            def on_leave(iself):
                 alert("")
+
+            def on_press(iself):
+                #print 'going to ', iself.text
+                #dirname, filename = split(iself.text)
+                #self.ids.file_chooser.path = dirname
+                self.ids.file_chooser.selection = [iself.text]
 
         names = list()
         for pattern in ['*.jpg','*.jpeg','*.png','*.bmp','*.gif']:

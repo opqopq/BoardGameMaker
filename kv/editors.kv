@@ -375,7 +375,8 @@
                             pos: fl.width/2, fl.y
                             dimension: (img.source, float(img_x.text), float(img_y.text), float(img_width.text), float(img_height.text) ) if img.source else ["",0,0,1,1]
                     GridLayout:
-                        size_hint_y: .15
+                        size_hint_y: None
+                        height: 60
                         rows: 2
                         Label:
                             text: "X Ratio:"

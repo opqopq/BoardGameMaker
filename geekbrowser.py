@@ -119,6 +119,10 @@ class BGGeekBrowser(BoxLayout):
         "Display/Hide degtails for a game selected in search result tree"
         if not hasattr(node, 'gid'):
             return
+        #Reset stuff
+        self.images = []
+        self.links = []
+        self.files = []
         gameID = self.selected_game = node.gid
         IS = self.ids.details
         IS.title = node.name
@@ -177,15 +181,47 @@ class BGGeekBrowser(BoxLayout):
             for pageId in range(total):
                 url = bgg_img_url%(int(self.selected_game),pageId+1)
                 UrlRequest(url, self.get_images_urls, use_proxy=USE_PROXY)
+        elif TYPE == 'FILE':
+            for pageId in range(total):
+                url = bgg_file_url%(int(self.selected_game), pageId+1)
+                UrlRequest(url, self.get_files_urls, use_proxy=USE_PROXY)
+        elif TYPE == 'LINK':
+            for pageId in range(total):
+                url = bgg_link_url% (int(self.selected_game), pageId + 1)
+                UrlRequest(url, self.get_links_urls, use_proxy=USE_PROXY)
 
     def get_images_urls(self,req, result):
         bs = BS(result)
-        imgs=[x.get('src') for x in bs.findAll('img',{"class":None})]
-        for index,img in enumerate(imgs):
-            href=img.replace('_mt.jpg' , '.jpg')
-            img="http:" + img.replace('_mt.jpg' , '_t.jpg')
+        imgs=[x.get('src') for x in bs.findAll('img', {"class": None})]
+        for index, img in enumerate(imgs):
+            href = img.replace('_mt.jpg', '.jpg')
+            img = "http:" + img.replace('_mt.jpg', '_t.jpg')
             href = "http:" + href
-            self.images.append((img,href))
+            self.images.append((img, href))
+
+    def get_files_urls(self, req, result):
+        bs= BS(result)
+        files_url = [x.get('href') for x in bs.findAll('a') if x.get('href') and x.get('href').startswith('/filepage')]
+        files_desc = [x.text.strip() for x in bs.findAll('div', {'class': 'sf', 'style':'margin-top:5px;'})]
+        if not len(files_url)==len(files_desc):
+            'Issue while '
+            print 'Files URL', files_url
+            print 'Files DESC', files_desc
+        for u,d in zip(files_url, files_desc):
+            self.files.append((u,d))
+
+
+    def get_links_urls(self, req, result):
+        bs = BS(result)
+        link_desc = [x.text.strip() for x in bs.findAll('a') if x.get('href') and x.get('href').startswith('/weblink')]
+        link_url = [x.get('ng-href') for x in bs.findAll('a', {'target': '_blank'})]
+        if not len(link_desc)==len(link_url):
+            print 'Link Desc', link_desc
+            print 'Lind URL', link_url
+
+        for u, d in zip(link_url, link_desc):
+            self.links.append((u, d))
+
 
     def prepare_gallery(self):
         title = self.ids.details.title
@@ -236,12 +272,18 @@ class BGGeekBrowser(BoxLayout):
                         </div>
                     <h3><a href="#">Links</a></h3>
                         <div>
-                            <p>%(Links)s
+                            <p> Links
+                            <table>
+                            <tr><td> Link</td><td> Description</td></tr>
+                            %(Links)s
                             </p>
                         </div>
                     <h3><a href="#">Files</a></h3>
                         <div>
-                            <p>%(Files)s
+                            <p> Files
+                            <table>
+                            <tr><td> Files</td><td> Description</td></tr>
+                            %(Files)s
                             </p>
                         </div>
                 </div>
@@ -304,13 +346,21 @@ class BGGeekBrowser(BoxLayout):
         elts['gameName'] = self.ids.details.title.encode('cp1252', 'ignore')
         imgs = []
         for img, href in self.images:
-            imgs.append(line%({'img':img, 'href':href.replace('_mt','')}))
+            imgs.append(line % ({'img':img, 'href':href.replace('_mt', '')}))
         elts['Images'] = "\n".join(imgs)
-        sub=tmpl.encode('cp1252', 'ignore')%elts
-        file(join(path, "explore_%s.html"%self.selected_game),'wb').write(sub)
-
+        files = []
+        flines = '<tr> <td><a href="%s">%s</a></td><td>%s</td>'
+        for url, desc in self.files:
+            files.append(flines%(url, url.split('/')[-1], desc))
+        elts['Files'] = "\n".join(files)
+        links = []
+        for url, desc in self.links:
+            links.append(flines%(url, url.split('/')[-1], desc))
+        elts['Links'] = "\n".join(links)
+        sub = tmpl%elts
+        file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
         from conf import start_file
-        start_file(join(path, "explorer_%s.html"%self.selected_game))
+        start_file(join(path, "explore_%s.html"%self.selected_game))
 
     def create_game_folder(self):
         from conf import gamepath
@@ -322,13 +372,14 @@ class BGGeekBrowser(BoxLayout):
         import os.path
         path=os.path.join(gamepath,gameName)
         if os.path.isdir(path):
-            raise ValueError('Already Existing folder for %s in %s. Aborting'%(gameName,gamepath))
-        os.mkdir(path)
-        # ~ 3. create subfolders: rule, img, old , export
-        os.mkdir(os.path.join(path, 'rules'))
-        os.mkdir(os.path.join(path, 'img'))
-        os.mkdir(os.path.join(path, 'old'))
-        os.mkdir(os.path.join(path, 'export-%s'%gameName))
+            alert('Already Existing folder for %s in %s. Aborting'%(gameName,gamepath))
+        else:
+            os.mkdir(path)
+            # ~ 3. create subfolders: rule, img, old , export
+            os.mkdir(os.path.join(path, 'rules'))
+            os.mkdir(os.path.join(path, 'img'))
+            os.mkdir(os.path.join(path, 'old'))
+            os.mkdir(os.path.join(path, 'export-%s'%gameName))
         output = file(os.path.join(path, 'description.txt'),'wb')
         output.write('Game Description:\n')
         output.write(self.ids.details.ids.description.text)

@@ -16,10 +16,11 @@
     theellipse:
         id: bg
         size: root.size
-        #:import gradient effects.h_gradient
-        #:import gradient effects.v_gradient
-        #:import gradient effects.radial_gradient
+        #:import hgradient effects.h_gradient
+        #:import vgradient effects.v_gradient
+        #:import rgradient effects.radial_gradient
         #:import huexfo effects.hue_transform
+		texture: rgradient(size = root.size, border_color=(1,1,0))
 		##texture: huexfo(size=root.size, source='images/judge.jpg', hue = self.hue)
-        texture: gradient(size= root.size)
+        ##texture: gradient(size= root.size)
 

@@ -14,7 +14,6 @@ todos= [
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
     'for field d&d/move, apply rotation effect to angle when calcultaing the drama',
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
-    'find a way to get auto texture of each widget. derive field from fbowidget ?',
 ]
 
 for i,todo in enumerate(todos):

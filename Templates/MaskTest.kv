@@ -1,0 +1,17 @@
+<MaskTest@BGTemplate>
+    size: cm(8), cm(10)
+
+    MaskField:
+        id: mask
+        size: root.size
+        points: .25,0.0,  .75,.0, 1.0,.25, 1.0,.75, .75,1.0, .25,1.0, 0.0,.75, 0.0,.25
+        #texture: widget.texture
+        ImageField:
+            id: widget
+            source: 'images/red.png'
+            text: "erzerzerzerzerzerzerzerze"*100
+            size: root.size
+            size_hint: None, None
+            allow_stretch: True
+            keep_ratio: False
+            rgba: 1,1 ,0,.5

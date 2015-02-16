@@ -32,8 +32,55 @@ from styles import getStyle
 #        Field                                #
 ###############################################
 
+from kivy.graphics import ClearBuffers, ClearColor
 class BaseField(FloatLayout):
-    pass
+
+    texture = ObjectProperty(None, allownone=True)
+
+    alpha = NumericProperty(1)
+
+    def __init__(self, **kwargs):
+        self.canvas = Canvas()
+        with self.canvas:
+            self.fbo = Fbo(size=self.size)
+            self.fbo_color = Color(1, 1, 1, 1)
+            self.fbo_rect = Rectangle()
+
+        with self.fbo:
+            ClearColor(0,0,0,0)
+            ClearBuffers()
+
+        # wait that all the instructions are in the canvas to set texture
+        self.texture = self.fbo.texture
+        super(BaseField, self).__init__(**kwargs)
+
+    def add_widget(self, *largs):
+        # trick to attach graphics instructino to fbo instead of canvas
+        canvas = self.canvas
+        self.canvas = self.fbo
+        ret = super(BaseField, self).add_widget(*largs)
+        self.canvas = canvas
+        return ret
+
+    def remove_widget(self, *largs):
+        canvas = self.canvas
+        self.canvas = self.fbo
+        super(BaseField, self).remove_widget(*largs)
+        self.canvas = canvas
+
+    def on_size(self, instance, value):
+        self.fbo.size = value
+        self.texture = self.fbo.texture
+        self.fbo_rect.size = value
+
+    def on_pos(self, instance, value):
+        self.fbo_rect.pos = value
+
+    def on_texture(self, instance, value):
+        self.fbo_rect.texture = value
+
+    def on_alpha(self, instance, value):
+        self.fbo_color.rgba = (1, 1, 1, value)
 
 from kivy.uix.widget import Widget
 
@@ -157,12 +204,21 @@ class Field(HoverBehavior, FloatLayout):
                 print 'While GetDelta between %s and %s: Issue with key %s. Maybe due to styles: %s'%(self,other, attrName, self.styles)
         return results
 
-    def Copy(self):
+    def Copy(self, with_children = False):
         blank = self.__class__()
-        for attr in self.getChangedAttributes(False):
-            setattr(blank, attr, getattr(self,attr))
+        for attr in self.getChangedAttributes(True):
+            try:
+                setattr(blank, attr, getattr(self,attr))
+            except AttributeError, E:
+                print 'skipping attribute copying for ',attr, ':', E
         blank.parent = None
         blank.name = (self.name or self.Type ) +'-copy'
+        if with_children:
+            for child in self.children:
+                if not isinstance(child, Field):
+                    continue
+                print 'copying child', child
+                blank.add_widget(child.Copy(with_children))
         return blank
 
     def getEditor(self, name, add_label=False, **kwargs):
@@ -221,12 +277,6 @@ class Field(HoverBehavior, FloatLayout):
                 touch.grab(self)
                 #Define if resized is on
                 touch.ud['do_resize'] = False
-                #Here I should watch if shift is set, then it would be an append.
-                self.selected = True
-                #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
-                if self.designer.selection and self.designer.selection[0] is not self:
-                    self.designer.selection[0].selected = False
-                self.designer.selection = [self]
                 #Display params if duoble tap
                 if touch.is_double_tap:
                     self.designer.display_field_attributes(self)
@@ -238,6 +288,12 @@ class Field(HoverBehavior, FloatLayout):
 
     def on_touch_up(self, touch):
         if self.designed  and touch.grab_current==self:
+            # Here I should watch if shift is set, then it would be an append.
+            self.selected = True
+            #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
+            if self.designer.selection and self.designer.selection[0] is not self:
+                self.designer.selection[0].selected = False
+            self.designer.selection = [self]
             touch.ungrab(self)
         return super(Field, self).on_touch_up(touch)
 
@@ -261,8 +317,9 @@ class Field(HoverBehavior, FloatLayout):
                     else:
                         self.width += touch.dx
             else:#Move
-                self.x += touch.dx
-                self.y += touch.dy
+                if self.selected:
+                    self.x += touch.dx
+                    self.y += touch.dy
         return super(Field, self).on_touch_move(touch)
 
     def on_z(self, instance, value):
@@ -285,7 +342,8 @@ class Field(HoverBehavior, FloatLayout):
         self.children = cs
         #Also reorder canvas
         for cindex, c in enumerate(self.children):
-            self.canvas.remove(c.canvas)
+            if not self.canvas.indexof(c.canvas) == -1:
+                self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
 
     def remove_widget(self, widget):
@@ -298,15 +356,15 @@ class Field(HoverBehavior, FloatLayout):
             self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
 
-
 class TextField(Label, Field):
     autofit = BooleanProperty(False)
+    multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
     min_font_size = NumericProperty()
     halign_values = ['left','center','right','justify']
     valign_values = ['bottom','middle','top']
     attrs = OrderedDict([
-        ('text', TextEditor), ('autofit', BooleanEditor),
+        ('text', TextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
         ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('color', ColorEditor),
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
@@ -328,6 +386,7 @@ class TextField(Label, Field):
             #store the format static value
             self.static_font_size = self.font_size
             #Now calculate the new one
+            self.multiline = False
         else:
             #Restore former size, if it exists
             if self.static_font_size:
@@ -335,6 +394,10 @@ class TextField(Label, Field):
         self.on_text(instance, None)
 
     def on_text(self, base, *args):
+        if self.multiline:
+            from textwrap import wrap
+            self.text = '\n'.join(wrap(self.text))
+            return
         if self.autofit:
             if not self.text:
                 return
@@ -392,7 +455,8 @@ class ImgChoiceField(Image, Field):
 
     def on_selection(self, instance, selection):
         if self.choices:
-            self.source = self.choices[selection]
+            from conf import path_reader
+            self.source = path_reader(self.choices[selection])
 
     def on_choices(self, instance, choices):
         self.selection_values = choices.keys()
@@ -572,8 +636,21 @@ class SourceShapeField(ShapeField):
     source = StringProperty(None)
     source_filters = ('*.png', '*.jpg', '*.jpeg', '*.gif')
     texture = ObjectProperty(None, allownone=True)
-    attrs = {'source': FileEditor}
+    texture_wrap = StringProperty()
+    texture_wrap_values = ['repeat', 'mirrored_repeat', 'clamp_to_edge']
+    attrs = {'source': FileEditor, 'texture_wrap': ChoiceEditor}
     default_attr = 'source'
+
+    not_exported = ['texture_wrap_values', 'source_filters']
+
+    def on_texture_wrap(self, instance, wrap):
+        if self.texture and wrap:
+            self.texture.wrap = wrap
+
+    def on_source(self,instance, source):
+        from kivy.core.image import Image
+        self.texture = Image(source).texture
+        self.on_texture_wrap(self, self.texture_wrap)
 
 class LineField(ShapeField):
     #Just goigng from lower left to upper right. is it even useful ?
@@ -589,16 +666,14 @@ class RectangleField(ShapeField):
     default_attr = 'corner_radius'
     attrs = {'corner_radius': AdvancedIntEditor}
 
-class FRectangleField(SourceShapeField):
+class RectangleFField(SourceShapeField):
     skip_designer = False
 
-
-class FEllipseField(SourceShapeField):
+class EllipseFField(SourceShapeField):
     skip_designer = False
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
     attrs = OrderedDict([('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
-
 
 class WireField(ShapeField):
     attrs = {'points': PointListEditor}
@@ -607,14 +682,30 @@ class WireField(ShapeField):
 
 class MeshField(SourceShapeField):
     skip_designer = False
-    attrs = {'points': PointListEditor}
-    default_attr= 'points'
+    attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
+    default_attr = 'points'
     vertices = ListProperty()
     not_exported = ['vertices']
     points = ListProperty()
+    mode = StringProperty('triangle_fan')
+    mode_values = 'points', 'line_strip', 'line_loop', 'lines', 'triangle_strip', 'triangle_fan'
 
     def on_points(self, instance, points):
-        print 'creating vertices from points', points
+        from math import cos, sin, pi, radians
+        cx, cy = self.pos
+        self.vertices = []
+        for i in range(0,len(points), 2):
+            self.vertices.append(cx + points[i] * self.width)
+            self.vertices.append(cy+points[i+1] * self.height)
+            #Texture have to be vertically flipped for kivy to load. why ???
+            self.vertices.extend([points[i], 1-points[i+1]])
+
+    def on_pos(self, instance, pos):
+        self.on_points(instance, self.points)
+
+    def on_size(self, instance, size):
+        self.on_points(instance, self.points)
+
 class PolygonField(SourceShapeField):
     #Mesh field with predefined points for regular polygon
 
@@ -657,10 +748,6 @@ class BezierField(ShapeField):
     attrs = {'points': PointListEditor}
     default_attr = 'points'
     points = ListProperty()
-
-class FBezier(SourceShapeField):
-    pass
-
 
 class LinkedField(Field):
     "Abstrat class usedd to point out field that have children"
@@ -722,9 +809,135 @@ class CopyField(LinkedField):
                 log(E, traceback.format_exc())
             self.bind(**kw)
 
+class MaskField(LinkedField):
+    # Take a single field and apply a mask based on the source of the mesh
+    texture = ObjectProperty(None, allownone=True)
+
+    alpha = NumericProperty(1)
+
+    skip_designer = False
+    attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
+    default_attr = 'points'
+    vertices = ListProperty()
+    not_exported = ['vertices']
+    points = ListProperty()
+    mode = StringProperty('triangle_fan')
+    mode_values = 'points', 'line_strip', 'line_loop', 'lines', 'triangle_strip', 'triangle_fan'
+
+    def on_points(self, instance, points):
+        from math import cos, sin, pi, radians
+        cx, cy = self.pos
+        self.vertices = []
+        for i in range(0,len(points), 2):
+            self.vertices.append(cx + points[i] * self.width)
+            self.vertices.append(cy+points[i+1] * self.height)
+            #Texture have to be vertically flipped for kivy to load. why ???
+            self.vertices.extend([points[i], 1-points[i+1]])
+
+
+    def add_widget(self, *largs):
+        largs= list (largs)
+        from kivy.graphics.texture import Texture
+        if not hasattr(largs[0],'texture'):
+            print 'not texture -> wrapping', largs[0],
+            largs[0] = textured(largs[0])
+        # trick to attach graphics instructino to fbo instead of canvas
+        ret = super(FloatLayout, self).add_widget(*largs)
+        self.texture = largs[0].texture
+        self.on_points(self, self.points)
+        return ret
+
+class TextureTransfoField(LinkedField):
+    "Transform a existing field thourgh different methods registered in img_xfos.py"
+    default_attr = 'xfos'
+    not_exported = ['texture', 'Image']
+    attrs = {'xfos': TransfoListEditor}
+    texture = ObjectProperty(allownone=True)
+    xfos = ListProperty()
+    Image = ObjectProperty()
+
+    def add_widget(self, *largs):
+        largs= list (largs)
+        from kivy.graphics.texture import Texture
+        if not hasattr(largs[0],'texture'):
+            print 'not texture -> wrapping', largs[0],
+            largs[0] = textured(largs[0])
+        # trick to attach graphics instructino to fbo instead of canvas
+        ret = super(FloatLayout, self).add_widget(*largs)
+        self.texture = largs[0].texture
+        self.on_xfos(self, self.xfos)
+        return ret
+
+    def on_xfos(self):
+        if self.texture is None:
+            return
+        for xfo in self.xfos:
+            texture = xfo(texture)
+        self.texture = texture
+
 class EffectField(EffectWidget, LinkedField):
     attrs = {'effects': EffectsEditor}
     default_attr = 'effects'
+
+###############################################
+#        Misc                                 #
+###############################################
+
+#Texture Item: item which have a texture
+class Textured(FloatLayout):
+    texture = ObjectProperty()
+    texture = ObjectProperty(None, allownone=True)
+
+    def __init__(self, **kwargs):
+        self.canvas = Canvas()
+        with self.canvas:
+            self.fbo = Fbo(size=self.size)
+            Color(1, 1, 1)
+            self.fbo_rect = Rectangle()
+
+        # wait that all the instructions are in the canvas to set texture
+        self.texture = self.fbo.texture
+        super(Textured, self).__init__(**kwargs)
+
+    def add_widget(self, *largs):
+        # trick to attach graphics instructino to fbo instead of canvas
+        canvas = self.canvas
+        self.canvas = self.fbo
+        ret = super(Textured, self).add_widget(*largs)
+        self.canvas = canvas
+        return ret
+
+    def remove_widget(self, *largs):
+        canvas = self.canvas
+        self.canvas = self.fbo
+        super(Textured, self).remove_widget(*largs)
+        self.canvas = canvas
+
+    def on_size(self, instance, value):
+        self.fbo.size = value
+        self.texture = self.fbo.texture
+        self.fbo_rect.size = value
+
+    def on_pos(self, instance, value):
+        self.fbo_rect.pos = value
+
+    def on_texture(self, instance, value):
+        self.fbo_rect.texture = value
+
+    def on_alpha(self, instance, value):
+        self.fbo_color.rgba = (1, 1, 1, value)
+
+def textured(widget):
+    res = Textured()
+    res.add_widget(widget)
+    res.pos = widget.pos
+    res.size = widget.size
+    res.size_hint = widget.size_hint
+    def info_update(*args):
+        res.pos = widget.pos
+        res.size = widget.size
+    widget.bind(pos=info_update, size=info_update)
+    return res
 
 # Special case used only for SubImageEditor
 class OverlayField(RectangleField):
@@ -757,9 +970,6 @@ class OverlayField(RectangleField):
                 return True
         return super(Field, self).on_touch_down(touch)
 
-###############################################
-#        Misc                                 #
-###############################################
 
 fieldDict = dict()
 

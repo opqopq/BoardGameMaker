@@ -20,3 +20,4 @@ def gscale(texture):
     pixels = img._texture.pixels
     print type(pixels), len(pixels), set(pixels)
     return texture
+

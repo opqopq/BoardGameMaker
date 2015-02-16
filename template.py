@@ -35,7 +35,7 @@ class BGTemplate(Field, RelativeLayout):
             import traceback
             alert(str(E))
             print 'Error while trying to import Template ',filename
-            log(E)
+            log(E, traceback.print_exc())
             res = list()
         return res
 

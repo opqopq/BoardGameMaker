@@ -107,6 +107,10 @@ def fill_env(*args):
     from template import templateList
     ENV['tmpls'] = templateList
     ENV['DEFAULT_TEMPLATE'] = templateList['Default']
+    from printer import prepare_pdf
+    ENV['prepare_pdf'] = prepare_pdf
+    from models import ImgPack
+    ENV['ImgPack'] = ImgPack
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)
@@ -118,3 +122,16 @@ def CreateConfigPanel():
     settings.add_json_panel('BGM', CP, filename='params.json')
     settings.add_kivy_panel()
     return settings
+
+#Path Handling functions
+
+from os.path import normpath, join, split, sep
+from kivy.resources import resource_add_path, resource_find
+
+def path_reader(path):
+    #normalize any path to be read according to the current OS
+    not_sep = '/' if sep=='\\' else '\\'
+    if sep in path:
+        return normpath(path)
+    else:
+        return normpath(path.replace(not_sep,sep))
