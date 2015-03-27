@@ -13,11 +13,8 @@ from kivy.uix.floatlayout import FloatLayout
 
 from kivy.factory import Factory
 
-from fpdf import FPDF, fpdf
-from PIL import Image
-
-#Monkey patching fpdf for Pillow
-fpdf.Image = Image
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.units import cm as r_cm
 
 
 Builder.load_file('kv/printer.kv')
@@ -156,13 +153,16 @@ def center(x,y,w,h):
     return x+w/2, y+h/2
 
 class PDFBook:
-    def __init__(self):
+    def __init__(self, dst='test.pdf'):
         self.page_format = None
         self.stack = None
         self.pages = None
-        self.pdf = FPDF(unit="cm")
+        self.pdf = Canvas(dst)
+        self.dst = dst
 
-    def generate_pdf(self, stack, pages=None, dst='test.pdf'):
+    def generate_pdf(self, stack, pages=None):
+        print 'in here, i souhld print to pdf some info, like deck name, date and num page'
+        print 'front page are all printer bbefore bakcpage. to be sorted out'
         if not stack:
             from conf import alert
             alert('Stack is empty !')
@@ -198,20 +198,20 @@ class PDFBook:
                         phx,phy = Vector(ph.pos)/cm(1)
                         phw,phh = Vector(ph.size)/cm(1)
                         if ph.angle:
-                            self.pdf.rotate(ph.angle,*center(phx,phy,phw,phh))
+                            self.pdf.rotate(ph.angle)#,*center(phx,phy,phw,phh))
                         #print 'adding image to pdf %s'%fname, phx,phy, phw, phh
+                        self.pdf.drawImage(fname, phx*r_cm,phy*r_cm,phw*r_cm,phh*r_cm)
+                        #add line after image: they ll be above
                         self.AddLines(phx,phy,phw,phh)
-                        self.pdf.image(fname, phx,phy,phw,phh)
-                        #self.pdf.image(fname, phx,phy,0,0)
                         if ph.angle:
                             self.rotate(0)
                         index+=1
             if len(front_pages) != len(back_pages) and len(back_pages):
                 from conf import alert
                 alert('Front & Back pages mismatch',(1,.3,1,.8), True)
-            self.pdf.output(dst,'F')
+            self.pdf.save()
             from conf import start_file
-            start_file(dst)
+            start_file(self.dst)
         except Exception, e:
             alert(e)
             from traceback import format_exc
@@ -228,7 +228,7 @@ class PDFBook:
 
     def AddPage(self, mode, target_list):
         pf = self.GetPageFormat(mode)
-        self.pdf.add_page()
+        self.pdf.showPage()
         target_list.append(pf)
         return pf
 
@@ -236,11 +236,12 @@ class PDFBook:
         from kivy.metrics import cm
         step = 10.0/cm(1)
         pagging = 1.0/cm(1)
-        self.pdf.line(x-step,y-pagging, x+w+step, y-pagging)
-        self.pdf.line(x-pagging,y-step, x-pagging, y+h+step)
-        self.pdf.line(x-step,y+h+pagging, x+w+step, y+h+pagging)
-        self.pdf.line(x+w-pagging,y-step, x+w-pagging, y+h+step)
-
+        self.pdf.lines([
+            ((x-step)*r_cm, (y-pagging)*r_cm, (x+w+step)*r_cm, (y-pagging)*r_cm),
+            ((x-pagging)*r_cm, (y-step)*r_cm, (x-pagging)*r_cm, (y+h+step)*r_cm),
+            ((x-step)*r_cm, (y+h+pagging)*r_cm, (x+w+step)*r_cm, (y+h+pagging)*r_cm),
+            ((x+w-pagging)*r_cm, (y-step)*r_cm, (x+w-pagging)*r_cm, (y+h+step)*r_cm)
+        ])
 
 def prepare_pdf(stack, dst='test.pdf'):
     for p in stack:
@@ -252,3 +253,16 @@ def prepare_pdf(stack, dst='test.pdf'):
         book.generate_pdf(stack, dst=dst)
     from kivy.clock import Clock
     Clock.schedule_once(process, .3)
+
+def prepare_pdf(stack):
+    from conf import wait_cursor, log, alert
+    try:
+        from kivy.app import App
+        root = App.get_running_app().root
+        # Ensure screeen is present
+        root.on_screen_name(None, 'PrintPreview', False)
+        root.ids.printer.ids.book.export_imgs(stack)
+    except Exception, e:
+        import traceback
+        log(e, traceback.format_exc())
+        alert(e, [1, 0, 0, 1], True)

@@ -192,6 +192,54 @@
                     text: "Cancel"
                     on_press: root.dismiss()
 
+<PosHintChoiceEditorPopup>:
+    size_hint: None, None
+    title: 'Choose PosHint for %s'%self.name
+    GridLayout:
+        cols:2
+        SubmitTreeView:
+            target: root
+            id: poshints
+            root_options: {'text': "Hint"}
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .67
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: imgpicker
+                    cols: 3
+                    Label:
+                        text: "Selection"
+                        size_hint: .15, None
+                        height: 30
+                    Label:
+                        text: "Name"
+                        size_hint: .2, None
+                        height: 30
+                    Label:
+                        text: "Value"
+                        size_hint: .35, None
+                        height: 30
+            BoxLayout:
+                size_hint: 1, None
+                height: 30
+                orientation: "horizontal"
+                Button:
+                    text: "Add"
+                    on_press: root.add_item()
+                Button:
+                    text: "Remove"
+                    on_press: root.remove_poshint()
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute() ; root.cb(root.choices)
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+
 <ColorChoiceEditorPopup>:
     size_hint: None, None
     title: 'Choose Color for %s'%self.name
@@ -259,6 +307,25 @@
             Button:
                 text: "Apply"
                 on_press: root.dismiss(); root.cb(root)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
+<TextEditorPopup@Popup>
+    size_hint: None, None
+    title: 'Text Edition for %s'%self.name
+    GridLayout:
+        cols: 1
+        CodeInput:
+            id: tpicker
+            text: root.text
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(tpicker)
             Button:
                 text: "Cancel"
                 on_press: root.dismiss()

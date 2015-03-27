@@ -278,14 +278,16 @@ class BGDeckMaker(FloatLayout):
             qt.ids.value.text = str(pack.size)
             self.ids.stackview.add_node(qt, node)
             dualNode = BoolNode()
-            def dcb(active):
+            def dcb(active, _node):
                 try:
+                    pack = _node.pack
                     pack.dual = bool(active)
-                    node.text = str(pack)
+                    _node.parent_node.text = str(pack)
                 except ValueError, E:
                     from conf import alert
                     alert(E)
             dualNode.callback = dcb
+            dualNode.pack = pack
             dualNode.ids.value.active = pack.dual
             self.ids.stackview.add_node(dualNode, node)
 
@@ -418,9 +420,14 @@ class BGDeckMaker(FloatLayout):
         wait_cursor()
         try:
             from models import Stack
-            s = Stack.from_file("stack.csv")
-            for item in s.items:
-                self.stack.append(item)
+            try:
+                s = Stack.from_file("stack.csv")
+            except Exception,e:
+                print e
+                import traceback
+                traceback.print_exc()
+                s = []
+            self.stack.extend(s.items)
         except Exception, e:
             log(e)
         wait_cursor()
@@ -446,3 +453,54 @@ class BGDeckMaker(FloatLayout):
         if not isdir(dirname):
             return
         print 'Now Load super folder repr wth checkbox'
+
+    def all_test(self):
+        """Run a pdf test on all registered templates"""
+        stack = []
+        for tmplName in sorted(templateList.templates.keys()):
+            tmpl = templateList[tmplName]
+            # Here is hould loop on the template to apply them on values
+            values = dict()
+            node = self.ids.tmpl_tree.nodes[tmpl.name]
+            for child_node in node.nodes:
+                for child in child_node.walk(restrict=True):
+                    key = getattr(child, 'target_key', '')
+                    sv = getattr(child, 'stored_value', '')
+                    if key and sv:  # means somthing has changed
+                        if child.target_attr in tmpl.vars:  #just a tmpl variable
+                            values[key] = sv
+                        else:
+                            values["%s.%s" % (child.target_attr, key)] = sv
+            src = self.ids['file_chooser']
+            if src.selection:
+                #Load dir
+                from os.path import isdir, join
+                from os import listdir
+
+                if isdir(src.selection[0]):
+                    for fname in listdir(src.selection[0]):
+                        values['default.source'] = join(src.selection[0], fname)
+                        pack = ImgPack(tmpl, int(self.ids['qt'].text), self.ids['dual'].active, values.copy())
+                        self.stack.append(pack)
+                    #Add it the the printpreview
+                    from kivy.app import App
+
+                    App.get_running_app().root.layout(self.stack)
+                    return
+                else:
+                    values['default.source'] = src.selection[0]
+
+            pack = ImgPack(tmpl, int(self.ids['qt'].text), self.ids['dual'].active, values)
+            stack.append(pack)
+        self.stack = stack
+        #Add it the the printpreview
+        from kivy.app import App
+        root = App.get_running_app().root
+        root.layout(self.stack)
+        #add some delay, to let the layout process
+        def process(*args):
+            root.on_screen_name(self, 'PrintPreview', False)
+            root.ids.printer.ids.book.export_imgs(self.stack)
+        from kivy.clock import Clock
+        Clock.schedule_once(process, .5)
+

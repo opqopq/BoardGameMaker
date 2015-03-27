@@ -57,6 +57,8 @@ class BGGeekBrowser(BoxLayout):
     def search_game(self, name):
         "Search a game. Callback to insert_games"
         self.ids.results.root_options={'text':'Results: %s'%name}
+        self.ids.results.nodes = list()
+        self.ids.results.remove_node(self.ids.results.root)
         url = bgg_search_url
         try:
             int(name)
@@ -210,7 +212,6 @@ class BGGeekBrowser(BoxLayout):
         for u,d in zip(files_url, files_desc):
             self.files.append((u,d))
 
-
     def get_links_urls(self, req, result):
         bs = BS(result)
         link_desc = [x.text.strip() for x in bs.findAll('a') if x.get('href') and x.get('href').startswith('/weblink')]
@@ -221,7 +222,6 @@ class BGGeekBrowser(BoxLayout):
 
         for u, d in zip(link_url, link_desc):
             self.links.append((u, d))
-
 
     def prepare_gallery(self):
         title = self.ids.details.title

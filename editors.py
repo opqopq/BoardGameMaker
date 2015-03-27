@@ -5,10 +5,10 @@ from kivy.lang import Builder
 from os.path import isfile
 from kivy.metrics import cm
 from kivy.properties import *
-from kivy.vector import Vector
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
+from kivy.factory import Factory as F
 
 Builder.load_file('kv/editors.kv')
 
@@ -84,6 +84,43 @@ class TextEditor(Editor):
             #self.target.text = value
             t.stored_value = value
         t.bind(text=cb)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
+class AdvancedTextEditor(TextEditor):
+    def getWidgets(self, name, keyname, **kwargs):
+        from kivy.uix.boxlayout import BoxLayout
+        from kivy.uix.button import Button
+
+        ti = TextEditor.getWidgets(self, name, keyname, **kwargs)
+        ti.size_hint_x = .8
+
+        b = Button(text='...')
+
+        t = BoxLayout(orientation='horizontal')
+        t.add_widget(ti)
+        t.add_widget(b)
+
+        def cbtxt(*args):
+            print 'cb got thje gollowint(', args , args[0].text
+            setattr(self.target,keyname, args[0].text)
+            t.stored_value = args[0].text
+            ti.text = args[0].text
+
+        #Create callback for button that would start a modal
+        def button_callback():
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)*.9
+            cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
+            filters = getattr(self.target, '%s_filters'%keyname, [])
+            #filters= ['*.jpg', '*.png','*.jpeg','*.gif']
+            popup = TextEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = str(getattr(self.target,keyname)), multiline = True)
+            popup.open()
+
+        b.on_press = button_callback
         t.target_key = keyname
         t.stored_value = None
         t.target_attr = name
@@ -266,6 +303,80 @@ class MetricEditor(Editor):
         args={keyname:xcb}
         self.target.bind(**args)
         return t
+
+class SizeHintEditor(Editor):
+    "Editor for pos_hint & size_hint ediition"
+    def getWidgets(self, name, keyname, **kwargs):
+
+        from kivy.uix.textinput import TextInput
+        from kivy.uix.boxlayout import BoxLayout
+
+        t = BoxLayout(orientation='horizontal')
+
+        tiw = TextInput(text=( "%.2f" % getattr(self.target, keyname)[0] ) if getattr(self.target, keyname)[0] else "")
+        tih = TextInput(text=( "%.2f" % getattr(self.target, keyname)[1] ) if getattr(self.target, keyname)[1] else "")
+        t.add_widget(tiw)
+        t.add_widget(tih)
+
+        def cb_w(instance, value):
+            try:
+                sh = getattr(self.target, keyname)
+                if not value:
+                    sh[0] = None
+                else:
+                    sh[0] = float(value)
+                t.stored_value = float(value)
+            except ValueError, E:
+                from conf import log
+                log(E)
+
+        def cb_h(instance, value):
+            try:
+                sh = getattr(self.target, keyname)
+                if not value:
+                    sh[1] = None
+                else:
+                    sh[1] = float(value)
+                t.stored_value = float(value)
+            except ValueError, E:
+                from conf import log
+                log(E)
+
+        tiw.bind(text=cb_w)
+        tih.bind(text=cb_h)
+
+        t.target_key = keyname
+        t.stored_value = getattr(self.target, keyname)
+        t.target_attr = name
+        return t
+
+class PosHintEditor(Editor):
+    "Editor for pos_hint & size_hint ediition"
+    def getWidgets(self, name, keyname, **kwargs):
+        t=Button(text="...")
+        def cbimg(value):
+            try:
+                setattr(self.target, keyname, value)
+                t.stored_value = value
+            except ValueError,E:
+                from conf import log
+                log(E)
+        t.bind(text=cbimg)
+        def button_callback(instance):
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)*.9
+            title = 'Choose Pos_hint for %s'%name
+            popup = PosHintChoiceEditorPopup(title=title, name=name, size=size, pos=(0,0), cb=cbimg, keyname = getattr(self.target, keyname))
+            popup.load_items(['x', 'y', 'center_x', 'center_y', 'right', 'top'])
+            popup.load_choices(self.target.pos_hint)
+            popup.open()
+        t.bind(on_press=button_callback)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
 
 class FileEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -729,6 +840,11 @@ class FieldEditor(ChoiceEditor):
 #        POPUP                                #
 ###############################################
 
+class TextEditorPopup(Popup):
+    name = StringProperty()
+    cb = ObjectProperty()
+    text = StringProperty()
+
 class FontEditorPopup(Popup):
     name = StringProperty()
     text = StringProperty()
@@ -966,7 +1082,6 @@ class Point(Widget):
             self.color=[1,0,0,1]
         return super(Point, self).on_touch_up(touch)
 
-
 class PointListEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
@@ -1069,6 +1184,67 @@ class PointListEditorPopup(Popup):
             x = float(cs[3*i+1+3].text)
             y = float(cs[3*i+2+3].text)
             self.points.extend([x, y])
+
+class PosHintChoiceEditorPopup(Popup):
+    name = StringProperty()
+    cb = ObjectProperty()
+    choices = DictProperty()
+
+    def load_items(self, items):
+        tree = self.ids.poshints
+        from kivy.uix.treeview import TreeViewLabel
+
+        for key in sorted(items):
+            tree.add_node(TreeViewLabel(text=key))
+
+    def load_choices(self, choices):
+        from kivy.uix.textinput import TextInput
+        from kivy.uix.checkbox import CheckBox
+        for name, path in choices.items():
+            self.ids.imgpicker.add_widget(CheckBox(size_hint=(.2,None), height= 30))
+            self.ids.imgpicker.add_widget(TextInput(text=name, size_hint=(.2, None), height=30))
+            self.ids.imgpicker.add_widget(TextInput(text='%.2f'%path, size_hint=(.3, None), height=30))
+
+    def add_item(self):
+        from os.path import split, splitext
+        from kivy.uix.textinput import TextInput
+        from kivy.uix.image import Image
+        from kivy.uix.checkbox import CheckBox
+
+        selection = self.ids.poshints.selected_node
+        if selection:
+            name = selection.text
+            self.ids.imgpicker.add_widget(CheckBox(size_hint=(.2,None), height= 30))
+            self.ids.imgpicker.add_widget(TextInput(text=name, size_hint=(.2, None), height=30))
+            self.ids.imgpicker.add_widget(TextInput(text="", size_hint=(.3, None), height=30))
+
+    def remove_poshint(self):
+        grid = self.ids.imgpicker
+        cs = list(reversed(grid.children[:]))
+        to_remove = list()
+        for i in reversed(range((len(grid.children)-3)/3)):
+            cb = cs[i*3+3]
+            if cb.active:
+                print cs[i*3+3:i*3+6]
+                to_remove.extend(cs[i*3+3:i*3+6])
+        for elt in to_remove:
+            grid.remove_widget(elt)
+
+    def compute(self):
+        self.choices = dict()
+        grid = self.ids.imgpicker
+        cs = list(reversed(grid.children[:]))
+        for i in reversed(range((len(grid.children)-3)/3)):
+            name = cs[i*3+4].text
+            path = cs[i*3+5].text
+            try:
+                self.choices[name] = float(path)
+            except ValueError,E:
+                from conf import log, alert
+                alert(E)
+                log(E,'while converting to float')
+        print 'new poshint is', self.choices
+        #self.cb(self.choices)
 
 class SubImageEditorPopup(Popup):
     name = StringProperty()

@@ -178,6 +178,7 @@ class BGTemplate(Field, RelativeLayout):
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
 from kivy.properties import DictProperty
+
 class TemplateList(EventDispatcher):
     templates = DictProperty()
 

@@ -21,9 +21,9 @@ class Stack(Widget):
     def load(self, filename):
         import csv
         with open(filename, 'rb') as csvfile:
-            writer = csv.DictReader(csvfile)
-            for row in writer:
-                self.items.append(ImgPack.from_dict(row))
+            writer = csv.DictReader(csvfile, delimiter=";")
+            for line, row in enumerate(writer):
+                self.items.append(ImgPack.from_dict(row, line))
 
     def saveas(self, filename):
         import csv
@@ -42,7 +42,7 @@ class Stack(Widget):
                 writer.writerow(item.to_dict())
 
     @classmethod
-    def from_file(cls,filepath):
+    def from_file(cls, filepath):
         from os.path import split
         s = Stack(name=split(filepath[-1]), path=filepath)
         s.load(filepath)
@@ -82,9 +82,26 @@ class ImgPack:
         return fname
 
     @classmethod
-    def from_dict(cls, other):
+    def from_dict(cls, other, line = -1):
         from template import templateList
-        res = cls(size = int(other['size']), dual = other['dual'].lower()=="true", template=templateList.templates.get(other['template']))
+        size = 1
+        try:
+            size = int(other['size'])
+        except Exception,E:
+            from conf import log
+            log('Cohercing size to One in stack import line %s'%line, str(E))
+        dual = False
+        try:
+            dual = other['dual'].lower() == 'true'
+        except Exception,E:
+            from conf import log
+            log('Cohercing dual to False in stack import line %s'%line, str(E))
+        tmpl = templateList.templates.get('Default')
+        try:
+            tmpl = templateList.templates.get(other['template'])
+        except Exception,E:
+            log('Cohercing template to Default in stack import line %s'%line, str(E))
+        res = cls(size=size, dual=dual, template=tmpl)
         values = other.copy()
         del values['dual'], values['size'], values['template']
         res.values.update(values)

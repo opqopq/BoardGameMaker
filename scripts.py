@@ -57,6 +57,7 @@ class BGScriptEditor(BoxLayout):
     env = ObjectProperty()
 
 class REPL(CodeInput):
+    "Single black line for sending status (like code exec properly)"
     locals = DictProperty()
     env = ObjectProperty()
 
@@ -123,7 +124,7 @@ class Idle(Script):
     tst_param = StringProperty('toto')
     num_param = NumericProperty(0)
 
-    vars = {'tst_param': TextEditor, 'num_param': IntEditor}
+    vars = {'tst_param': AdvancedTextEditor, 'num_param': IntEditor}
 
     def execute(self):
         print 'idel executed'

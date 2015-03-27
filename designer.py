@@ -260,7 +260,7 @@ class BGDesigner(FloatLayout):
         #Done by chaging the width & hiehgt tyhingy
         #self.ids.content.size = template.size
         from kivy.metrics import cm
-        w,h = template.size
+        self.current_template.size = w,h = template.size
         if self.ids.tmpl_unit.text == "cm":
             w/=cm(1)
             h/=cm(1)
@@ -268,6 +268,8 @@ class BGDesigner(FloatLayout):
         self.ids.tmpl_height.text = "%.2f"%h
         #Have to do that, as chilndre is in the wrong way  !
         ordered_child = [c for c in list(template.walk(restrict= True)) if c.parent == template]
+        ordered_child = template.children[:]
+        ordered_child.sort(key=lambda x:x.z, reverse=True)
         for target in ordered_child:
             if not isinstance(target, Field):
                 #Here we do not import kivy widget; should be replaced by a kivy widget field
@@ -276,6 +278,7 @@ class BGDesigner(FloatLayout):
                 continue
             template.remove_widget(target)
             self.insert_field(target)
+        print 'End load', self.current_template.size
 
     def new(self,*args):
         for nodeIndex, node in self.nodes.items():
@@ -365,16 +368,30 @@ class BGDesigner(FloatLayout):
         relativ = self.ids.cb_relative.active
         save_cm = self.ids.cb_cm.active
         imports = list()
+        print 'export kv'
+        w = self.ids.tmpl_width.text
+        h = self.ids.tmpl_height.text
+        #Get Unit
+        u = self.ids.tmpl_unit.text
+        w = float(w)
+        h = float(h)
+        self.current_template.size = w,h
+        if u == 'cm':
+            self.current_template.size = w*cm(1), h*cm(1)
+        if u == 'cm':
+            w *= cm(1)
+            h *= cm(1)
+            if not save_cm:
+                w = "%.2f" % w
+                h = "%.2f" % h
+        else:
+            if save_cm:
+                w = "cm(%.2f)"%(w/cm(1))
+                h = 'cm(%.2f)'%(h/cm(1))
         if not self.current_template.name:
             self.current_template.name = "TMPL"
         tmpls=["<%s@BGTemplate>:"%self.current_template.name]
-        from kivy.metrics import cm
-        #if self.ids.tmpl_unit.text == 'cm':
-        if save_cm:
-            #Save the size in cm
-            w,h = "cm(%.2f)"%(self.current_template.width/cm(1)), "cm(%.2f)"%(self.current_template.height/cm(1))
-        else:
-            w,h = self.current_template.size
+        print 'tmpl size', w, h
         tmpls.append('\tsize: %s, %s'%(w,h))
         for node in self.ids.fields.root.nodes:
             field = node.target

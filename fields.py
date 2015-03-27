@@ -84,7 +84,7 @@ class BaseField(FloatLayout):
 
 from kivy.uix.widget import Widget
 
-class Field(HoverBehavior, FloatLayout):
+class Field(HoverBehavior, FocusBehavior, FloatLayout):
     """Element class represent any component of a template (fields, font, transformation....)"""
     selected = BooleanProperty(False)
     z = NumericProperty(0)
@@ -99,13 +99,13 @@ class Field(HoverBehavior, FloatLayout):
     name = StringProperty()
     #Attributes that are only used in designed mode
     attrs=OrderedDict([
-            ("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor),
+            ("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor), ('size_hint', SizeHintEditor), ('pos_hint', PosHintEditor),
             ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
     ])
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
-    not_exported = ['cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type']
+    not_exported = ['cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -120,9 +120,33 @@ class Field(HoverBehavior, FloatLayout):
     #Menu is an ordered dict  listing which attributes needs to be in which sub tree for editors
     #_menu work for current instance
     # menu aggregate parent info
-    _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','opacity','angle','bg_color'])])
+    _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color'])])
 
     Type = 'Field'
+
+    def on_selected(self, instance, selected):
+        self.focused = selected
+
+    def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        if self.designed:
+            code,text= keycode
+            if text in ('left','right','up','down'):
+                DIR = 'x'
+                STEP = 1
+                if 'ctrl' in modifiers:
+                    STEP *= 10
+                if text == 'left':
+                    STEP *= -1
+                elif text == 'up':
+                    DIR = 'y'
+                elif text == 'down':
+                    DIR = 'y'
+                    STEP *=-1
+                elif text =='right':
+                    pass
+                setattr(self, DIR, getattr(self, DIR) + STEP)
+            if text in ('delete',):
+                self.designer.remove_selection()
 
     def on_styles(self, instance, styles):
         before = set(self.cls)
@@ -364,7 +388,7 @@ class TextField(Label, Field):
     halign_values = ['left','center','right','justify']
     valign_values = ['bottom','middle','top']
     attrs = OrderedDict([
-        ('text', TextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
+        ('text', AdvancedTextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
         ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('color', ColorEditor),
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
@@ -373,8 +397,9 @@ class TextField(Label, Field):
     #Keep old static font size
     static_font_size = NumericProperty()
     default_attr = "text"
+    _single_line_text = StringProperty()
 
-    not_exported = ['static_font_size', 'font', 'text_size']
+    not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text']
     font = ListProperty(['DroidSans.ttf', 8,False, False])
 
     def on_size(self,instance, size):
@@ -393,11 +418,22 @@ class TextField(Label, Field):
                 self.font_size = self.static_font_size
         self.on_text(instance, None)
 
+    def on_multiline(self, instance, multiline):
+        if multiline:
+            from textwrap import wrap
+            self._single_line_text = self.text
+            self.text = '\n'.join(wrap(self.text))
+        else:
+            if self._single_line_text:
+                self.text=self._single_line_text
+
     def on_text(self, base, *args):
+        self._single_line_text = self.text.replace('\n', '')
         if self.multiline:
             from textwrap import wrap
             self.text = '\n'.join(wrap(self.text))
-            return
+        else:
+            self.text = self._single_line_text
         if self.autofit:
             if not self.text:
                 return
@@ -970,7 +1006,12 @@ class OverlayField(RectangleField):
                 return True
         return super(Field, self).on_touch_down(touch)
 
-
+    def on_touch_up(self, touch):
+        if self.designed  and touch.grab_current==self:
+            # Here I should watch if shift is set, then it would be an append.
+            self.selected = True
+            touch.ungrab(self)
+        return super(Field, self).on_touch_up(touch)
 fieldDict = dict()
 
 for klassName in globals().keys()[:]:
