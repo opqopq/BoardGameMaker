@@ -3,7 +3,7 @@
 #:import kivy_data_dir kivy.kivy_data_dir
 #:import join os.path.join
 
-#:import BGGDeck deck.BGDeckMaker
+#:import BGGDeck sgm.BGDeckMaker
 
 <Template>:
     do_rotation: False
@@ -54,7 +54,7 @@
             width: 100
             on_text: root.screen_name = self.text
             text: 'Deck'
-            values: 'Deck','Browser','PrintPreview','Layout','Console','Script','Designer', 'Settings'
+            values: 'Deck','Browser','Designer', 'Settings' #'PrintPreview','Layout','Console','Script',
         LabelButton:
             id: message
             on_press: app.alert('')# dismiss message

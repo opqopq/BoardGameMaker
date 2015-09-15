@@ -1,5 +1,7 @@
 #:import resplit re.split
 #:import FileChooserThumbView kivy.garden.filechooserthumbview
+#:import get_last_dir conf.get_last_dir
+#:import set_last_dir conf.set_last_dir
 
 ##############################################################################
 #                            Popups                                          #
@@ -147,9 +149,9 @@
         FileChooserListView:
             size_hint_x: .33
             id: imgchooser
-            path: '.'
+            path: get_last_dir(self)
             filters: ['*.png','*.jpg','*.jpeg','*.gif']
-            on_submit: root.add_image()
+            on_submit: set_last_dir(root,self.path); root.add_image()
         BoxLayout:
             orientation: 'vertical'
             size_hint_x: .67
@@ -293,10 +295,10 @@
     title: 'Choose src for %s'%self.name
     GridLayout:
         cols:1
-        #FileChooserListView:
-        FileChooserThumbView:
+        FileChooserListView:
+        #FileChooserThumbView:
             id: fpicker
-            path: root.path
+            path: get_last_dir(root)
             filters: root.filters
             #on_success: root.dismiss() ; root.cb(root)
             #on_canceled: root.dismiss()
@@ -306,7 +308,7 @@
             orientation: "horizontal"
             Button:
                 text: "Apply"
-                on_press: root.dismiss(); root.cb(root)
+                on_press: set_last_dir(root, fpicker.path); root.dismiss(); root.cb(root)
             Button:
                 text: "Cancel"
                 on_press: root.dismiss()

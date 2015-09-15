@@ -67,7 +67,11 @@ from kivy.app import App
 def log(text, stack=None):
     app = App.get_running_app()
     if app:
-        app.root.log(text, stack)
+        try:
+            app.root.log(text, stack)
+        except AttributeError:
+            print 'WARNING: No Log function found; reverting to print'
+            print '\t', text, stack
     else:
         print text, stack
 
@@ -80,7 +84,11 @@ def wait_cursor(value=None):
 def alert(text, status_color=(0,0,0,1), keep = False):
     app = App.get_running_app()
     if app:
-        app.alert(text,status_color, keep)
+        try:
+            app.alert(text,status_color, keep)
+        except AttributeError:
+            print 'ALERT did not work. Reverting to print:'
+            print '\t', text, status_color, keep
 
 def start_file(path):
     import os
@@ -95,14 +103,14 @@ def fill_env(*args):
     if not app:
         return
     root = app.root
-    ENV['stack'] = root.ids.deck.stack
-    if 'layout' in root.ids:
-        ENV['layout'] = root.ids.layout.ids.page
-    ENV['tmpl_tree'] = root.ids.deck.ids.tmpl_tree
-    ENV['file_selector'] = root.ids.deck.ids.file_chooser
-    ENV['Dual'] = root.ids.deck.ids.dual.active
-    ENV['Qt'] = int(root.ids.deck.ids.qt.text)
-    ENV['alert'] = alert
+    #ENV['stack'] = root.ids.deck.stack
+    #if 'layout' in root.ids:
+    #    ENV['layout'] = root.ids.layout.ids.page
+    #ENV['tmpl_tree'] = root.ids.deck.ids.tmpl_tree
+    #ENV['file_selector'] = root.ids.deck.ids.file_chooser
+    #ENV['Dual'] = root.ids.deck.ids.dual.active
+    #ENV['Qt'] = int(root.ids.deck.ids.qt.text)
+    #ENV['alert'] = alert
     ENV['log'] = log
     from template import templateList
     ENV['tmpls'] = templateList
@@ -135,3 +143,17 @@ def path_reader(path):
         return normpath(path)
     else:
         return normpath(path.replace(not_sep,sep))
+
+
+DirCache={'last':'.'}
+
+def set_last_dir(src,value):
+    DirCache[src] = value
+    DirCache['last']  = value
+
+def get_last_dir(src=None):
+    #print 'get_last_dir', src, src in DirCache, DirCache.keys()
+    if src is None or not(src in DirCache):
+        src = 'last'
+    return DirCache[src]
+

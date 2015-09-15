@@ -377,7 +377,6 @@ class PosHintEditor(Editor):
         t.target_attr = name
         return t
 
-
 class FileEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from os.path import split

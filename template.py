@@ -274,4 +274,9 @@ def LoadTemplateFolder(folder="Templates"):
         #for tmpl in BGTemplate.FromFile(kv):
         #    templateList.register(tmpl)
 
-LoadTemplateFolder()
+
+from conf import CP
+if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):
+    LoadTemplateFolder()
+else:
+    print 'No Template Libray Loading requested'

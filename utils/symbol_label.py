@@ -1,5 +1,4 @@
 from kivy.core.text.markup import MarkupLabel
-from kivy.core.text.text_pygame import LabelPygame
 from kivy.core.text import Label as CoreLabel
 from kivy.graphics.texture import Texture
 from kivy.uix.label import Label
@@ -8,7 +7,6 @@ from kivy.parser import parse_color
 from kivy.logger import Logger
 import re
 from copy import copy
-import pygame
 from kivy.properties import DictProperty
 from math import ceil
 
@@ -17,6 +15,7 @@ class SymbolCoreLabel(MarkupLabel):
     def _render_image(self,src,x,y,image_part=None):
         #print 'Rendering Image at src %s at %s:%s'%(src,x,y)
         #Load from PIL, then feed it to pygame. Why ????! 
+        import pygame
         import Image
         image=Image.open(src)
         image.getdata()
@@ -103,7 +102,7 @@ class SymbolCoreLabel(MarkupLabel):
                 else:
                     try:
                         i(options.get('symbol_src'), x ,y + (lh - ph) / 1.25)
-                    except pygame.error,_exc:
+                    except Exception,_exc:
                         Logger.warning('Not able to load symbol: %s'%_exc)
                         r(part, x, y + (lh - ph) / 1.25)
                 # should we record refs ?

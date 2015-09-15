@@ -496,3 +496,26 @@ def hue_transform(source, hue, size=(64, 64)):
 
     return fbo.texture
 
+maskeffect='''
+vec4 effect(vec4 color, sampler2D texture, vec2 tex_coords, vec2 coords)
+{
+    return vec4(1.0 - color.xyz, 1.0);
+}
+'''
+
+class MaskEffect(AdvancedEffectBase):
+    def __init__(self, *args, **kwargs):
+        super(MaskEffect, self).__init__(*args, **kwargs)
+        self.glsl = maskeffect
+        self.uniforms = {'touch':[0.0, 0.0]}
+
+    def on_touch(self, *args, **kwargs):
+        self.uniforms['touch']= [float(i) for i in self.touch]
+
+from kivy.uix.effectwidget import EffectWidget
+
+class MaskWidget(EffectWidget):
+    def __init__(self, *args, **kwargs):
+        super(MaskWidget, self).__init__(*args, **kwargs)
+        self.effect = MaskEffect()
+        self.effects = [self.effect]

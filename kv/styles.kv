@@ -12,6 +12,16 @@
             dash_length: self.border_dash_length
             width: self.border_width
 
+<.Rotated>:
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: self.rotation
+            origin: self.center # if scatter self.width/2, self.height/2
+            axis: 0,0,1
+    canvas.after:
+        PopMatrix
+
 <.Cross>:
     cross_color: 1,0,0,1
     cross_width: 10

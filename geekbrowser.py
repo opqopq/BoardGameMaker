@@ -384,7 +384,7 @@ class BGGeekBrowser(BoxLayout):
         output.write('Game Description:\n')
         output.write(self.ids.details.ids.description.text)
         output.write('\n\nMore Information:')
-        output.write(self.ids.details.ids.information.text)
+        output.write(self.ids.details.ids.information.text.encode('cp1252'))
         from conf import start_file
         start_file(path)
 

@@ -8,146 +8,20 @@ from kivy.uix.carousel import Carousel
 from kivy.metrics import cm
 from kivy.lang import Builder
 from kivy.vector import Vector
-from conf import card_format, page_format
 from kivy.uix.floatlayout import FloatLayout
-
 from kivy.factory import Factory
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import cm as r_cm
 
-
-Builder.load_file('kv/printer.kv')
-
-
-class BGPrinter(FloatLayout):
-    "BG Printer widget, displaying printpreview as caroussel"
-
-class SheetLayout(Widget):
-    Dual = BooleanProperty()
-    number = NumericProperty()
-    name = StringProperty()
-    book = ObjectProperty()
-
-class BookLayout(Carousel):
-    stack = ObjectProperty()
-    bag = DictProperty()
-
-    def layout(self, stack= None):
-        self.clear_widgets()
-        if stack is None:
-            stack = self.stack
-        if stack:
-            self.stack= stack
-            #First calculte how many card by sheet we have
-            cards_by_sheet = int((page_format.width-page_format.left-page_format.right)/card_format.width) * int((page_format.height-page_format.bottom-page_format.top)/card_format.height)
-            cards = list()
-            for piece in stack:
-                cards.extend([piece]*piece.size)
-                blank = piece.template.blank()
-                blank.apply_values(piece.values)
-                self.bag[id(piece)] = blank
-            i=0
-            for index in range(len(cards))[::cards_by_sheet]:
-                i += 1
-                sheet_layout = SheetLayout(number=i, name="from %s"%index, Dual = False, book=self)
-                self.add_widget(sheet_layout)
-                ssheet = sheet_layout.ids.ssheet
-                ssheet.stack = self.stack
-                for card,widget in zip(cards[index:index+cards_by_sheet],list(ssheet.walk(restrict=True))[1:]):
-                    #Here I'm copying existing blank item, as they can not be duplicated/reparented
-                    blank = card.template.blank()
-                    blank.apply_values(card.values)
-                    widget.add_widget(blank)
-                    #Fill the placeholder
-                    blank.size = widget.size
-
-    def export_imgs(self,stack):
-        if stack:
-            self.stack = stack
-        if self.bag:
-            for pid in self.bag:
-                self.bag[pid].export_to_image('build/%s.png'%pid, (1,1,1,0.1))
-                #####self.bag[pid].export_to_png('buid/%s_B.png'%pid)
-                #self.bag[pid].export_to_image('build/%s_W.png'%pid, (1,1,1,1))
-        else:
-            for p in self.stack:
-                blank = p.template.blank()
-                blank.apply_values(p.values)
-                blank.export_to_image('build/%s.png'%id(p))
-        book = PDFBook()
-        book.generate_pdf(self.stack)
-
-class Printer(Widget):
-    "One page of print preview, as a X*Y imgholder widget"
-    stack = ObjectProperty()
-
-    def __init__(self,*args,**kwargs):
-        Widget.__init__(self, *args, **kwargs)
-        self.auto_fill()
-
-    def auto_fill(self, cf=None):
-        self.clear_widgets()
-        if cf is None:
-            cf = card_format
-        IMGPlaceHolder = Factory.get('IMGPlaceHolder')
-        for index_h in range(int(round(((page_format.width-page_format.left-page_format.right)/card_format.width)))):
-            for index_v in range(int(round(((page_format.height-page_format.top-page_format.bottom)/card_format.height)))):
-                self.add_widget(IMGPlaceHolder(
-                        pos = (page_format.left + index_h*cf.width,page_format.bottom+index_v*cf.height)
-                ))
-
-    def snapshot(self):
-        from conf import alert
-        alert('Snapshot saved as page_%s.png'%id(self))
-        self.export_to_png('page_%s.png'%id(self))
-        from conf import start_file
-        start_file('page_%s.png'%id(self))
-
-class PDFPlaceHolder:
-    def __init__(self,pos,size,angle):
-        self.pos = pos
-        self.size = size
-        self.angle = angle
-
-class PDFPage:
-    def __init__(self, dual = False):
-        self.ph_per_page = 0
-        self.phs=list()
-        self.dual = dual
-
-    @classmethod
-    def fromFormat(cls,card_format= card_format, withDual = False):
-        w,h = card_format.width, card_format.height
-        W,H = page_format.width, page_format.height
-        left = page_format.left
-        right = page_format.right
-        top = page_format.top
-        bottom = page_format.bottom
-        self = cls()
-        res = dict()
-        res['front']=self
-        self.ph_per_page = int(W/w)*int(H/h)
-        if withDual:
-            dual = cls(dual = True)
-            res['back']=dual
-            dual.ph_per_page = self.ph_per_page
-        for index_h in range(int(round((W-left-right)/w))):
-            for index_v in range(int(round((H-bottom-top)/h))):
-                self.phs.append(PDFPlaceHolder(
-                    pos = (left+index_h*w, bottom+index_v*h),#here if dual, then change it
-                    size = (w,h),
-                    angle = 0
-                    )
-                )
-                if withDual:
-                    dual.phs.append(PDFPlaceHolder(
-                        pos = (W-(1+index_h)*w-right,bottom+index_v*h),
-                        size = (w,h),
-                        angle = 0
-                    )
-                )
-        return res
+from conf import card_format
+#Page Format - to be stuck into a .ini file
+width = 21.0
+height = 29.7
+left = 0.8
+right = 0.8
+bottom = 1.0
+top = 1.0
 
 def center(x,y,w,h):
     return x+w/2, y+h/2
@@ -160,77 +34,60 @@ class PDFBook:
         self.pdf = Canvas(dst)
         self.dst = dst
 
-    def generate_pdf(self, stack, pages=None):
+    def generate_pdf(self, stack, fitting_size):
         print 'in here, i souhld print to pdf some info, like deck name, date and num page'
         print 'front page are all printer bbefore bakcpage. to be sorted out'
-        if not stack:
-            from conf import alert
-            alert('Stack is empty !')
+        fps, bps = stack
+        #First determinez the number of item per page, acconirding to the dimensions
+        x,y= Vector(fitting_size)/cm(1)
+        NUM_COL = int((width-left)/(x+5/cm(1)))
+        NUM_ROW = int((height-top-bottom)/(y+5/cm(1)))
+        PICT_BY_SHEET=NUM_COL*NUM_ROW
+        if not(fps) and not(bps):
+            print 'Warning: nothing to print'
             return
-        from conf import alert, log
-        try:
-            self.pages = []
-            self.stack = list()
-            if stack:
-                for piece in stack:
-                    self.stack.extend([piece]*piece.size)
-            cards = list()
-            if pages is None: #Auto template is on
-                self.page_format = PDFPage.fromFormat(withDual=self.containsDual())
-            #Gather Front & Back Packs
-            fps = [p for p in self.stack if not p.dual]
-            bps = [p for p in self.stack if p.dual]
-            front_pages=list()
-            back_pages=list()
-            for cardlist, mode, target_list in zip((fps,bps),(False,True),(front_pages,back_pages)):
-                print 'loop:', "card list: %s"%cardlist, 'mode %s'%mode,"target_list : %s"%target_list
-                if cardlist:
-                    index = 0
-                    pf = self.AddPage(mode, target_list)
-                    while cardlist:
-                        #print index, pf.ph_per_page
-                        if index == pf.ph_per_page:
-                            index = 0
-                            pf = self.AddPage(mode, target_list)
-                        item = cardlist.pop(0)
-                        ph = pf.phs[index]
-                        fname = 'build/%s.png'%(id(item))
-                        phx,phy = Vector(ph.pos)/cm(1)
-                        phw,phh = Vector(ph.size)/cm(1)
-                        if ph.angle:
-                            self.pdf.rotate(ph.angle)#,*center(phx,phy,phw,phh))
-                        #print 'adding image to pdf %s'%fname, phx,phy, phw, phh
-                        self.pdf.drawImage(fname, phx*r_cm,phy*r_cm,phw*r_cm,phh*r_cm)
+        print 'fitting size', fitting_size
+        print "x,y", x,y
+
+        print 'Num row', NUM_ROW
+        print 'Num Col', NUM_COL
+        print PICT_BY_SHEET , 'pictures by sheet'
+        for i in range((len(fps)/PICT_BY_SHEET)+1):
+            #Add PAge if fps left
+            if fps:
+                for row in range(NUM_ROW):
+                    for col in range(NUM_COL):
+                        try:
+                            src = fps.pop()
+                        except IndexError:
+                            break
+                        X,Y = col * x+ left, height-(1+row)*y - top
+                        self.pdf.drawImage(src, X*r_cm, Y*r_cm, x*r_cm, y*r_cm)
                         #add line after image: they ll be above
-                        self.AddLines(phx,phy,phw,phh)
-                        if ph.angle:
-                            self.rotate(0)
-                        index+=1
-            if len(front_pages) != len(back_pages) and len(back_pages):
-                from conf import alert
-                alert('Front & Back pages mismatch',(1,.3,1,.8), True)
+                        self.AddLines(X,Y,x,y)
+                self.AddPage()
+            #Add Back page if bps left
+            if bps:
+                for row in range(NUM_ROW):
+                    for col in range(NUM_COL):
+                        try:
+                            src = bps.pop()
+                        except IndexError:
+                            break
+                        X,Y = width -(1+col)*x-right, height-(1+row)*y - top
+                        self.pdf.drawImage(src, X*r_cm, Y*r_cm, x*r_cm, y*r_cm)
+                        #add line after image: they ll be above
+                        self.AddLines(X,Y,x,y)
+                self.AddPage()
+        try:
             self.pdf.save()
-            from conf import start_file
-            start_file(self.dst)
-        except Exception, e:
-            alert(e)
-            from traceback import format_exc
-            log(e, format_exc())
+        except IOError:
+            res= raw_input('Document is already opened. Close it first')
+            self.pdf.save()
+        return True
 
-    def containsDual(self):
-        if self.stack:
-            return any([x.dual for x in self.stack])
-
-    def GetPageFormat(self, dual=False):
-        if dual:
-            return self.page_format['back']
-        return self.page_format['front']
-
-    def AddPage(self, mode, target_list):
-        pf = self.GetPageFormat(mode)
+    def AddPage(self):
         self.pdf.showPage()
-        target_list.append(pf)
-        return pf
 
     def AddLines(self, x, y, w, h):
         from kivy.metrics import cm
@@ -243,26 +100,28 @@ class PDFBook:
             ((x+w-pagging)*r_cm, (y-step)*r_cm, (x+w-pagging)*r_cm, (y+h+step)*r_cm)
         ])
 
-def prepare_pdf(stack, dst='test.pdf'):
-    for p in stack:
-        blank = p.template.blank()
-        blank.apply_values(p.values)
-        blank.export_to_image('build/%s.png'%id(p))
+def prepare_pdf(stack, fitting_size, dst='test.pdf'):
+    #linearize stack to create list of element
+    deck_front = list()
+    deck_back = list()
+    for item in stack.children:
+        print 'settping on', item
+        #Create tuple with qt * (source,dual)
+        if not isinstance(item, Factory.get('StackPart')): continue
+        if item.verso=='normal':#front
+            deck_front += item.qt*[item.source]
+        else:
+            deck_back += item.qt*[item.source]
+        print 'adding', item.source, item.qt, item.verso
+        print 'back:', len(deck_back), 'front', len(deck_front)
+    if deck_back and len(deck_front)!= len(deck_back):
+        print 'WARNING: Front/Back discrepencies: ',len(deck_front), len(deck_back)
+
     def process(*args):
-        book = PDFBook()
-        book.generate_pdf(stack, dst=dst)
+        book = PDFBook(dst)
+        res = book.generate_pdf((deck_front,deck_back), fitting_size)
+        if res:
+            from os import startfile
+            startfile(dst)
     from kivy.clock import Clock
     Clock.schedule_once(process, .3)
-
-def prepare_pdf(stack):
-    from conf import wait_cursor, log, alert
-    try:
-        from kivy.app import App
-        root = App.get_running_app().root
-        # Ensure screeen is present
-        root.on_screen_name(None, 'PrintPreview', False)
-        root.ids.printer.ids.book.export_imgs(stack)
-    except Exception, e:
-        import traceback
-        log(e, traceback.format_exc())
-        alert(e, [1, 0, 0, 1], True)

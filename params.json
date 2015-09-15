@@ -30,6 +30,17 @@
     },
     {
         "type": "title",
+        "title": "Startup"
+    },
+    {
+    "type": "bool",
+    "title": "Load Template Lib",
+    "desc": "Load Std Tmpl Library at Startup",
+    "section": "Startup",
+    "key": "LOAD_TMPL_LIB"
+    },
+    {
+        "type": "title",
         "title": "Print"
     },
     {

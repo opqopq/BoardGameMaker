@@ -223,7 +223,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
                 binstance = getattr(other, attrName)
                 if binstance != instance:
                     results.add(attrName)
-            except KeyError, E:
+            except (KeyError, AttributeError), E:
                 import traceback
                 print 'While GetDelta between %s and %s: Issue with key %s. Maybe due to styles: %s'%(self,other, attrName, self.styles)
         return results
