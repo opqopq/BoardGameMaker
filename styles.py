@@ -1,13 +1,8 @@
-"Contains all classes to managed styles, which are KV class added dynamicly to any fields"
+"Contains all classes to managed styles, which are KV class added dynamcaly to any fields"
 __author__ = 'opq'
-
-
 
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
-from kivy.properties import DictProperty, StringProperty, ListProperty, NumericProperty, BooleanProperty
-from kivy.lang import Builder
-
 from editors import *
 
 class Style(EventDispatcher):
@@ -36,9 +31,9 @@ class Shadow(Style):
     attrs = {'offset': AdvancedIntEditor, 'shadow_opacity': FloatEditor}
 
 class Rotated(Style):
-	kvname = 'rotated'
-	rotation = NumericProperty(0)
-	attrs = {'rotation': AdvancedIntEditor}
+    kvname = 'rotated'
+    rotation = NumericProperty(0)
+    attrs = {'rotation': AdvancedIntEditor}
 	
 class StyleList(EventDispatcher):
     styles = DictProperty()

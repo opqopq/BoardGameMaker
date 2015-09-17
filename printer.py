@@ -72,7 +72,7 @@ class PDFBook:
                                 if item.values:
                                     tmplWidget.apply_values(item.values)
                                 cim = tmplWidget.toImage()
-                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw')
+                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw', 0, 1)
                                 src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
                             else:
                                 src = item.source

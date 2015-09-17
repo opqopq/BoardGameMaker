@@ -1,22 +1,21 @@
-from kivy.logger import Logger
-Logger.setLevel('WARNING')
-
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.uix.image import Image, AsyncImage
+from kivy.uix.image import AsyncImage
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
-from kivy.uix.tabbedpanel import TabbedPanel
-from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, OptionProperty, DictProperty
-from kivy.uix.treeview import TreeView, TreeViewLabel
+from kivy.uix.popup import Popup
+from kivy.properties import NumericProperty, StringProperty,   DictProperty
+from kivy.uix.treeview import  TreeViewLabel
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from deck import TreeViewField, Field, TreeView
 import os, os.path
 from conf import gamepath
 
 Builder.load_file('kv/sgm.kv')
+
 class FolderTreeView(TreeView):
     folder = StringProperty()
 
@@ -44,13 +43,6 @@ class FolderTreeView(TreeView):
             n.path = join(node.path, f)
 
     load_func = callback
-
-Factory.register('FolderTreeView',FolderTreeView)
-
-class FoldedTabbedPanel(TabbedPanel):
-    folded = BooleanProperty(False)
-
-Factory.register('FoldedTabbedPanel',FoldedTabbedPanel)
 
 class DynamicQuantity(BoxLayout):
     selected = BooleanProperty()
@@ -176,6 +168,7 @@ class StackPart(ButtonBehavior, BoxLayout):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
                     options = p.ids['options']
+                    print 'editing options with ', self.values
                     options.values = self.values
                     options.tmplPath = self.template #trigger options building on popup
                     p.stackpart = self
@@ -195,11 +188,6 @@ class StackPart(ButtonBehavior, BoxLayout):
             setattr(blank, attr, getattr(self,attr))
         blank.ids['img'].texture = self.ids['img'].texture
         return blank
-
-from kivy.factory import Factory
-Factory.register('IconImage',IconImage)
-
-from deck import TemplateTree, TreeViewField, Field, TreeView
 
 class TemplateEditTree(TreeView):
     tmplPath = StringProperty()
@@ -246,11 +234,9 @@ class TemplateEditTree(TreeView):
                     w = _wid.params[_wid.default_attr](_wid)
                     if w is not None:#None when not editable
                         self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
-            self.update_tmpl(tmpl)
+            self.toggle_node(node)
+            self.select_node(node) # will issue a template update
 
-Factory.register('TemplateEditTree',TemplateEditTree)
-
-from kivy.uix.popup import Popup
 class TemplateEditPopup(Popup):
     def compute(self):
         tree = self.ids['options']
@@ -263,9 +249,9 @@ class TemplateEditPopup(Popup):
         if node:#do that only if a template has been selected. otherwise skip it
             for child_node in node.nodes:
                 for child in child_node.walk(restrict=True):
-                    key = getattr(child, 'target_key','')
-                    sv = getattr(child, 'stored_value','')
-                    if key and sv: # means somthing has changed
+                    key = getattr(child, 'target_key',None)
+                    sv = getattr(child, 'stored_value',None)
+                    if key is not None and sv is not None: # means somthing has changed
                         if child.target_attr in tmpl.vars: #just a tmpl variable
                             values[key] = sv
                         else:
@@ -414,5 +400,4 @@ class SGMApp(App):
 
     def compute_stats(self,grid): return self.root.compute_stats(grid)
 if __name__ == '__main__':
-
     SGMApp().run()

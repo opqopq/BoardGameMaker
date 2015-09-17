@@ -66,7 +66,7 @@ class RootWidget(BoxLayout):
             try:
                 self.on_screen_name(self, 'Console', False)
             except ValueError:
-                print 'Additional Screen disabled: resorting to print'
+                print 'Additional Screen disabled: resorting to print: ',
                 print text, stack
                 return
         if not stack:

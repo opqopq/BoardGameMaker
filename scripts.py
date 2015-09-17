@@ -182,10 +182,18 @@ class MirrorBackground(Script):
         fill_env()
         if self.grey_mode:
             print 'outch'
-        for p in ENV['stack'][:]:
-            pack = p.copy()
-            pack.dual = True
-            ENV['stack'].append(pack)
+        from sgm import StackPart
+        children = ENV['stack'].children[::-1]
+        for p in children:
+            print p
+            if not isinstance(p,StackPart):
+                continue
+            pack = p.Copy()
+            print 'P copy:', pack
+            pack.dual = not p.dual
+            print 'Adding to stack',
+            ENV['stack'].add_widget(pack)
+            print 'done'
 
 
 scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]

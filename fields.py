@@ -12,7 +12,6 @@ from PIL import Image as PILImage
 from kivy.uix.behaviors import FocusBehavior
 
 from utils.hoverable import HoverBehavior
-from img_xfos import img_modes
 
 #Fbo
 from kivy.graphics import Color, Rectangle, Canvas
@@ -619,6 +618,7 @@ class TransfoField(Field):
         #Standard mode: flip the
         flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
         w, h = flip.size
+        from img_xfos import img_modes
         imgdata = ImageData(w, h, img_modes[flip.mode], data=flip.tobytes())
         ktext = Texture.create_from_data(imgdata)
         self.texture = ktext

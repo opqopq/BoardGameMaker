@@ -2,9 +2,20 @@
 #:import CARD conf.card_format
 #:import GAMEPATH conf.gamepath
 #:import split os.path.split
+#:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
 
-<Icon@ToggleButtonBehavior+Image>:
-
+<Icon@ToggleButtonBehavior+BoxLayout>:
+    source: ""
+    text: ""
+    orientation: 'vertical'
+    size_hint_y: None
+    height: 80
+    Image:
+        source: root.source
+        size_hint_y: .9
+    Label:
+        text: root.text
+        size_hint_y: .1
 
 <FoldedTabbedPanelItem@TabbedPanelItem>:
     on_touch_down: if args[1].is_double_tap: self.panel.folded = not(self.panel.folded)
@@ -55,6 +66,8 @@
     size_hint_y: None
     qt: 1
     verso: 'normal'
+    dual: self.verso!='normal'
+    on_dual: self.verso = 'normal' if not self.dual else 'down'
     canvas.after:
         Color:
             rgba: (0.3,0.3,1,.8) if self.selected else (0,0,0,0)
@@ -151,7 +164,7 @@
     hide_root: True
     on_selected_node: if hasattr(self.selected_node,'template'): root.update_tmpl(self.selected_node.template)
 
-<StencilBox@BoxLayout+StencilView>:
+<StencilBox@BoxLayout>:
 
 <TemplateEditPopup>:
     name: ""
@@ -177,8 +190,9 @@
                 Scatter:
                     id: preview
                     do_rotation: False
-                    x: root.x
-                    center_y: root.center_y
+                    x: root.x + 100
+                    center_y: root.center_y +100
+                    #center_x: root.center_x
             BoxLayout:
                 size_hint_y: None
                 orientation: "horizontal"
@@ -193,8 +207,7 @@
 <BGDeckMaker>:
     #The Left tab with files/templates & values
     file_chooser: file_chooser
-    FoldedTabbedPanel:
-        background_image: 'img/card_template.png'
+    TabbedPanel:
         folded: False
         do_default_tab: False
         tab_pos: 'top_left'
@@ -217,63 +230,77 @@
             GridLayout:
                 id: tab2_content
                 cols: 1
-                GridLayout:
-                    cols: 2
-                    row_force_default: True
-                    row_default_height: 30
-                    size_hint_y: None
-                    height: 180
-                    Label:
-                        text: 'Current'
-                    Label:
-                        text: "Fit Format"
-                    Label:
-                        text: "Card Width:"
-                    TextInput:
-                        id: cw
-                        text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
-                        on_text: CARD.updateW(self.text, unit.text)
-                    Label:
-                        text: "Card Height:"
-                    TextInput:
-                        id: ch
-                        text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
-                        on_text: CARD.updateH(self.text, unit.text)
-                    Label:
-                        text: "Unit:"
-                    Spinner:
-                        id: unit
-                        values: ['cm','px']
-                        text: 'cm'
-                    Label:
-                        text: "Keep Ratio"
-                    CheckBox:
-                        ratio: 1
-                        active: True
-                        id: keep_ratio
-                        on_active: CARD.keep_ratio = self.active
-                Icon:
-                    #text: 'Empty Stack'
-                    source: 'img/new.png'
-                    on_press: root.empty_stack()
-                    size_hint_y: None
-                    height: 80
-                Icon:
-                    #text: 'Print'
-                    source: 'img/print.png'
-                    on_press: root.prepare_print()
-                    size_hint_y: None
-                    height: 80
-                Button:
-                    text: 'Import Stack'
-                    on_press: root.load_file()
-                    size_hint_y: None
-                    height: 30
-                Button:
-                    text: 'Export Stack'
-                    on_press: root.export_file()
-                    size_hint_y: None
-                    height: 30
+                Accordion:
+                    orientation: 'vertical'
+                    min_size: 10
+                    AccordionItem:
+                        collapse: False
+                        title: "Fit Format"
+                        GridLayout:
+                            cols: 2
+                            row_force_default: True
+                            row_default_height: 30
+                            Label:
+                                text: 'Current'
+                            Label:
+                                text: "Fit Format"
+                            Label:
+                                text: "Card Width:"
+                            TextInput:
+                                id: cw
+                                text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                                on_text: CARD.updateW(self.text, unit.text)
+                            Label:
+                                text: "Card Height:"
+                            TextInput:
+                                id: ch
+                                text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                                on_text: CARD.updateH(self.text, unit.text)
+                            Label:
+                                text: "Unit:"
+                            Spinner:
+                                id: unit
+                                values: ['cm','px']
+                                text: 'cm'
+                            Label:
+                                text: "Keep Ratio"
+                            CheckBox:
+                                ratio: 1
+                                active: True
+                                id: keep_ratio
+                                on_active: CARD.keep_ratio = self.active
+                    AccordionItem:
+                        title: "File"
+                        GridLayout:
+                            cols: 1
+                            spacing: 10
+                            Icon:
+                                text: 'New / Empty Stack'
+                                source: 'img/new.png'
+                                on_press: root.empty_stack()
+                            Icon:
+                                text: 'Print PDF'
+                                source: 'img/print.png'
+                                on_press: root.prepare_print()
+                            Icon:
+                                text: 'Import Stack'
+                                on_press: root.load_file()
+                                source: 'img/import.png'
+                            Icon:
+                                text: 'Export Stack'
+                                source: 'img/export.png'
+                                on_press: root.export_file()
+                    AccordionItem:
+                        title: "Scripts"
+                        GridLayout:
+                            cols: 1
+                            #WatchedFolderTree:
+                            #    root_options: {'text': 'Script Folders'}
+                            #Splitter:
+                            #    sizable_from: 'top'
+                            ScriptTree:
+                                root_options: {'text': 'Script Library'}
+
         #FoldedTabbedPanelItem:
         TabbedPanelHeader:
             background_normal: 'img/folder_off.png'
@@ -283,17 +310,18 @@
             #text: "Files"
         TabbedPanelHeader:
             #text: 'Format'
-            background_normal: 'img/format_off.png'
-            background_down: 'img/format.png'
+            background_normal: 'img/misc_off.png'
+            background_down: 'img/misc.png'
             content: tab2_content.__self__
     BoxLayout:
         orientation: 'vertical'
         Splitter:
+            size_hint_y: None
+            height: 250
             #max_size: 400
+            height: 100
             sizable_from: 'bottom'
             ScrollView:
-                #size_hint_y: None
-                #height: 440
                 id: pg_scroll
                 canvas.before:
                     Color:
@@ -317,6 +345,8 @@
                 #Progressbar when loading folder
                 ProgressBar:
                     id: load_progress
+                    size_hint_y: None
+                    height: 30
         Label:
             id: stats
             size_hint_y: None

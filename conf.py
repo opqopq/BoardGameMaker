@@ -124,22 +124,16 @@ def fill_env(*args):
     ENV['app'] = app = App.get_running_app()
     if not app:
         return
-    #root = app.root
-    #ENV['stack'] = root.ids.deck.stack
-    #if 'layout' in root.ids:
-    #    ENV['layout'] = root.ids.layout.ids.page
-    #ENV['tmpl_tree'] = root.ids.deck.ids.tmpl_tree
-    #ENV['file_selector'] = root.ids.deck.ids.file_chooser
-    #ENV['Dual'] = root.ids.deck.ids.dual.active
-    #ENV['Qt'] = int(root.ids.deck.ids.qt.text)
-    #ENV['alert'] = alert
+    root = app.root
+    for _id in root.ids:
+        ENV[_id] = root.ids[_id]
     ENV['log'] = log
     from template import templateList
     ENV['tmpls'] = templateList
     ENV['DEFAULT_TEMPLATE'] = templateList['Default']
     from printer import prepare_pdf
     ENV['prepare_pdf'] = prepare_pdf
-
+    ENV['stack'] = root.ids['deck'].ids['stack']
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)
