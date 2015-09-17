@@ -135,6 +135,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     values = DictProperty()
 
     def realise(self,*args):
+        #Force the creation of an image from self.template, thourhg real display
         from kivy.clock import Clock
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
@@ -187,6 +188,14 @@ class StackPart(ButtonBehavior, BoxLayout):
             self.remove_widget(self.children[0])
             if self.template:
                 self.remove_widget(self.children[0])
+
+    def Copy(self):
+        blank = self.__class__()
+        for attr in ['template','name','values', "qt","verso"]:
+            setattr(blank, attr, getattr(self,attr))
+        blank.ids['img'].texture = self.ids['img'].texture
+        return blank
+
 from kivy.factory import Factory
 Factory.register('IconImage',IconImage)
 
@@ -203,7 +212,6 @@ class TemplateEditTree(TreeView):
         self.current_selection = (tmpl, self.selected_node)
 
     def on_tmplPath(self, instance, value):
-        print 'playing with ', self.tmplPath
         from template import BGTemplate
         #tmplPath is in the form [NAME][@PATH]. If path provided, load all tmpl from there. Without it, take name from library
         name, path = self.tmplPath.split('@')

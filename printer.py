@@ -67,13 +67,10 @@ class PDFBook:
                                         tmplWidget = tmplWidget[-1]
                                     else:
                                         raise NameError('No such template: '+ item.template)
-                                    if item.values:
-                                        print 'yes', item.values
-                                        tmplWidget.apply_values(item.values)
-                                    else:
-                                        print 'no'
                                     print 'this will not work: we need to force the creation of image somewhere to force creation of pixels'
                                     print 'here to be added: adding on realizer, exporting & then removing. more tricky'
+                                if item.values:
+                                    tmplWidget.apply_values(item.values)
                                 cim = tmplWidget.toImage()
                                 pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw')
                                 src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))

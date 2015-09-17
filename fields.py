@@ -82,7 +82,6 @@ class BaseField(FloatLayout):
     def on_alpha(self, instance, value):
         self.fbo_color.rgba = (1, 1, 1, value)
 
-from kivy.uix.widget import Widget
 
 class Field(HoverBehavior, FocusBehavior, FloatLayout):
     """Element class represent any component of a template (fields, font, transformation....)"""

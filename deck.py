@@ -11,10 +11,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty, ListProperty, DictProperty, StringProperty, BooleanProperty
 from kivy.uix.treeview import TreeView, TreeViewLabel, TreeViewNode
 from kivy.uix.boxlayout import BoxLayout
-from kivy.factory import Factory
 from fields import Field
-from kivy.uix.tabbedpanel import TabbedPanel
-from models import ImgPack
 
 Builder.load_file('kv/deck.kv')
 

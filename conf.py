@@ -1,7 +1,13 @@
-__author__ = 'opq'
 from os.path import isdir
 from kivy.config import ConfigParser
 from sys import platform
+from kivy.logger import Logger
+from kivy.resources import resource_add_path
+from kivy.metrics import cm
+from kivy.event import EventDispatcher
+from kivy.lang import Observable
+from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, BooleanProperty, DictProperty
+from kivy.app import App
 
 if platform.startswith('win'):
     fname = 'bgm.ini'
@@ -15,24 +21,16 @@ gamepath = CP.getdefault('Path', 'gamepath', r'C:\Users\mrs.opoyen\SkyDrive\Game
 if not isdir(gamepath):
     gamepath = "../../../../OneDrive/Games"
 if not isdir(gamepath):
-    from kivy.logger import Logger
     Logger.warn('No Existing Game Path found')
 else:
-    from kivy.resources import resource_add_path
     resource_add_path(gamepath)
 
 
 USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 
-from kivy.logger import Logger
 if USE_PROXY:
     Logger.info('Using Proxy')
 
-
-from kivy.metrics import cm
-from kivy.event import EventDispatcher
-from kivy.lang import Observable
-from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, BooleanProperty
 
 class CardFormat(EventDispatcher):
     width = NumericProperty(cm(CP.getfloat('Card', 'width')))
@@ -42,15 +40,15 @@ class CardFormat(EventDispatcher):
     ratio = NumericProperty(6.5/8.8)
 
     def updateW(self, W, unit):
-        if unit=='px':
+        if unit == 'px':
             self.width = float(W)
         else:
             self.width = float(W) * cm(1)
         if self.keep_ratio:
             self.height = self.width/self.ratio
 
-    def updateH(self,H, unit):
-        if unit=='px':
+    def updateH(self, H, unit):
+        if unit == 'px':
             self.height = float(H)
         else:
             self.height = float(H) * cm(1)
@@ -63,29 +61,27 @@ class CardFormat(EventDispatcher):
 
 card_format = CardFormat()
 
+
 class PageFormat(EventDispatcher):
-    width = NumericProperty(cm(CP.getfloat('Page','width')))
-    height = NumericProperty(cm(CP.getfloat('Page','height')))
-    left = NumericProperty(cm(CP.getfloat('Page','left')))
-    right = NumericProperty(cm(CP.getfloat('Page','right')))
-    bottom = NumericProperty(cm(CP.getfloat('Page','bottom')))
-    top = NumericProperty(cm(CP.getfloat('Page','top')))
+    width = NumericProperty(cm(CP.getfloat('Page', 'width')))
+    height = NumericProperty(cm(CP.getfloat('Page', 'height')))
+    left = NumericProperty(cm(CP.getfloat('Page', 'left')))
+    right = NumericProperty(cm(CP.getfloat('Page', 'right')))
+    bottom = NumericProperty(cm(CP.getfloat('Page', 'bottom')))
+    top = NumericProperty(cm(CP.getfloat('Page', 'top')))
 
 page_format = PageFormat()
 
-#This cache will get a copy of last opened dir for each file browser to simplify history
+# This cache will get a copy of last opened dir for each file browser to simplify history
 dir_cache = dict()
 
 
-from kivy.properties import DictProperty
 class BGMCache(Observable):
-    folder= StringProperty('.')
-    cache= DictProperty()
+    folder = StringProperty('.')
+    cache = DictProperty()
+
 bgmcache = BGMCache()
 
-
-#Some utility func
-from kivy.app import App
 
 def log(text, stack=None):
     app = App.get_running_app()
@@ -98,17 +94,19 @@ def log(text, stack=None):
     else:
         print text, stack
 
+
 def wait_cursor(value=None):
     if value is not None:
         App.get_running_app().root.wait_mode = bool(value)
     else:
-        App.get_running_app().root.wait_mode = not(App.get_running_app().root.wait_mode)
+        App.get_running_app().root.wait_mode = not App.get_running_app().root.wait_mode
+
 
 def alert(text, status_color=(0,0,0,1), keep = False):
     app = App.get_running_app()
     if app:
         try:
-            app.alert(text,status_color, keep)
+            app.alert(text, status_color, keep)
         except AttributeError:
             print 'ALERT did not work. Reverting to print:'
             print '\t', text, status_color, keep
@@ -121,11 +119,12 @@ def start_file(path):
         os.system('open "%s"'%path)
 
 ENV = dict()
+
 def fill_env(*args):
     ENV['app'] = app = App.get_running_app()
     if not app:
         return
-    root = app.root
+    #root = app.root
     #ENV['stack'] = root.ids.deck.stack
     #if 'layout' in root.ids:
     #    ENV['layout'] = root.ids.layout.ids.page
@@ -140,8 +139,7 @@ def fill_env(*args):
     ENV['DEFAULT_TEMPLATE'] = templateList['Default']
     from printer import prepare_pdf
     ENV['prepare_pdf'] = prepare_pdf
-    from models import ImgPack
-    ENV['ImgPack'] = ImgPack
+
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)
