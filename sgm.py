@@ -3,20 +3,16 @@ Logger.setLevel('WARNING')
 
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image, AsyncImage
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
 from kivy.uix.tabbedpanel import TabbedPanel
-from kivy.event import EventDispatcher
 from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, OptionProperty, DictProperty
-from kivy.metrics import cm
 from kivy.uix.treeview import TreeView, TreeViewLabel
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from os.path import isdir
 import os, os.path
 from conf import gamepath
 
@@ -153,24 +149,6 @@ class StackPart(ButtonBehavior, BoxLayout):
             self.ids['img'].texture = cim.texture
             App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     def on_press(self):
         if self.last_touch.is_double_tap :
@@ -424,7 +402,6 @@ class SGMApp(App):
         root = BGDeckMaker()
         root.ids['file_chooser'].load_folder(gamepath)
         r = root.ids['file_chooser']
-        print r, r.load_folder
         return root
 
     def compute_stats(self,grid): return self.root.compute_stats(grid)

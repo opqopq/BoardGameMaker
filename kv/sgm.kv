@@ -83,7 +83,7 @@
     RVImage:
         id: dual
         state: root.verso
-        on_state: root.verso = self.state
+        on_state: root.verso = self.state ;  app.compute_stats(None)
 
 <ChoiceBox@BoxLayout>
     size_hint_y:  None

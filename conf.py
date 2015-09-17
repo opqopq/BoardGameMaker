@@ -14,14 +14,13 @@ CP.read(fname)
 gamepath = CP.getdefault('Path', 'gamepath', r'C:\Users\mrs.opoyen\SkyDrive\Games')
 if not isdir(gamepath):
     gamepath = "../../../../OneDrive/Games"
-
-print 'GAMEDIR', gamepath
 if not isdir(gamepath):
     from kivy.logger import Logger
     Logger.warn('No Existing Game Path found')
 else:
     from kivy.resources import resource_add_path
     resource_add_path(gamepath)
+
 
 USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 

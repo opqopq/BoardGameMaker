@@ -1,18 +1,14 @@
 """This module handle generation of formatted page, through several renderer: PIL, WX & Reportlab/PDF"""
 #For Py2exe towork
 
-import os,os.path
-from kivy.uix.widget import Widget
-from kivy.properties import ObjectProperty, StringProperty, NumericProperty, BooleanProperty, ListProperty, DictProperty
-from kivy.uix.carousel import Carousel
 from kivy.metrics import cm
-from kivy.lang import Builder
 from kivy.vector import Vector
-from kivy.uix.floatlayout import FloatLayout
 from kivy.factory import Factory
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import cm as r_cm
+from reportlab.lib.utils import ImageReader
+from PIL.Image import frombuffer, FLIP_TOP_BOTTOM
 
 from conf import card_format
 #Page Format - to be stuck into a .ini file
@@ -61,7 +57,6 @@ class PDFBook:
                             #here we either get the source or convert to image
                             if item.template:
                                 if item.tmplWidget:#it has been modified
-                                    print 'using modified widget'
                                     tmplWidget = item.tmplWidget
                                 else:
                                     print 'using basing template. with values ? ',
@@ -77,8 +72,11 @@ class PDFBook:
                                         tmplWidget.apply_values(item.values)
                                     else:
                                         print 'no'
-                                tmplWidget.export_to_png('build/%s.png'%id(tmplWidget))
-                                src='build/%s.png'%id(tmplWidget)
+                                    print 'this will not work: we need to force the creation of image somewhere to force creation of pixels'
+                                    print 'here to be added: adding on realizer, exporting & then removing. more tricky'
+                                cim = tmplWidget.toImage()
+                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw')
+                                src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
                             else:
                                 src = item.source
                         except IndexError:
@@ -93,7 +91,32 @@ class PDFBook:
                 for row in range(NUM_ROW):
                     for col in range(NUM_COL):
                         try:
-                            src = bps.pop()
+                            item = bps.pop()
+                            #here we either get the source or convert to image
+                            if item.template:
+                                if item.tmplWidget:#it has been modified
+                                    tmplWidget = item.tmplWidget
+                                else:
+                                    print 'using basing template. with values ? ',
+                                    from template import BGTemplate
+                                    tmplWidget= BGTemplate.FromFile(item.template)
+                                    if tmplWidget:
+                                        #only taking the last one
+                                        tmplWidget = tmplWidget[-1]
+                                    else:
+                                        raise NameError('No such template: '+ item.template)
+                                    if item.values:
+                                        print 'yes', item.values
+                                        tmplWidget.apply_values(item.values)
+                                    else:
+                                        print 'no'
+                                    print 'this will not work: we need to force the creation of image somewhere to force creation of pixels'
+                                    print 'here to be added: adding on realizer, exporting & then removing. more tricky'
+                                cim = tmplWidget.toImage()
+                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw', 0,1)
+                                src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
+                            else:
+                                src = item.source
                         except IndexError:
                             break
                         X,Y = width -(1+col)*x-right, height-(1+row)*y - top
