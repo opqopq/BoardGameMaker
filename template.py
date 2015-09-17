@@ -23,6 +23,11 @@ class BGTemplate(Field, RelativeLayout):
 
     @classmethod
     def FromFile(cls, filename):
+        if "@" in filename: #Only using subone
+            name, filename = filename.split('@')
+        else:
+            name = ""
+        #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
         # Remove any former trace of the file
         Builder.unload_file(filename)
@@ -37,6 +42,8 @@ class BGTemplate(Field, RelativeLayout):
             print 'Error while trying to import Template ',filename
             log(E, traceback.print_exc())
             res = list()
+        if name:
+            return [r for r in res if res.name == name ]
         return res
 
     @classmethod
@@ -122,9 +129,13 @@ class BGTemplate(Field, RelativeLayout):
                 self.attrs = field.attrs.copy()
         return FromFieldTemplate()
 
-    def export_to_image(self, filename, bg_col = (1,1,1,0)):
+    def export_to_image(self, filename=None, bg_col = (1,1,1,0)):
         from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
 
+
+        if filename is None:
+            #resorting to default build on id
+            filenmame = 'build/%s.png'%id(self)
         if self.parent is not None:
             canvas_parent_index = self.parent.canvas.indexof(self.canvas)
             self.parent.canvas.remove(self.canvas)
@@ -146,6 +157,36 @@ class BGTemplate(Field, RelativeLayout):
             self.parent.canvas.insert(canvas_parent_index, self.canvas)
 
         return True
+
+    def toImage(self):
+        #create image widget with texture == to a snapshot of me
+        from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
+        from kivy.core.image import Image as CoreImage
+
+        if self.parent is not None:
+            canvas_parent_index = self.parent.canvas.indexof(self.canvas)
+            self.parent.canvas.remove(self.canvas)
+
+        fbo = Fbo(size=self.size, with_stencilbuffer=True)
+
+        with fbo:
+            ClearColor(0, 0, 0, 1)
+            ClearBuffers()
+            Scale(1, -1, 1)
+            Translate(-self.x, -self.y - self.height, 0)
+
+        fbo.add(self.canvas)
+        fbo.draw()
+
+        cim = CoreImage(fbo.texture, filename = '%s.png'%id(self))
+
+        fbo.remove(self.canvas)
+
+        if self.parent is not None:
+            self.parent.canvas.insert(canvas_parent_index, self.canvas)
+
+        return cim
+
 
     def blank(self):
         t = self.__class__()

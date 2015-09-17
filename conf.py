@@ -1,9 +1,9 @@
 __author__ = 'opq'
 from os.path import isdir
 from kivy.config import ConfigParser
-from kivy.config import platform
+from sys import platform
 
-if platform() == 'win': #work
+if platform.startswith('win'):
     fname = 'bgm.ini'
 else:
     fname = 'bgm_home.ini'
@@ -14,6 +14,8 @@ CP.read(fname)
 gamepath = CP.getdefault('Path', 'gamepath', r'C:\Users\mrs.opoyen\SkyDrive\Games')
 if not isdir(gamepath):
     gamepath = "../../../../OneDrive/Games"
+
+print 'GAMEDIR', gamepath
 if not isdir(gamepath):
     from kivy.logger import Logger
     Logger.warn('No Existing Game Path found')
@@ -31,12 +33,34 @@ if USE_PROXY:
 from kivy.metrics import cm
 from kivy.event import EventDispatcher
 from kivy.lang import Observable
-from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty
+from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, BooleanProperty
 
 class CardFormat(EventDispatcher):
     width = NumericProperty(cm(CP.getfloat('Card', 'width')))
     height = NumericProperty(cm(CP.getfloat('Card', 'height')))
     size = ReferenceListProperty(width, height)
+    keep_ratio = BooleanProperty(True)
+    ratio = NumericProperty(6.5/8.8)
+
+    def updateW(self, W, unit):
+        if unit=='px':
+            self.width = float(W)
+        else:
+            self.width = float(W) * cm(1)
+        if self.keep_ratio:
+            self.height = self.width/self.ratio
+
+    def updateH(self,H, unit):
+        if unit=='px':
+            self.height = float(H)
+        else:
+            self.height = float(H) * cm(1)
+        if self.keep_ratio:
+            self.width = self.height * self.ratio
+
+    def on_keep_ratio(self, instance, keep_ratio):
+        if keep_ratio:
+            self.ratio = self.width/self.height
 
 card_format = CardFormat()
 
@@ -156,4 +180,3 @@ def get_last_dir(src=None):
     if src is None or not(src in DirCache):
         src = 'last'
     return DirCache[src]
-

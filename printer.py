@@ -36,7 +36,6 @@ class PDFBook:
 
     def generate_pdf(self, stack, fitting_size):
         print 'in here, i souhld print to pdf some info, like deck name, date and num page'
-        print 'front page are all printer bbefore bakcpage. to be sorted out'
         fps, bps = stack
         #First determinez the number of item per page, acconirding to the dimensions
         x,y= Vector(fitting_size)/cm(1)
@@ -46,19 +45,42 @@ class PDFBook:
         if not(fps) and not(bps):
             print 'Warning: nothing to print'
             return
-        print 'fitting size', fitting_size
-        print "x,y", x,y
-
-        print 'Num row', NUM_ROW
-        print 'Num Col', NUM_COL
-        print PICT_BY_SHEET , 'pictures by sheet'
+        if 0:
+            print 'fitting size', fitting_size
+            print "x,y", x,y
+            print 'Num row', NUM_ROW
+            print 'Num Col', NUM_COL
+            print PICT_BY_SHEET , 'pictures by sheet'
         for i in range((len(fps)/PICT_BY_SHEET)+1):
             #Add PAge if fps left
             if fps:
                 for row in range(NUM_ROW):
                     for col in range(NUM_COL):
                         try:
-                            src = fps.pop()
+                            item = fps.pop()
+                            #here we either get the source or convert to image
+                            if item.template:
+                                if item.tmplWidget:#it has been modified
+                                    print 'using modified widget'
+                                    tmplWidget = item.tmplWidget
+                                else:
+                                    print 'using basing template. with values ? ',
+                                    from template import BGTemplate
+                                    tmplWidget= BGTemplate.FromFile(item.template)
+                                    if tmplWidget:
+                                        #only taking the last one
+                                        tmplWidget = tmplWidget[-1]
+                                    else:
+                                        raise NameError('No such template: '+ item.template)
+                                    if item.values:
+                                        print 'yes', item.values
+                                        tmplWidget.apply_values(item.values)
+                                    else:
+                                        print 'no'
+                                tmplWidget.export_to_png('build/%s.png'%id(tmplWidget))
+                                src='build/%s.png'%id(tmplWidget)
+                            else:
+                                src = item.source
                         except IndexError:
                             break
                         X,Y = col * x+ left, height-(1+row)*y - top
@@ -105,15 +127,12 @@ def prepare_pdf(stack, fitting_size, dst='test.pdf'):
     deck_front = list()
     deck_back = list()
     for item in stack.children:
-        print 'settping on', item
-        #Create tuple with qt * (source,dual)
         if not isinstance(item, Factory.get('StackPart')): continue
+        #Create tuple with qt * (item) in front deck or back deck
         if item.verso=='normal':#front
-            deck_front += item.qt*[item.source]
+            deck_front += item.qt*[item]
         else:
-            deck_back += item.qt*[item.source]
-        print 'adding', item.source, item.qt, item.verso
-        print 'back:', len(deck_back), 'front', len(deck_front)
+            deck_back += item.qt*[item]
     if deck_back and len(deck_front)!= len(deck_back):
         print 'WARNING: Front/Back discrepencies: ',len(deck_front), len(deck_back)
 

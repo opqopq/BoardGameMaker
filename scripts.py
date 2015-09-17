@@ -65,8 +65,8 @@ class REPL(CodeInput):
         "Populate self.locals with important variable"
         env = self.env.__self__
         stack = env.ids.deck.stack
-        if 'layout' in env.ids:
-            layout = env.ids.layout.ids.page
+        #if 'layout' in env.ids:
+        #    layout = env.ids.layout.ids.page
         tmpl_tree = env.ids.deck.ids.tmpl_tree
         file_selector = env.ids.deck.ids.file_chooser
         from template import templateList as tmpls

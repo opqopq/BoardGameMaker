@@ -1,6 +1,3 @@
-import kivy
-kivy.require('1.0.8')
-
 from kivy.logger import Logger
 Logger.setLevel('WARNING')
 
@@ -13,13 +10,15 @@ from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.event import EventDispatcher
-from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, OptionProperty
+from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, OptionProperty, DictProperty
 from kivy.metrics import cm
 from kivy.uix.treeview import TreeView, TreeViewLabel
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.uix.boxlayout import BoxLayout
 from os.path import isdir
-
+import os, os.path
+from conf import gamepath
 
 Builder.load_file('kv/sgm.kv')
 class FolderTreeView(TreeView):
@@ -52,51 +51,10 @@ class FolderTreeView(TreeView):
 
 Factory.register('FolderTreeView',FolderTreeView)
 
-
-class CardFormat(EventDispatcher):
-    #Card format in PIXELS !!!
-    width = NumericProperty(cm(6.5))
-    height = NumericProperty(cm(8.8))
-    size = ReferenceListProperty(width, height)
-
-    keep_ratio = BooleanProperty(True)
-    ratio = NumericProperty(6.5/8.8)
-
-
-    def updateW(self, W, unit):
-        if unit=='px':
-            self.width = float(W)
-        else:
-            self.width = float(W) * cm(1)
-        if self.keep_ratio:
-            self.height = self.width/self.ratio
-
-    def updateH(self,H, unit):
-        if unit=='px':
-            self.height = float(H)
-        else:
-            self.height = float(H) * cm(1)
-        if self.keep_ratio:
-            self.width = self.height * self.ratio
-
-    def on_keep_ratio(self, instance, keep_ratio):
-        if keep_ratio:
-            self.ratio = self.width/self.height
-
-
-card_format = CardFormat()
-
-gamepath = r'C:\Users\mrs.opoyen\OneDrive\Games'
-
-if not isdir(gamepath):
-    gamepath = "../../../../OneDrive/Games"
-
 class FoldedTabbedPanel(TabbedPanel):
     folded = BooleanProperty(False)
 
 Factory.register('FoldedTabbedPanel',FoldedTabbedPanel)
-
-import os, os.path
 
 class DynamicQuantity(BoxLayout):
     selected = BooleanProperty()
@@ -126,29 +84,35 @@ class IconImage(ButtonBehavior, AsyncImage):
 
     def on_press(self):
         if self.last_touch.is_double_tap or self.selected:
-            stack = self.get_root_window().ids['stack']
+            stack = App.get_running_app().root.ids['deck'].ids['stack']
             ##########################################################
             qt = int(self.inner_box.ids['qt'].value)
             verso = self.inner_box.ids['dual'].state
             if self.folder:
                 #It is a folder, add all the imge from folder
                 for f in os.listdir(self.folder):
-                    if f[-4:] in ('.jpg','.jpeg', '.png','.gif','*.kv'):
+                    if f.endswith(('.jpg','.jpeg', '.png','.gif','.kv')):
                         box = StackPart()
+                        box.name = f
                         box.source = os.path.join(self.folder,f)
                         box.qt =qt
                         box.verso = verso
                         if f.endswith('.kv'):
-                            box.template = f
+                            box.template = "@%s"%os.path.join(self.folder,f)
+                            #box.source = 'img/card_template.png'
+                            box.realise()
                         stack.add_widget(box)
             else:
                 box = StackPart()
+                box.name = self.name
                 box.source = self.source
                 box.qt = qt
                 box.verso = verso
                 stack.add_widget(box)
                 if self.name.endswith('.kv'):
-                    box.template=self.name
+                    box.template="@%s"%self.name
+                    #box.source = 'img/card_template.png'
+                    box.realise()
             self.selected= False
 
         else:
@@ -160,7 +124,7 @@ class IconImage(ButtonBehavior, AsyncImage):
     def on_selected(self, target,value):
         if self.selected:
             #Add QT / Dual
-            self.inner_box = Factory.get('ChoiceBox')(x=self.x, y=self.y+20)
+            self.inner_box = Factory.get('ChoiceBox')()
             self.add_widget(self.inner_box)
         else:
             #Remove QT/Dual
@@ -169,12 +133,48 @@ class IconImage(ButtonBehavior, AsyncImage):
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
     row = NumericProperty(0)
+    template = StringProperty()
+    tmplWidget = ObjectProperty()
+    name = StringProperty()
+    values = DictProperty()
+
+    def realise(self,*args):
+        from kivy.clock import Clock
+        #Force the creaiotn of the tmpl miniture for display
+        from template import BGTemplate
+        tmpl = BGTemplate.FromFile(self.template)[-1]
+        App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
+
+        def inner(*args):
+            #Here is hould loop on the template to apply them on values
+            self.tmplWidget = tmpl
+            cim =  tmpl.toImage()
+            cim.texture.flip_vertical()
+            self.ids['img'].texture = cim.texture
+            App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
+        Clock.schedule_once(inner, -1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def on_press(self):
         if self.last_touch.is_double_tap :
             self.selected= False
-            print 'Edition Mode to be launched ? or a thingy to the left ? '
         else:
             if not self.selected:
                 if self.parent.last_selected:
@@ -191,16 +191,15 @@ class StackPart(ButtonBehavior, BoxLayout):
             from kivy.animation import Animation
             anim = Animation(width=100, duration=.1)
             anim.start(b)
-            print 'template selected is ', self.template
             if self.template:#it is a template: add edit button
-                #be = Factory.get('HiddenRemoveButton')(source='img/edit_stack.png')
                 be = Factory.get('HiddenRemoveButton')(source='img/writing_blue.png')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
                     options = p.ids['options']
-                    from kivy.uix.button import Button
-                    options.add_widget(Button(text='toto'))
+                    options.values = self.values
+                    options.tmplPath = self.template #trigger options building on popup
+                    p.stackpart = self
                     p.open()
                 be.bind(on_press = inner)
                 self.add_widget(be)
@@ -213,7 +212,92 @@ class StackPart(ButtonBehavior, BoxLayout):
 from kivy.factory import Factory
 Factory.register('IconImage',IconImage)
 
-from kivy.uix.boxlayout import BoxLayout
+from deck import TemplateTree, TreeViewField, Field, TreeView
+
+class TemplateEditTree(TreeView):
+    tmplPath = StringProperty()
+    current_selection = ObjectProperty()
+    values = DictProperty() #values from template, if any
+
+    def update_tmpl(self,tmpl):
+        self.target.clear_widgets()
+        self.target.add_widget(tmpl)
+        self.current_selection = (tmpl, self.selected_node)
+
+    def on_tmplPath(self, instance, value):
+        print 'playing with ', self.tmplPath
+        from template import BGTemplate
+        #tmplPath is in the form [NAME][@PATH]. If path provided, load all tmpl from there. Without it, take name from library
+        name, path = self.tmplPath.split('@')
+        if not(name) and not(path):
+            print 'Warning: tmpl Path is empty. stopping template edition'
+        if not path:
+            from template import templateList
+            tmpls = [templateList[name]]
+        else:
+            tmpls = BGTemplate.FromFile(path)
+        for tmpl in tmpls:
+            #Ensure we have the proper values validated
+            tmpl.apply_values(self.values)
+            #Now add on load
+            node = self.add_node(TreeViewLabel(text=tmpl.name, color_selected=(.6,.6,.6,.8)))
+            node.is_leaf = False #add the thingy
+            #point to the template
+            node.template = tmpl
+            #Deal with Template Properties:
+            for pname, editor in tmpl.vars.items():
+                self.add_node(TreeViewField(name=pname, editor=editor(tmpl)), node)
+            #Deal with KV style elemebts
+            for fname in tmpl.ids.keys():
+                if not isinstance(tmpl.ids[fname], Field):
+                    continue
+                if not tmpl.ids[fname].editable:
+                    continue
+                _wid = tmpl.ids[fname]
+                if not _wid.editable:
+                    continue
+                if _wid.default_attr:
+                    w = _wid.params[_wid.default_attr](_wid)
+                    if w is not None:#None when not editable
+                        self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
+            self.update_tmpl(tmpl)
+
+Factory.register('TemplateEditTree',TemplateEditTree)
+
+from kivy.uix.popup import Popup
+class TemplateEditPopup(Popup):
+    def compute(self):
+        tree = self.ids['options']
+        if not tree.current_selection:
+            print 'Warning: no template choosen. do nothing'
+            return
+        tmpl, node = tree.current_selection
+        #Here is hould loop on the template to apply them on values
+        values = dict()
+        if node:#do that only if a template has been selected. otherwise skip it
+            for child_node in node.nodes:
+                for child in child_node.walk(restrict=True):
+                    key = getattr(child, 'target_key','')
+                    sv = getattr(child, 'stored_value','')
+                    if key and sv: # means somthing has changed
+                        if child.target_attr in tmpl.vars: #just a tmpl variable
+                            values[key] = sv
+                        else:
+                             values["%s.%s"%(child.target_attr, key)] = sv
+        self.stackpart.values = values
+        self.stackpart.tmplWidget = tmpl
+        oldname = self.stackpart.template
+        if '@' in oldname:
+            oname,opath = oldname.split('@')
+        else:
+            oname,opath = oldname,""
+        if opath:
+            self.stackpart.template = '%s@%s'%(tmpl.name, opath)
+        else:
+            self.stackpart.template = tmpl.name
+        cim =  tmpl.toImage()
+        cim.texture.flip_vertical()
+        self.stackpart.ids['img'].texture = cim.texture
 
 class BGDeckMaker(BoxLayout):
     cancel_load = BooleanProperty()
@@ -223,6 +307,7 @@ class BGDeckMaker(BoxLayout):
 
     def prepare_print(self):
         from printer import prepare_pdf
+        from conf import card_format
         prepare_pdf(self.ids['stack'], (card_format.width, card_format.height))
 
     def load_folder(self,folder):
@@ -244,6 +329,7 @@ class BGDeckMaker(BoxLayout):
             #FOLD = True
             if _f.endswith('.kv'): #it is a template:
                 source = 'img/card_template.png'
+                _f = os.path.join(folder, _f)
             else:
                 source  = os.path.join(folder,_f)
             img = IconImage(source=source, name=_f)
@@ -251,9 +337,8 @@ class BGDeckMaker(BoxLayout):
             _progress.value += 1
         for index,f in enumerate(os.listdir(folder)):
             if f.endswith(('.jpg','.jpeg', '.png','.gif', '.kv')):
-                Clock.schedule_once(partial(inner, f, pg, progress),0+0.001*index)
+                Clock.schedule_once(partial(inner, f, pg, progress),0.001*index)
         def complete(*args):
-            print 'done with image. pasting all'
             #have the grid appear in here
             pg_scroll = self.ids['pg_scroll']
             self.ids['pg_scroll'].remove_widget(pictures)
@@ -334,11 +419,12 @@ class BGDeckMaker(BoxLayout):
         label = "Stack made of %s parts / %s Cards: %s Front - %s Back"%(num_part,qt,qt_front,qt_back)
         self.ids['stats'].text = label
 
-
 class SGMApp(App):
     def build(self):
         root = BGDeckMaker()
         root.ids['file_chooser'].load_folder(gamepath)
+        r = root.ids['file_chooser']
+        print r, r.load_folder
         return root
 
     def compute_stats(self,grid): return self.root.compute_stats(grid)

@@ -27,6 +27,7 @@ from kivy.lang import Builder
 Builder.load_file('kv/bgm.kv')
 ##############################################
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import StringProperty
 class RootWidget(BoxLayout):
 
@@ -75,19 +76,16 @@ class RootWidget(BoxLayout):
             stack = traceback.format_exc()
         self.ids.bgconsole.add(text, stack)
 
-    def layout(self, stack):
-        if 'printer' not in self.ids:
-            self.on_screen_name(self, 'PrintPreview',False)
-        self.ids.printer.ids.book.layout(stack)
-
-
 from kivy.app import App
 
 class BGMApp(App):
     title = "Kivy Board Game Maker"
 
     def build(self):
-        return RootWidget()
+        root =  RootWidget()
+        from conf import gamepath
+        root.ids['deck'].file_chooser.load_folder(gamepath)
+        return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):
         button = self.root.ids.message
@@ -102,6 +100,9 @@ class BGMApp(App):
 
     def set_screen(self, screen_name):
         self.root.ids.screen_spinner.text = screen_name
+
+    def compute_stats(self,grid):
+        return self.root.ids['deck'].compute_stats(grid)
 
 if __name__ == '__main__':
     BGMApp().run()

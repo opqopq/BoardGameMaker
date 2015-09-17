@@ -1,0 +1,324 @@
+#:kivy 1.0.4
+#:import CARD conf.card_format
+#:import GAMEPATH conf.gamepath
+#:import split os.path.split
+
+<Icon@ToggleButtonBehavior+Image>:
+
+
+<FoldedTabbedPanelItem@TabbedPanelItem>:
+    on_touch_down: if args[1].is_double_tap: self.panel.folded = not(self.panel.folded)
+
+
+<DynamicQuantity>:
+    orientation: 'vertical'
+    #size_hint: None, None
+    #size: 100,100
+    size_hint: None, None
+    width: 100
+    height: 150
+    init_qt: 1
+    padding: 0,50,0,10
+    spacing: 10
+    Label:
+        text: 'Qt'
+        size_hint_y: .1
+        #height: 10
+        font_size: 20
+    TextInput:
+        multiline: False
+        disabled: not(root.selected)
+        text: "%s"%root.init_qt
+        id: qt
+        font_size: 36
+        size_hint_y: None
+        height: 50
+        on_text: root.parent.qt = int(self.text); app.compute_stats(None)
+
+
+<HiddenRemoveButton@ButtonBehavior+Image>:
+    #source: 'img/Delete_icon.png'
+    text: 'Remove'
+    size_hint: None, None
+    width: 0
+
+<RVImage@ToggleButtonBehavior+Image>:
+    source: 'img/recto.png' if self.state =='normal' else 'img/verso.png'
+    size_hint: None, None
+    size: 100, 100
+
+<StackPart>:
+    source: ""
+    height: 150
+    spacing: 20
+    padding: 20
+    size_hint_y: None
+    qt: 1
+    verso: 'normal'
+    canvas.after:
+        Color:
+            rgba: (0.3,0.3,1,.8) if self.selected else (0,0,0,0)
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, 25
+            width: 3
+    Label:
+        font_size: 48
+        text: "#%s."%root.row
+        size_hint_x: None
+        width: 50
+    BoxLayout:
+        orientation: 'vertical'
+        Image:
+            source: root.source
+            size: root.height, root.height
+            id: img
+        Label:
+            text: split(root.name)[-1]
+            size_hint_y: .1
+            font_size: img.height/10
+    DynamicQuantity:
+        id: qt
+        selected: root.selected
+        init_qt: root.qt
+    RVImage:
+        id: dual
+        state: root.verso
+        on_state: root.verso = self.state
+
+<ChoiceBox@BoxLayout>
+    size_hint_y:  None
+    height: 40
+    width: self.parent.width if self.parent else 100
+    on_parent: self.pos = (self.parent.x, self.parent.y+20) if self.parent else (0,0)
+    Slider:
+        min: 1
+        max: 20
+        value: 1
+        id: qt
+    Label:
+        text: "%d"%qt.value
+        font_size: 48
+    ToggleButton:
+        text: 'Dual'
+        id: dual
+
+<IconImage>:
+    #size: 400,400
+    size_hint: None, 1
+    width: self.height
+    allow_stretch: True
+    selected: False
+    canvas.before:
+        Color:
+            rgba: (0,0,1,1) if self.selected else (1,1,1,0)
+        Rectangle:
+            size: (self.width+10, self.height+30)
+            pos: self.x-5, self.y-20
+    Label:
+        size_hint: None, None
+        font_size:  max(root.width/10, 10)
+        y: root.y - 50
+        halign: "center"
+        text:  split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
+        center_x: root.center_x
+    Label:
+        size_hint: None, None
+        size: root.size
+        pos: root.pos
+        text: 'Add'
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1) if root.selected else (1,1,1,0)
+        bold: True
+        font_size:48
+        canvas.before:
+            Color:
+                rgba: (.5,.5,.5,.5) if root.selected else (0,0,0,0)
+            Rectangle:
+                size: self.size
+                pos: self.pos
+
+<PictureGrid@GridLayout>:
+    rows: 1
+    padding: 10
+    spacing: 10
+    size_hint: None, 1
+    on_minimum_width: self.width = self.minimum_width
+    last_selected: None
+
+
+<TemplateEditTree>:
+    hide_root: True
+    on_selected_node: if hasattr(self.selected_node,'template'): root.update_tmpl(self.selected_node.template)
+
+<StencilBox@BoxLayout+StencilView>:
+
+<TemplateEditPopup>:
+    name: ""
+    title: 'Edition of %s'%split(self.name)[-1]
+    size_hintt: .8,.8
+    GridLayout:
+        cols:2
+        ScrollView:
+            size_hint_x: .33
+            TemplateEditTree:
+                id: options
+                target: preview
+        StencilBox:
+            size_hint_x: .67
+            orientation: 'vertical'
+            RelativeLayout:
+                canvas.before:
+                    Color:
+                        rgb:.7,.7,.7
+                    Line:
+                        rectangle: 0,0, self.width, self.height
+                        width: 3
+                Scatter:
+                    id: preview
+                    do_rotation: False
+                    x: root.x
+                    center_y: root.center_y
+            BoxLayout:
+                size_hint_y: None
+                orientation: "horizontal"
+                height: 30
+                Button:
+                    text: "Apply"
+                    on_press: root.dismiss(); root.compute()
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+
+<BGDeckMaker>:
+    #The Left tab with files/templates & values
+    file_chooser: file_chooser
+    FoldedTabbedPanel:
+        background_image: 'img/card_template.png'
+        folded: False
+        do_default_tab: False
+        tab_pos: 'top_left'
+        size_hint_x: None
+        width: 240 if not self.folded else 40
+        id: explorer
+        FloatLayout:
+            ScrollView:
+                id: tab1_content
+                #FileChooserListView:
+                FolderTreeView:
+                    size_hint_y: None
+                    on_minimum_height: self.height = self.minimum_height
+                    id: file_chooser
+                    dirselect: True
+                    rootpath: GAMEPATH
+                    filters: ['*.jpg','*.jpeg', '*.png','*.gif', '*.kv']
+                    #on_selection: root.load_folder(args[1][0])
+                    on_selected_node: root.load_folder(args[1].path if hasattr(args[1],'path') else "")
+            GridLayout:
+                id: tab2_content
+                cols: 1
+                GridLayout:
+                    cols: 2
+                    row_force_default: True
+                    row_default_height: 30
+                    size_hint_y: None
+                    height: 180
+                    Label:
+                        text: 'Current'
+                    Label:
+                        text: "Fit Format"
+                    Label:
+                        text: "Card Width:"
+                    TextInput:
+                        id: cw
+                        text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                        on_text: CARD.updateW(self.text, unit.text)
+                    Label:
+                        text: "Card Height:"
+                    TextInput:
+                        id: ch
+                        text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                        on_text: CARD.updateH(self.text, unit.text)
+                    Label:
+                        text: "Unit:"
+                    Spinner:
+                        id: unit
+                        values: ['cm','px']
+                        text: 'cm'
+                    Label:
+                        text: "Keep Ratio"
+                    CheckBox:
+                        ratio: 1
+                        active: True
+                        id: keep_ratio
+                        on_active: CARD.keep_ratio = self.active
+                Icon:
+                    #text: 'Empty Stack'
+                    source: 'img/new.png'
+                    on_press: root.empty_stack()
+                    size_hint_y: None
+                    height: 80
+                Icon:
+                    #text: 'Print'
+                    source: 'img/print.png'
+                    on_press: root.prepare_print()
+                    size_hint_y: None
+                    height: 80
+                Button:
+                    text: 'Import Stack'
+                    on_press: root.load_file()
+                    size_hint_y: None
+                    height: 30
+                Button:
+                    text: 'Export Stack'
+                    on_press: root.export_file()
+                    size_hint_y: None
+                    height: 30
+        #FoldedTabbedPanelItem:
+        TabbedPanelHeader:
+            background_normal: 'img/folder_off.png'
+            background_down: 'img/folder.png'
+            panel: explorer
+            content: tab1_content.__self__
+            #text: "Files"
+        TabbedPanelHeader:
+            #text: 'Format'
+            background_normal: 'img/format_off.png'
+            background_down: 'img/format.png'
+            content: tab2_content.__self__
+    BoxLayout:
+        orientation: 'vertical'
+        Splitter:
+            #max_size: 400
+            sizable_from: 'bottom'
+            ScrollView:
+                #size_hint_y: None
+                #height: 440
+                id: pg_scroll
+                canvas.before:
+                    Color:
+                        rgb: .7,.7,.7
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                do_scroll_y: False
+                PictureGrid:
+                    id: pictures
+        ScrollView:
+            #size_hint_y: .3
+            do_scroll_x: False
+            GridLayout:
+                cols: 1
+                size_hint: 1, None
+                on_minimum_height: self.height= self.minimum_height
+                id: stack
+                on_children: root.compute_stats(self)
+                last_selected: None
+                #Progressbar when loading folder
+                ProgressBar:
+                    id: load_progress
+        Label:
+            id: stats
+            size_hint_y: None
+            height: 30
+            font_size: 20
