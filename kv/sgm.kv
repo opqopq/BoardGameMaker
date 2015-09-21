@@ -17,10 +17,6 @@
         text: root.text
         size_hint_y: .1
 
-<FoldedTabbedPanelItem@TabbedPanelItem>:
-    on_touch_down: if args[1].is_double_tap: self.panel.folded = not(self.panel.folded)
-
-
 <DynamicQuantity>:
     orientation: 'vertical'
     #size_hint: None, None
@@ -114,6 +110,12 @@
     ToggleButton:
         text: 'Dual'
         id: dual
+    Button:
+        text: "Edit" if root.parent and root.parent.name.endswith('.kv') else ""
+        id: edit_button
+        size_hint_x: 1 if root.parent and root.parent.name.endswith('.kv') else None
+        width: 0 #will only apply if it is a template otherwise size hint will prevail
+        on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
 
 <IconImage>:
     #size: 400,400
@@ -219,13 +221,12 @@
                 id: tab1_content
                 #FileChooserListView:
                 FolderTreeView:
+                    root_options: {'text': 'Game Library'}
                     size_hint_y: None
                     on_minimum_height: self.height = self.minimum_height
                     id: file_chooser
-                    dirselect: True
                     rootpath: GAMEPATH
-                    filters: ['*.jpg','*.jpeg', '*.png','*.gif', '*.kv']
-                    #on_selection: root.load_folder(args[1][0])
+                    filters: ['.jpg','.jpeg', '.png','.gif', '.kv']
                     on_selected_node: root.load_folder(args[1].path if hasattr(args[1],'path') else "")
             GridLayout:
                 id: tab2_content
@@ -235,6 +236,27 @@
                     min_size: 10
                     AccordionItem:
                         collapse: False
+                        title: "File"
+                        GridLayout:
+                            rows: 1
+                            #spacing: 10
+                            Icon:
+                                text: 'New'
+                                source: 'img/new.png'
+                                on_press: root.empty_stack()
+                            Icon:
+                                text: 'PDF'
+                                source: 'img/print.png'
+                                on_press: root.prepare_print()
+                            Icon:
+                                text: 'Import'
+                                on_press: root.load_file()
+                                source: 'img/import.png'
+                            Icon:
+                                text: 'Export'
+                                source: 'img/export.png'
+                                on_press: root.export_file()
+                    AccordionItem:
                         title: "Fit Format"
                         GridLayout:
                             cols: 2
@@ -270,26 +292,10 @@
                                 id: keep_ratio
                                 on_active: CARD.keep_ratio = self.active
                     AccordionItem:
-                        title: "File"
-                        GridLayout:
-                            cols: 1
-                            spacing: 10
-                            Icon:
-                                text: 'New / Empty Stack'
-                                source: 'img/new.png'
-                                on_press: root.empty_stack()
-                            Icon:
-                                text: 'Print PDF'
-                                source: 'img/print.png'
-                                on_press: root.prepare_print()
-                            Icon:
-                                text: 'Import Stack'
-                                on_press: root.load_file()
-                                source: 'img/import.png'
-                            Icon:
-                                text: 'Export Stack'
-                                source: 'img/export.png'
-                                on_press: root.export_file()
+                        title: 'Templates'
+                        Button:
+                            text: 'Load Templates Library'
+                            on_press: root.load_template_lib()
                     AccordionItem:
                         title: "Scripts"
                         GridLayout:

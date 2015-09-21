@@ -160,7 +160,7 @@ def path_reader(path):
         return normpath(path.replace(not_sep,sep))
 
 
-DirCache={'last':'.'}
+DirCache={'last':gamepath}
 
 def set_last_dir(src,value):
     DirCache[src] = value

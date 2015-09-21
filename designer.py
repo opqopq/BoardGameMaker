@@ -8,15 +8,17 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.graphics import Color, Line
 from kivy.metrics import cm
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
-from kivy.properties import ListProperty, DictProperty, ObservableList, ObservableReferenceList
+from kivy.properties import ListProperty, DictProperty, ObservableList, ObservableReferenceList, ObservableDict
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 
 from fields import Field
 from template import BGTemplate, templateList
-from conf import card_format
+from conf import card_format, gamepath
 from deck import TreeViewField
+from os.path import isfile, split, relpath
+
 
 def compare_to_root(rootsize,fieldsize):
     "Take 2 size or pos tuple and return a string made of b/a ratio as string, rounded to 2 digits float"
@@ -67,6 +69,8 @@ class BGDesigner(FloatLayout):
     nodes = DictProperty()
     #Place Holder when copying size/pos of a widget
     _do_copy = None
+    #String for holding the path at which template will be saved in the form name@path
+    tmplPath = StringProperty()
 
     def __init__(self, **kwargs):
         super(BGDesigner,self).__init__(**kwargs)
@@ -250,8 +254,16 @@ class BGDesigner(FloatLayout):
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
+        #First clean a little
+        self.new()
         print 'see if there is a better way to moving the template around. maybe a copy ?'
-        template = templateList[templateName]
+        if '@' in templateName:
+            #load from file:
+            from template import BGTemplate
+            template = BGTemplate.FromFile(templateName)[-1]
+        else:
+            template = templateList[templateName]
+        self.tmplPath = templateName
         #Empty current list
         self.new()
         #Create a c# opy
@@ -294,7 +306,7 @@ class BGDesigner(FloatLayout):
         self.ids.tmpl_width.text = "%.2f"%card_format.width
         self.ids.tmpl_height.text = "%.2f"%card_format.height
 
-    def export_field(self, field, tmpls, imports, level, save_cm, relativ):
+    def export_field(self, field, tmpls, imports, level, save_cm, relativ, save_relpath):
         from fields import LinkedField
         prepend = '\t'*level
         #Remove field from any not desired attrbiute for export
@@ -307,14 +319,20 @@ class BGDesigner(FloatLayout):
             #convert name to ID
             value = getattr(field,attr)
             vtype = type(value)
+            #print 'exporting field', attr, vtype
             if attr == 'name':
                 tmpls.append('%sid: %s'%(prepend,value))
-            elif vtype == type(""):
-                tmpls.append('%s%s: "%s"'%(prepend,attr, getattr(field,attr)))
+            elif  isinstance(value, basestring):
+                if isfile(value) and save_relpath:
+                    value = relpath(value, gamepath)
+                tmpls.append('%s%s: "%s"'%(prepend,attr, value))
             elif vtype == type(1.0):
-                tmpls.append('%s%s: %.2f'%(prepend, attr, getattr(field,attr)))
-            elif vtype == type({}):
-                tmpls.append('%s%s: %s'%(prepend, attr,getattr(field,attr)))
+                tmpls.append('%s%s: %.2f'%(prepend, attr, value))
+            elif vtype in  (type({}), ObservableDict):
+                for _v in value:
+                    if isfile(value[_v]) and save_relpath:
+                        value[_v] = relpath(value[_v], gamepath)
+                tmpls.append('%s%s: %s'%(prepend, attr,value))
             elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
                 if attr in ("size","pos"):
                     if relativ:
@@ -329,6 +347,8 @@ class BGDesigner(FloatLayout):
                     if isinstance(item, float):
                         sub.append('%.2f'%item)
                     elif isinstance(item, basestring):
+                        if isfile(item) and save_relpath:
+                            item = relpath(item, gamepath)
                         sub.append('"%s"'%item)
                     else:
                         sub.append(str(item))
@@ -345,12 +365,20 @@ class BGDesigner(FloatLayout):
     def save(self,PATH=None,*args):
         from os.path import isfile
         if PATH is None:
-            PATH = 'Templates/%s.kv'%self.current_template.name
-        overwrite = self.ids.cb_overwrite.active
+            if self.tmplPath:
+                PATH = self.tmplPath
+                if "@" in PATH:
+                    PATH = PATH.split('@')[-1]
+                overwrite = True
+            else:
+                PATH = 'Templates/%s.kv'%self.current_template.name
+                overwrite = self.ids.cb_overwrite.active
+        else:
+            overwrite = self.ids.cb_overwrite.active
         exists = isfile(PATH)
         kv = self.export_kv()
         if overwrite or not exists:
-            file('Templates/%s.kv'%self.current_template.name,'wb').write(kv)
+            file(PATH,'wb').write(kv)
         else:
             from conf import alert
             alert('Template %s already exists !'%PATH)
@@ -361,14 +389,17 @@ class BGDesigner(FloatLayout):
         #Force update on deck widget
         from kivy.app import App
         deck = App.get_running_app().root.ids.deck
-        if deck.ids.tmpl_tree.current_tmpl_name == self.current_template.name:
-            deck.update_tmpl(self.current_template.name)
+        print 'todo: impact all template from current deck to reflect what is happening'
+        print 'todo: how do I save pultiple template on a single KV file ? '
+        #if deck.ids.tmpl_tree.current_tmpl_name == self.current_template.name:
+        #    deck.update_tmpl(self.current_template.name)
 
     def export_kv(self):
         relativ = self.ids.cb_relative.active
         save_cm = self.ids.cb_cm.active
+        save_relpath = self.ids.cb_relpath.active
         imports = list()
-        print 'export kv'
+        #Will be used to find a interresting base for relpath
         w = self.ids.tmpl_width.text
         h = self.ids.tmpl_height.text
         #Get Unit
@@ -390,12 +421,11 @@ class BGDesigner(FloatLayout):
                 h = 'cm(%.2f)'%(h/cm(1))
         if not self.current_template.name:
             self.current_template.name = "TMPL"
-        tmpls=["<%s@BGTemplate>:"%self.current_template.name]
-        print 'tmpl size', w, h
+        tmpls = ["<%s@BGTemplate>:"%self.current_template.name]
         tmpls.append('\tsize: %s, %s'%(w,h))
         for node in self.ids.fields.root.nodes:
             field = node.target
-            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ)
+            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ, save_relpath = save_relpath)
         #Prepend include
         if imports:
             tmpls.insert(0, "")

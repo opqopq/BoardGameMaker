@@ -187,7 +187,7 @@
                                 size_hint_x: .2
                                 #width: 30
                             Slider:
-                                range:0.01,2
+                                range:0.01,4
                                 value: 1
                                 size_hint_x: 1
                                 on_value: content.scale = self.value#; content.pos= 150,50
@@ -248,12 +248,12 @@
                             FieldTaskButton:
                                 size_hint_x: .25
                                 source: 'img/filesave.png'
-                                on_press: root.save(); app.set_screen('Deck')
+                                on_press: root.save()
                                 radius: .8*self.parent.height
                             FieldTaskButton:
                                 size_hint_x: .25
                                 source: 'img/filesaveas.png'
-                                on_press: root.save()
+                                on_press: root.save(root.current_template.name)
                                 radius: .8*self.parent.height
                             FieldTaskButton:
                                 size_hint_x: .25
@@ -318,6 +318,15 @@
                             size_hint_y: None
                             height: 30
                             CheckBox:
+                                id: cb_relpath
+                                size_hint_x: .1
+                                active: True
+                            Label:
+                                text: "Save Path relative to GAMEPATH"
+                        BoxLayout:
+                            size_hint_y: None
+                            height: 30
+                            CheckBox:
                                 id: cb_cm
                                 size_hint_x: .1
                                 active: True
@@ -337,7 +346,7 @@
                         Button:
                             text: "Template Text Preview"
                             #:import F kivy.factory.Factory
-                            on_press: F.Popup(title='Template Text Preview', size_hint=(None,None), width=.8*root.width, height=.8*root.height, pos=(.1*root.width,.1*root.height), content=F.Label(text=root.export_kv().replace('\t','    ').replace('\r\n','\n'))).open()
+                            on_press: F.Popup(title='Template Text Preview', size_hint=(None,None), width=.8*root.width, height=.8*root.height, pos=(.1*root.width,.1*root.height), content=F.Label(text=root.export_kv().replace('\t','    ').replace('\r\n','\n'))).open() ; file('export.kv','wb').write(root.export_kv())
                             size_hint_y: None
                             height: 30
 

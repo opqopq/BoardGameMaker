@@ -3,12 +3,13 @@ __author__ = 'MRS.OPOYEN'
 
 
 from fields import Field
-from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty
+from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
 from editors import editors_map
 from kivy.uix.relativelayout import RelativeLayout
+from os.path import isdir
 
 class BGTemplate(Field, RelativeLayout):
     """Template class. Made of fields able to render an image"""
@@ -186,7 +187,6 @@ class BGTemplate(Field, RelativeLayout):
             self.parent.canvas.insert(canvas_parent_index, self.canvas)
 
         return cim
-
 
     def blank(self):
         t = self.__class__()

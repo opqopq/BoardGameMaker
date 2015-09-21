@@ -1,7 +1,7 @@
 """Contains all the diffrents fields for template"""
 
 from collections import OrderedDict
-
+from os.path import isfile, join
 from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.factory import Factory
@@ -10,19 +10,15 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.texture import Texture
 from PIL import Image as PILImage
 from kivy.uix.behaviors import FocusBehavior
-
 from utils.hoverable import HoverBehavior
-
-#Fbo
 from kivy.graphics import Color, Rectangle, Canvas
 from kivy.graphics.fbo import Fbo
 from utils.symbol_label import SymbolLabel
 from kivy.uix.effectwidget import EffectWidget
-
+from editors import *
 
 Builder.load_file('kv/fields.kv')
 
-from editors import *
 
 # Pre-import styles to register them all
 from styles import getStyle
@@ -80,7 +76,6 @@ class BaseField(FloatLayout):
 
     def on_alpha(self, instance, value):
         self.fbo_color.rgba = (1, 1, 1, value)
-
 
 class Field(HoverBehavior, FocusBehavior, FloatLayout):
     """Element class represent any component of a template (fields, font, transformation....)"""
@@ -460,8 +455,11 @@ class ImageField(Image, Field):
     source_filters = ['*.jpg','*.gif','*.jpeg','*.bmp','*.png']
 
     def on_source(self, instance, source):
-        from os.path import isfile
         if not isfile(source):
+            from conf import gamepath
+            if isfile(join(gamepath, source)):
+                self.source = join(gamepath, self.source)
+                return
             from conf import log
             log('Source does not exist for ImageField %s: %s'%(self.name, source))
 
@@ -499,6 +497,16 @@ class ImgChoiceField(Image, Field):
         else:
             #force selection
             self.on_selection(self, self.selection)
+
+    def on_source(self, instance, source):
+        if not isfile(source):
+            from conf import gamepath
+            if isfile(join(gamepath, source)):
+                self.source = join(gamepath, self.source)
+                return
+            from conf import log
+            log('Source does not exist for ImageChoiceField %s: %s'%(self.name, source))
+
 
 class ColorChoiceField(Field):
     "This widget will display an image base on a choice, helds in choices dict"
@@ -576,9 +584,15 @@ class SubImageField(Field):
 
     def on_dimension(self, instance, dimension):
         from kivy.core.image import Image
-        IMG = Image(dimension[0]).texture
+        path = dimension[0]
+        if not isfile(path):
+            from conf import gamepath
+            path = join(gamepath, path)
+            if not isfile(path):
+                raise ValueError('Invalid path for image to take subimage from', dimension[0])
+        IMG = Image(path).texture
         width, height = IMG.width, IMG.height
-        self.texture = Image(dimension[0]).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
+        self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
 
 class TransfoField(Field):
     "Transform an image file thourgh different methods registered in img_xfos.py"
@@ -592,7 +606,13 @@ class TransfoField(Field):
     Image = ObjectProperty()
 
     def on_source(self, instance, source):
-        from os.path import isfile
+        if not isfile(source):
+            from conf import gamepath
+            if isfile(join(gamepath, source)):
+                self.source = join(gamepath, self.source)
+                return
+            from conf import log
+            log('Source does not exist for TransfoField %s: %s'%(self.name, source))
         self.Image = PILImage.open(source)
         if isfile(source):
             for xfo in self.xfos:
@@ -630,19 +650,17 @@ class SvgField(Field):
     default_attr = 'source'
 
     def on_source(self,instance, source):
-        from os.path import isfile
-        if isfile(source):
+        if not isfile(source):
+            from conf import gamepath
+            if isfile(join(gamepath, source)):
+                self.source = join(gamepath, self.source)
+                return
+            from conf import log
+            log('Source does not exist for SVGField %s: %s'%(self.name, source))
+        else:
             with self.canvas:
                 from kivy.graphics.svg import Svg
                 Svg(source)
-        else:
-            from conf import log
-
-            try:
-                log('Not exsting SVG source: %s'%source)
-            except AttributeError:
-                #This if svg error occurs before the loger exists
-                print 'Not existing SVG source:%s'%source
 
 class ShapeField(Field):
     dash_length = NumericProperty()
@@ -684,6 +702,13 @@ class SourceShapeField(ShapeField):
 
     def on_source(self,instance, source):
         from kivy.core.image import Image
+        if not isfile(source):
+            from conf import gamepath
+            if isfile(join(gamepath, source)):
+                self.source = join(gamepath, self.source)
+                return
+            from conf import log
+            log('Source does not exist for SourceShapeField %s: %s'%(self.name, source))
         self.texture = Image(source).texture
         self.on_texture_wrap(self, self.texture_wrap)
 

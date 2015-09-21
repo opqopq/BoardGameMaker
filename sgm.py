@@ -1,23 +1,30 @@
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.uix.image import AsyncImage
+from kivy.uix.image import AsyncImage, Image
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
 from kivy.uix.popup import Popup
-from kivy.properties import NumericProperty, StringProperty,   DictProperty
+from kivy.properties import NumericProperty, StringProperty,   DictProperty, ListProperty
 from kivy.uix.treeview import  TreeViewLabel
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from deck import TreeViewField, Field, TreeView
-import os, os.path
+from kivy.uix.treeview import TreeView
+from deck import TreeViewField
+from fields import Field
 from conf import gamepath
+import os, os.path
 
 Builder.load_file('kv/sgm.kv')
 
 class FolderTreeView(TreeView):
     folder = StringProperty()
+    filters = ListProperty()
+    rootpath = StringProperty()
+
+    def on_rootpath(self, instance, value):
+        self.load_folder(value)
 
     def  load_folder(self, folder):
         self.folder = folder
@@ -25,7 +32,7 @@ class FolderTreeView(TreeView):
         from os import listdir
         self.clear_widgets()
         for f in listdir(folder):
-            if not isdir(join(folder,f)): continue
+            if not isdir(join(folder,f)) and not f.endswith(tuple(self.filters)): continue
             n = self.add_node(TreeViewLabel(text=f))
             n.is_leaf = False
             n.is_loaded = False
@@ -34,13 +41,14 @@ class FolderTreeView(TreeView):
     def callback(self, instance, node):
         from os import listdir
         from os.path import join, isdir
-        for f in listdir(node.path):
-            if not isdir(join(node.path,f)):
-                continue
-            n = self.add_node(TreeViewLabel(text=f), node)
-            n.is_leaf = False
-            n.is_loaded = False
-            n.path = join(node.path, f)
+        if hasattr(node, 'path'):
+            for f in listdir(node.path):
+                if not isdir(join(node.path,f)):
+                    continue
+                n = self.add_node(TreeViewLabel(text=f), node)
+                n.is_leaf = False
+                n.is_loaded = False
+                n.path = join(node.path, f)
 
     load_func = callback
 
@@ -64,7 +72,7 @@ class DynamicQuantity(BoxLayout):
             if len(self.children)>2: #not only the 'qt' label & the label itself
                 self.remove_widget(self.children[0])
 
-class IconImage(ButtonBehavior, AsyncImage):
+class IconImage(ButtonBehavior, Image):
     selected = BooleanProperty(False)
     inner_box = ObjectProperty(None)
     folder = StringProperty()
@@ -118,6 +126,28 @@ class IconImage(ButtonBehavior, AsyncImage):
             #Remove QT/Dual
             self.remove_widget(self.inner_box)
 
+    def realise(self,*args):
+        if not self.name.endswith('.kv'):
+            return
+        #Force the creation of an image from self.template, thourhg real display
+        from kivy.clock import Clock
+        #Force the creaiotn of the tmpl miniture for display
+        from template import BGTemplate
+        try:
+            tmpl = BGTemplate.FromFile(self.name)[-1]
+        except IndexError:
+            print 'Warning: template file %s contains no Template !!'%self.name
+            return
+        App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
+
+        def inner(*args):
+            #Here is hould loop on the template to apply them on values
+            cim =  tmpl.toImage()
+            cim.texture.flip_vertical()
+            self.texture = cim.texture
+            App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
+        Clock.schedule_once(inner, -1)
+
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
     row = NumericProperty(0)
@@ -131,7 +161,11 @@ class StackPart(ButtonBehavior, BoxLayout):
         from kivy.clock import Clock
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
-        tmpl = BGTemplate.FromFile(self.template)[-1]
+        try:
+            tmpl = BGTemplate.FromFile(self.template)[-1]
+        except IndexError:
+            print 'Warning: template file %s contains no Template !!'%self.template
+            return
         App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
         def inner(*args):
@@ -282,6 +316,29 @@ class BGDeckMaker(BoxLayout):
         from conf import card_format
         prepare_pdf(self.ids['stack'], (card_format.width, card_format.height))
 
+    def load_template_lib(self):
+        #Same as load_folder('/Templates') but with delay to avoid clash
+        for kv in os.listdir('Templates'):
+            if not kv.endswith('.kv'): continue
+        progress = self.ids['load_progress']
+        pictures = self.ids['pictures']
+        pictures.clear_widgets()
+        tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')])
+        C = len(tmpls )
+        progress.max = C
+        progress.value = 1
+        pg = Factory.get('PictureGrid')()
+        def inner(*args):
+            if not tmpls:
+                Clock.unschedule(inner)
+                return
+            _f = os.path.join('Templates',tmpls.pop())
+            img = IconImage(source="", name=_f)
+            pictures.add_widget(img)
+            progress.value += 1
+            img.realise()
+        Clock.schedule_interval(inner, .1)
+
     def load_folder(self,folder):
         self.cancel_load = False
         from functools import partial
@@ -300,14 +357,16 @@ class BGDeckMaker(BoxLayout):
                 return False
             #FOLD = True
             if _f.endswith('.kv'): #it is a template:
-                source = 'img/card_template.png'
+                #source = 'img/card_template.png'
                 _f = os.path.join(folder, _f)
             else:
                 source  = os.path.join(folder,_f)
             img = IconImage(source=source, name=_f)
             _pictures.add_widget(img)
             _progress.value += 1
-        for index,f in enumerate(os.listdir(folder)):
+            if _f.endswith('.kv'):
+                img.realise()
+        for index,f in enumerate(sorted(os.listdir(folder))):
             if f.endswith(('.jpg','.jpeg', '.png','.gif', '.kv')):
                 Clock.schedule_once(partial(inner, f, pg, progress),0.001*index)
         def complete(*args):
@@ -325,6 +384,9 @@ class BGDeckMaker(BoxLayout):
         od = json.load(file(filepath,'rb'))
         base = od['base']
         print 'stack loaded from base', base
+        from kivy.resources import resource_add_path
+        if os.path.isdir(base):
+            resource_add_path(base)
         from os.path import join, isdir
         if not isdir(base):
             print 'Warning, base for path does not exists on this computer', base
@@ -338,12 +400,14 @@ class BGDeckMaker(BoxLayout):
             box.qt = qt
             box.verso = verso
             box.template = obj['template']
+            box.values = obj['values']
             stack.add_widget(box)
         #Load Folder base - might come handy
         if isdir(base):
             self.ids['file_chooser'].path = base
 
     def export_file(self, filepath='deck.json'):
+        print 'do the relapth for template and values also'
         from collections import OrderedDict
         import json
         od = OrderedDict()
@@ -352,26 +416,46 @@ class BGDeckMaker(BoxLayout):
         from os.path import commonprefix, relpath
         paths = [item.source for item in self.ids['stack'].children if isinstance(item, Factory.get('StackPart'))]
         common_path = commonprefix(paths)
+        #What are the value with path ? best way might be to check for it
+        value_path = [common_path]
+        for item in self.ids['stack'].children:
+            if not isinstance(item, StackPart):
+                continue
+            for v in item.values.values():
+                if os.path.isfile(v):
+                    value_path.append(v)
+        common_path = commonprefix(value_path)
         od['base'] = common_path
         for item in reversed(self.ids['stack'].children):
             if not isinstance(item, Factory.get('StackPart')): continue
             d=dict()
             d['qt'] = item.qt
             d['source'] = relpath(item.source, common_path)
-            d['template'] = ''
+            d['template'] = item.template
             d['dual'] = not(item.verso=='normal')
+            d['values'] = item.values
             cards.append(d)
         od['cards'] = cards
         json.dump(od, file(filepath,'wb'), indent = 4)
         #Now also CSV export
         import csv
         if cards:
-            my_dict = cards[0]
+            my_dict = {}
+            #update the dict with all possible 'values' keys
+            for c in cards:
+                if c['values']:
+                    my_dict.update(**c['values'])
+
             with open('mycsvfile.csv', 'wb') as f:  # Just use 'w' mode in 3.x
-                w = csv.DictWriter(f, my_dict.keys())
+                fields_order = ['qt','dual','template','source'] + my_dict.keys()[:]
+                w = csv.DictWriter(f, fields_order)
                 w.writeheader()
-                for card in cards:
-                    w.writerow(card)
+                for c in cards:
+                    for k in my_dict: my_dict[k]=None
+                    my_dict.update(c)
+                    del my_dict['values']
+                    my_dict.update(**c['values'])
+                    w.writerow(my_dict)
 
     def compute_stats(self,grid):
         if grid is None:
@@ -392,12 +476,6 @@ class BGDeckMaker(BoxLayout):
         self.ids['stats'].text = label
 
 class SGMApp(App):
-    def build(self):
-        root = BGDeckMaker()
-        root.ids['file_chooser'].load_folder(gamepath)
-        r = root.ids['file_chooser']
-        return root
-
     def compute_stats(self,grid): return self.root.compute_stats(grid)
 if __name__ == '__main__':
     SGMApp().run()

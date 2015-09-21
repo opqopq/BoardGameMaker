@@ -72,7 +72,7 @@ class PDFBook:
                                 if item.values:
                                     tmplWidget.apply_values(item.values)
                                 cim = tmplWidget.toImage()
-                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw', 0, 1)
+                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw')
                                 src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
                             else:
                                 src = item.source
@@ -160,7 +160,10 @@ def prepare_pdf(stack, fitting_size, dst='test.pdf'):
         book = PDFBook(dst)
         res = book.generate_pdf((deck_front,deck_back), fitting_size)
         if res:
-            from os import startfile
-            startfile(dst)
+            try:
+                from os import startfile
+                startfile(dst)
+            except ImportError:
+                print 'on a mac: no startfile !'
     from kivy.clock import Clock
     Clock.schedule_once(process, .3)
