@@ -41,12 +41,13 @@ class PDFBook:
         if not(fps) and not(bps):
             print 'Warning: nothing to print'
             return
-        if 0:
+        if 1:
             print 'fitting size', fitting_size
             print "x,y", x,y
             print 'Num row', NUM_ROW
             print 'Num Col', NUM_COL
             print PICT_BY_SHEET , 'pictures by sheet'
+
         for i in range((len(fps)/PICT_BY_SHEET)+1):
             #Add PAge if fps left
             if fps:

@@ -346,7 +346,7 @@
                         Button:
                             text: "Template Text Preview"
                             #:import F kivy.factory.Factory
-                            on_press: F.Popup(title='Template Text Preview', size_hint=(None,None), width=.8*root.width, height=.8*root.height, pos=(.1*root.width,.1*root.height), content=F.Label(text=root.export_kv().replace('\t','    ').replace('\r\n','\n'))).open() ; file('export.kv','wb').write(root.export_kv())
+                            on_press: F.Popup(title='Template Text Preview', size_hint=(None,None), width=.8*root.width, height=.8*root.height, pos=(.1*root.width,.1*root.height), content=F.Label(text=root.export_kv().replace('\t','    ').replace('\r\n','\n'))).open()
                             size_hint_y: None
                             height: 30
 

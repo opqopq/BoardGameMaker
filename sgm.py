@@ -358,6 +358,7 @@ class BGDeckMaker(BoxLayout):
             #FOLD = True
             if _f.endswith('.kv'): #it is a template:
                 #source = 'img/card_template.png'
+                source = ""
                 _f = os.path.join(folder, _f)
             else:
                 source  = os.path.join(folder,_f)
@@ -379,64 +380,73 @@ class BGDeckMaker(BoxLayout):
         Clock.schedule_once(complete, 0.01*(index+1))
         #self.ids['options'].folded = FOLD
 
-    def load_file(self, filepath='deck.json'):
+    def load_file_json(self, filepath='deck.json'):
         import json
         od = json.load(file(filepath,'rb'))
-        base = od['base']
-        print 'stack loaded from base', base
-        from kivy.resources import resource_add_path
-        if os.path.isdir(base):
-            resource_add_path(base)
-        from os.path import join, isdir
-        if not isdir(base):
-            print 'Warning, base for path does not exists on this computer', base
         cards = od['cards']
         stack = self.ids['stack']
         for obj in cards:
             qt = int(obj['qt'])
             verso = 'down' if obj['dual'] else 'normal'
             box = StackPart()
-            box.source = join(base,obj['source'])
+            box.source = obj['source']
             box.qt = qt
             box.verso = verso
             box.template = obj['template']
             box.values = obj['values']
             stack.add_widget(box)
-        #Load Folder base - might come handy
-        if isdir(base):
-            self.ids['file_chooser'].path = base
 
-    def export_file(self, filepath='deck.json'):
+    def load_file(self, filepath='mycsvfile.csv'):
+        #Now also CSV export
+        import csv
+        reader = csv.DictReader(file(filepath, 'rb'))
+        header = reader.fieldnames
+        stack = self.ids['stack']
+        print 'reading file with header', header
+        remaining_header = set(header) - set(['qt','source','template','dual'])
+        for index, obj in enumerate(reader):
+            qt = int(obj['qt'])
+            verso = 'down' if obj['dual'] else 'normal'
+            box = StackPart()
+            box.source = obj['source']
+            box.qt = qt
+            box.verso = verso
+            box.template = obj['template']
+            values = dict()
+            for attr in remaining_header:
+                v = obj.get(attr, None)
+                if v is not None:
+                    values[attr] = v
+            box.values = values
+            stack.add_widget(box)
+
+    def export_file(self, filepath='mycsvfile.csv'):
         print 'do the relapth for template and values also'
         from collections import OrderedDict
+        from conf import gamepath
+        from os.path import relpath, isfile
         import json
         od = OrderedDict()
         cards = list()
-        #First, find a common base to all these path
-        from os.path import commonprefix, relpath
-        paths = [item.source for item in self.ids['stack'].children if isinstance(item, Factory.get('StackPart'))]
-        common_path = commonprefix(paths)
-        #What are the value with path ? best way might be to check for it
-        value_path = [common_path]
-        for item in self.ids['stack'].children:
-            if not isinstance(item, StackPart):
-                continue
-            for v in item.values.values():
-                if os.path.isfile(v):
-                    value_path.append(v)
-        common_path = commonprefix(value_path)
-        od['base'] = common_path
         for item in reversed(self.ids['stack'].children):
             if not isinstance(item, Factory.get('StackPart')): continue
             d=dict()
             d['qt'] = item.qt
-            d['source'] = relpath(item.source, common_path)
+            if item.source:
+                if isfile(item.source): #it is a full path. convert it
+                    _s = relpath(item.source, gamepath)
+                else:
+                    _s = item.source
+                d['source'] = _s
+            else:
+                d['source'] = ""
             d['template'] = item.template
             d['dual'] = not(item.verso=='normal')
             d['values'] = item.values
             cards.append(d)
         od['cards'] = cards
-        json.dump(od, file(filepath,'wb'), indent = 4)
+        print 'skipping export to json'
+        #json.dump(od, file(filepath,'wb'), indent = 4)
         #Now also CSV export
         import csv
         if cards:
@@ -446,7 +456,7 @@ class BGDeckMaker(BoxLayout):
                 if c['values']:
                     my_dict.update(**c['values'])
 
-            with open('mycsvfile.csv', 'wb') as f:  # Just use 'w' mode in 3.x
+            with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
                 fields_order = ['qt','dual','template','source'] + my_dict.keys()[:]
                 w = csv.DictWriter(f, fields_order)
                 w.writeheader()
