@@ -10,6 +10,7 @@ from collections import OrderedDict
 from editors import editors_map
 from kivy.uix.relativelayout import RelativeLayout
 from os.path import isdir
+from conf import path_reader
 
 class BGTemplate(Field, RelativeLayout):
     """Template class. Made of fields able to render an image"""
@@ -24,10 +25,19 @@ class BGTemplate(Field, RelativeLayout):
 
     @classmethod
     def FromFile(cls, filename):
+        from os.path import abspath, isfile, join
+        from conf import gamepath
         if "@" in filename: #Only using subone
             name, filename = filename.split('@')
         else:
             name = ""
+        if not isfile(filename):
+            #try with gamepath ?
+            if isfile(join(gamepath,path_reader(filename))):
+                filename = join(gamepath, path_reader(filename))
+        #Here, we convert to abspath / normpath, as filename is used to index rules by kivy. avoid reimporting rules
+        filepath = abspath(path_reader(filename))
+        filename = filepath
         #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
         # Remove any former trace of the file
@@ -44,7 +54,7 @@ class BGTemplate(Field, RelativeLayout):
             log(E, traceback.print_exc())
             res = list()
         if name:
-            return [r for r in res if res.name == name ]
+            return [r for r in res if r.name == name ]
         return res
 
     @classmethod
@@ -200,7 +210,13 @@ class BGTemplate(Field, RelativeLayout):
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:
-                setattr(self,k,v)
+                for cname in self.ids.keys():
+                    if cname == k and getattr(self.ids[cname],'default_attr'):
+                        print 'resorting to default attr', self.ids[cname], k, getattr(self.ids[cname],'default_attr'), v
+                        setattr(self.ids[cname], getattr(self.ids[cname],'default_attr'), v)
+                        break
+                else:
+                    setattr(self,k,v)
             else:
                 childName, attrName = k.split('.', 2)
                 for cname in self.ids.keys():

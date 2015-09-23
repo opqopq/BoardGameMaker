@@ -159,6 +159,16 @@ def path_reader(path):
     else:
         return normpath(path.replace(not_sep,sep))
 
+def find_path(path):
+    from os.path import isfile
+    if not isfile(path_reader(path)):
+        if isfile(join(gamepath, path_reader(path))):
+            return join(gamepath, path_reader(path))
+        from conf import log
+        log('Source does not exist at path %s'%(path))
+    else:
+        return path_reader(path)
+
 
 DirCache={'last':gamepath}
 

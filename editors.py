@@ -78,10 +78,9 @@ class TextEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         #can not use getattr with kivy property
         ml_value = '\n' in getattr(self.target, keyname)
-        t=TextInput(text=str(getattr(self.target, keyname)), multiline=ml_value)
+        t=TextInput(text=getattr(self.target, keyname), multiline=ml_value)
         def cb(instance,value):
             setattr(self.target, keyname, value)
-            #self.target.text = value
             t.stored_value = value
         t.bind(text=cb)
         t.target_key = keyname
@@ -104,7 +103,7 @@ class AdvancedTextEditor(TextEditor):
         t.add_widget(b)
 
         def cbtxt(*args):
-            print 'cb got thje gollowint(', args , args[0].text
+            print 'apply text from', getattr(self.target,keyname), 'to', args[0].text
             setattr(self.target,keyname, args[0].text)
             t.stored_value = args[0].text
             ti.text = args[0].text
@@ -406,6 +405,44 @@ class FileEditor(Editor):
         t.target_attr = name
         return t
 
+class TemplateFileEditor(Editor):
+    #Just like a fileeditor, but tmplPAth are in the form NAME@PATH
+    def getWidgets(self, name, keyname, **kwargs):
+        from os.path import split
+        t=Button(text="...", **kwargs)
+        #Create a callback for the modal frame
+        def cbimg(instance):
+            s = instance.ids.fpicker.selection
+            if len(s) and isfile(s[0]):
+                setattr(self.target, keyname, s[0])
+                print 'here start a popup will list of choice from tmpl '
+                from template import BGTemplate
+                tmpls = BGTemplate.FromField(s[0])
+                if len(tmpls) == 1:
+                    t.stored_value = '%s@%s'%(tmpls[0].name, s[0])
+                    t.text = tmpls[0].name
+                else:
+                    print 'in here the popup'
+                    t.stored_value = instance.ids.fpicker.selection[0]
+                    t.text = split(s[0])[-1]
+            else:
+                t.text="..."
+        #Create callback for button that would start a modal
+        def button_callback(instance):
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)*.9
+            cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
+            filters = getattr(self.target, '%s_filters'%keyname, [])
+            #filters= ['*.jpg', '*.png','*.jpeg','*.gif']
+            popup = FileEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg, filters=filters )
+            popup.open()
+        t.bind(on_press=button_callback)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
 class SubImageEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         t=Button(text="...", **kwargs)
@@ -600,7 +637,8 @@ class ImgOption(SpinnerOption):
         if self.text not in self.choices:
             return
         from kivy.uix.image import Image
-        self.add_widget(Image(source=self.choices[self.text], size=self.size, pos=(self.x-self.width/4,self.y)))
+        from conf import find_path
+        self.add_widget(Image(source=find_path(self.choices[self.text]), size=self.size, pos=(self.x-self.width/4,self.y)))
 
 class ImgOptionEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):

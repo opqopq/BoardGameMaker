@@ -36,11 +36,21 @@ class PDFBook:
         #First determinez the number of item per page, acconirding to the dimensions
         x,y= Vector(fitting_size)/cm(1)
         NUM_COL = int((width-left)/(x+5/cm(1)))
-        NUM_ROW = int((height-top-bottom)/(y+5/cm(1)))
+        NUM_ROW = int((height-top)/(y+5/cm(1)))
         PICT_BY_SHEET=NUM_COL*NUM_ROW
         if not(fps) and not(bps):
-            print 'Warning: nothing to print'
+            print 'Warning: nothing to print: cancelling PDF generation'
             return
+
+        if not NUM_COL or not NUM_ROW:
+            PICT_BY_SHEET = 1
+            if not NUM_ROW:
+                NUM_ROW = 1
+            if not NUM_COL:
+                NUM_COL = 1
+            x = width-left-right
+            y = height-top-bottom
+
         if 1:
             print 'fitting size', fitting_size
             print "x,y", x,y

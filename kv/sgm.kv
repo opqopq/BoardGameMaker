@@ -3,6 +3,7 @@
 #:import GAMEPATH conf.gamepath
 #:import split os.path.split
 #:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
+#:import StickyButton utils.stickybutton.StickyButton
 
 <Icon@ToggleButtonBehavior+BoxLayout>:
     source: ""
@@ -82,7 +83,7 @@
             size: root.height, root.height
             id: img
         Label:
-            text: split(root.name)[-1]
+            text: split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
             size_hint_y: .1
             font_size: img.height/10
     DynamicQuantity:
@@ -94,64 +95,89 @@
         state: root.verso
         on_state: root.verso = self.state ;  app.compute_stats(None)
 
-<ChoiceBox@BoxLayout>
-    size_hint_y:  None
-    height: 40
+<FileItemOption@BoxLayout>
+    size_hint_y:  .05
+    #height: 30
     width: self.parent.width if self.parent else 100
     on_parent: self.pos = (self.parent.x, self.parent.y+20) if self.parent else (0,0)
-    Slider:
-        min: 1
-        max: 20
-        value: 1
-        id: qt
     Label:
-        text: "%d"%qt.value
-        font_size: 48
-    ToggleButton:
-        text: 'Dual'
+        text: "1"
+        font_size: max(root.width/10, 10)
+        size_hint_x: .15
+        id: qt
+        halign: 'right'
+        valign: 'middle'
+        text_size: self.size
+    BoxLayout:
+        size_hint_x: .1
+        orientation: 'vertical'
+        StickyButton:
+            text: "^"
+            background_color: 1,1,1,.5
+            #size_hint: None, None
+            #size: 15,17
+            on_press: qt.text = str(int(qt.text)+1)
+        StickyButton:
+            text: "v"
+            background_color: 1,1,1,.5
+            #size_hint: None, None
+            #size: 15,17
+            on_press: qt.text = str(max(int(qt.text)-1,0))
+    RVImage:
+        #text: 'Dual'
         id: dual
+        size_hint: .33, 1
     Button:
-        text: "Edit" if root.parent and root.parent.name.endswith('.kv') else ""
         id: edit_button
-        size_hint_x: 1 if root.parent and root.parent.name.endswith('.kv') else None
+        size_hint: .25 if root.parent and root.parent.name.endswith('.kv') else None , 1
         width: 0 #will only apply if it is a template otherwise size hint will prevail
         on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
+        background_color: 0,0,0,0
+        Image:
+            source: 'img/edit.png'
+            pos: self.parent.pos
+            size: self.parent.size
+            allow_stretch: True
+    Button:
+        size_hint: .33 , 1
+        on_press: root.parent.add_item(qt.text, dual.state)
+        background_color: 0,0,0,0
+        Image:
+            source: 'img/additem.png'
+            pos: self.parent.pos
+            size: self.parent.size
+            allow_stretch: True
 
-<IconImage>:
-    #size: 400,400
+
+<FileViewItem>:
+    orientation: 'vertical'
+    group: 'fileitem'
     size_hint: None, 1
     width: self.height
-    allow_stretch: True
-    selected: False
+    spacing: 10
     canvas.before:
         Color:
-            rgba: (0,0,1,1) if self.selected else (1,1,1,0)
+            rgba: (0,0,1,1) if self.state == 'down' else (1,1,1,0)
+        Line:
+            rectangle: self.x-3, self.y-3, self.width+6, self.height+6
+            width: 3
+        Color:
+            rgba: (0,0,1,.31) if self.state == 'down' else (1,1,1,0)
+
         Rectangle:
             size: (self.width+10, self.height+30)
             pos: self.x-5, self.y-20
+    Image:
+        id: img
+        allow_stretch: True
+        source: root.source
+        size_hint_y: .9
     Label:
-        size_hint: None, None
+        size_hint: 1, .1
         font_size:  max(root.width/10, 10)
-        y: root.y - 50
+        text_size: self.size
         halign: "center"
         text:  split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
-        center_x: root.center_x
-    Label:
-        size_hint: None, None
-        size: root.size
-        pos: root.pos
-        text: 'Add'
-        halign: 'center'
-        valign: 'middle'
-        color: (1,1,1,1) if root.selected else (1,1,1,0)
-        bold: True
-        font_size:48
-        canvas.before:
-            Color:
-                rgba: (.5,.5,.5,.5) if root.selected else (0,0,0,0)
-            Rectangle:
-                size: self.size
-                pos: self.pos
 
 <PictureGrid@GridLayout>:
     rows: 1
@@ -159,14 +185,10 @@
     spacing: 10
     size_hint: None, 1
     on_minimum_width: self.width = self.minimum_width
-    last_selected: None
-
 
 <TemplateEditTree>:
     hide_root: True
     on_selected_node: if hasattr(self.selected_node,'template'): root.update_tmpl(self.selected_node.template)
-
-<StencilBox@BoxLayout>:
 
 <TemplateEditPopup>:
     name: ""
@@ -179,7 +201,7 @@
             TemplateEditTree:
                 id: options
                 target: preview
-        StencilBox:
+        BoxLayout:
             size_hint_x: .67
             orientation: 'vertical'
             RelativeLayout:
@@ -250,7 +272,7 @@
                                 on_press: root.prepare_print()
                             Icon:
                                 text: 'Import'
-                                on_press: root.load_file()
+                                on_press: root.choose_file_popup("Choose CSV file to import", root.load_file)
                                 source: 'img/import.png'
                             Icon:
                                 text: 'Export'
@@ -324,18 +346,16 @@
         Splitter:
             size_hint_y: None
             height: 250
-            #max_size: 400
-            height: 100
             sizable_from: 'bottom'
             ScrollView:
                 id: pg_scroll
+                do_scroll_y: False
                 canvas.before:
                     Color:
                         rgb: .7,.7,.7
                     Rectangle:
                         size: self.size
                         pos: self.pos
-                do_scroll_y: False
                 PictureGrid:
                     id: pictures
         ScrollView:
@@ -346,6 +366,7 @@
                 size_hint: 1, None
                 on_minimum_height: self.height= self.minimum_height
                 id: stack
+                padding: 10
                 on_children: root.compute_stats(self)
                 last_selected: None
                 #Progressbar when loading folder

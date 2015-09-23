@@ -1,7 +1,7 @@
 from kivy.app import App
 from kivy.factory import Factory
 from kivy.uix.image import AsyncImage, Image
-from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.behaviors import ButtonBehavior, ToggleButtonBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
 from kivy.uix.popup import Popup
@@ -26,7 +26,7 @@ class FolderTreeView(TreeView):
     def on_rootpath(self, instance, value):
         self.load_folder(value)
 
-    def  load_folder(self, folder):
+    def load_folder(self, folder):
         self.folder = folder
         from os.path import join, isdir
         from os import listdir
@@ -72,29 +72,47 @@ class DynamicQuantity(BoxLayout):
             if len(self.children)>2: #not only the 'qt' label & the label itself
                 self.remove_widget(self.children[0])
 
-class IconImage(ButtonBehavior, Image):
-    selected = BooleanProperty(False)
-    inner_box = ObjectProperty(None)
-    folder = StringProperty()
+class FileViewItem(ToggleButtonBehavior, BoxLayout):
     name = StringProperty()
+    source = StringProperty()
+    is_all_folder = StringProperty(False)
+
+    def on_state(self, target, state):
+        if state == 'down':
+            f= Factory.get('FileItemOption')()
+            self.add_widget(f)
+            from kivy.animation import Animation
+            anim = Animation(size_hint_y=0.25, duration=.1)
+            anim.start(f)
+        else:
+        #remove the choice box
+            self.remove_widget(self.children[0])
 
     def on_press(self):
-        if self.last_touch.is_double_tap or self.selected:
+        if self.last_touch.is_double_tap and self.state=='normal':#directly add it to the pool
+            self.add_item("1", 'normal')
+
+    def add_item(self, qt, verso):
+            from os.path import relpath
             stack = App.get_running_app().root.ids['deck'].ids['stack']
             ##########################################################
-            qt = int(self.inner_box.ids['qt'].value)
-            verso = self.inner_box.ids['dual'].state
-            if self.folder:
+            qt = int(qt)
+            if self.is_all_folder:
+                print self, self.source, self.name, self.is_all_folder
                 #It is a folder, add all the imge from folder
-                for f in os.listdir(self.folder):
+                for f in os.listdir(self.is_all_folder):
                     if f.endswith(('.jpg','.jpeg', '.png','.gif','.kv')):
                         box = StackPart()
                         box.name = f
-                        box.source = os.path.join(self.folder,f)
+                        box.source = os.path.join(self.is_all_folder,f)
                         box.qt =qt
                         box.verso = verso
                         if f.endswith('.kv'):
-                            box.template = "@%s"%os.path.join(self.folder,f)
+                            if self.is_all_folder.startswith(gamepath):
+                                fold = relpath(self.is_all_folder, gamepath)
+                            else:
+                                fold = self.is_all_folder
+                            box.template = "@%s"%os.path.join(fold,f)
                             #box.source = 'img/card_template.png'
                             box.realise()
                         stack.add_widget(box)
@@ -106,25 +124,12 @@ class IconImage(ButtonBehavior, Image):
                 box.verso = verso
                 stack.add_widget(box)
                 if self.name.endswith('.kv'):
-                    box.template="@%s"%self.name
-                    #box.source = 'img/card_template.png'
+                    if self.name.startswith(gamepath):
+                        fold = relpath(self.name, gamepath)
+                    else:
+                        fold = self.name
+                    box.template="@%s"%fold
                     box.realise()
-            self.selected= False
-
-        else:
-            if self.parent.last_selected:
-                self.parent.last_selected.selected = False
-            self.selected = True
-            self.parent.last_selected = self
-
-    def on_selected(self, target,value):
-        if self.selected:
-            #Add QT / Dual
-            self.inner_box = Factory.get('ChoiceBox')()
-            self.add_widget(self.inner_box)
-        else:
-            #Remove QT/Dual
-            self.remove_widget(self.inner_box)
 
     def realise(self,*args):
         if not self.name.endswith('.kv'):
@@ -142,9 +147,9 @@ class IconImage(ButtonBehavior, Image):
 
         def inner(*args):
             #Here is hould loop on the template to apply them on values
-            cim =  tmpl.toImage()
+            cim = tmpl.toImage()
             cim.texture.flip_vertical()
-            self.texture = cim.texture
+            self.ids['img'].texture = cim.texture
             App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
 
@@ -156,7 +161,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     name = StringProperty()
     values = DictProperty()
 
-    def realise(self,*args):
+    def realise(self,withValue = False):
         #Force the creation of an image from self.template, thourhg real display
         from kivy.clock import Clock
         #Force the creaiotn of the tmpl miniture for display
@@ -168,6 +173,8 @@ class StackPart(ButtonBehavior, BoxLayout):
             return
         App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
+        if withValue:
+            tmpl.apply_values(self.values)
         def inner(*args):
             #Here is hould loop on the template to apply them on values
             self.tmplWidget = tmpl
@@ -194,23 +201,26 @@ class StackPart(ButtonBehavior, BoxLayout):
             b.bind(on_press = lambda x: self.parent.remove_widget(self))
             self.add_widget(b)
             from kivy.animation import Animation
-            anim = Animation(width=100, duration=.1)
-            anim.start(b)
+            W = 100
             if self.template:#it is a template: add edit button
+                W=90
                 be = Factory.get('HiddenRemoveButton')(source='img/writing_blue.png')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
                     options = p.ids['options']
-                    print 'editing options with ', self.values
+                    #print 'editing options with ', self.values
+
                     options.values = self.values
                     options.tmplPath = self.template #trigger options building on popup
                     p.stackpart = self
                     p.open()
                 be.bind(on_press = inner)
                 self.add_widget(be)
-                anim = Animation(width=100, duration=.1)
+                anim = Animation(width=W, duration=.1)
                 anim.start(be)
+            anim = Animation(width=W, duration=.1)
+            anim.start(b)
         else:
             self.remove_widget(self.children[0])
             if self.template:
@@ -245,7 +255,6 @@ class TemplateEditTree(TreeView):
         else:
             tmpls = BGTemplate.FromFile(path)
         for tmpl in tmpls:
-            #Ensure we have the proper values validated
             tmpl.apply_values(self.values)
             #Now add on load
             node = self.add_node(TreeViewLabel(text=tmpl.name, color_selected=(.6,.6,.6,.8)))
@@ -259,19 +268,19 @@ class TemplateEditTree(TreeView):
             for fname in tmpl.ids.keys():
                 if not isinstance(tmpl.ids[fname], Field):
                     continue
-                if not tmpl.ids[fname].editable:
-                    continue
                 _wid = tmpl.ids[fname]
                 if not _wid.editable:
                     continue
                 if _wid.default_attr:
                     w = _wid.params[_wid.default_attr](_wid)
                     if w is not None:#None when not editable
+                        fname, _wid.default_attr, w
                         self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
             self.toggle_node(node)
             self.select_node(node) # will issue a template update
 
 class TemplateEditPopup(Popup):
+
     def compute(self):
         tree = self.ids['options']
         if not tree.current_selection:
@@ -279,7 +288,7 @@ class TemplateEditPopup(Popup):
             return
         tmpl, node = tree.current_selection
         #Here is hould loop on the template to apply them on values
-        values = dict()
+        values = tree.values
         if node:#do that only if a template has been selected. otherwise skip it
             for child_node in node.nodes:
                 for child in child_node.walk(restrict=True):
@@ -324,22 +333,23 @@ class BGDeckMaker(BoxLayout):
         pictures = self.ids['pictures']
         pictures.clear_widgets()
         tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')])
-        C = len(tmpls )
+        C = len(tmpls)
         progress.max = C
         progress.value = 1
         pg = Factory.get('PictureGrid')()
+
         def inner(*args):
             if not tmpls:
                 Clock.unschedule(inner)
                 return
             _f = os.path.join('Templates',tmpls.pop())
-            img = IconImage(source="", name=_f)
+            img = FileViewItem(source="", name=_f)
             pictures.add_widget(img)
             progress.value += 1
             img.realise()
         Clock.schedule_interval(inner, .1)
 
-    def load_folder(self,folder):
+    def load_folder(self, folder):
         self.cancel_load = False
         from functools import partial
         if not folder: return
@@ -351,18 +361,18 @@ class BGDeckMaker(BoxLayout):
         progress.max = C
         progress.value = 1
         pg = Factory.get('PictureGrid')()
-        pg.add_widget(IconImage(source='img/AllFolder.png', folder = folder, name="Add %d Imgs"%C))
+        pg.add_widget(FileViewItem(source='img/AllFolder2.png', is_all_folder = folder, name="Add %d Imgs"%C))
         def inner(_f,_pictures,_progress, *args):
             if self.cancel_load:
                 return False
             #FOLD = True
             if _f.endswith('.kv'): #it is a template:
-                #source = 'img/card_template.png'
-                source = ""
+                source = 'img/card_template.png'
+                #source = ""
                 _f = os.path.join(folder, _f)
             else:
                 source  = os.path.join(folder,_f)
-            img = IconImage(source=source, name=_f)
+            img = FileViewItem(source=source, name=_f)
             _pictures.add_widget(img)
             _progress.value += 1
             if _f.endswith('.kv'):
@@ -396,32 +406,75 @@ class BGDeckMaker(BoxLayout):
             box.values = obj['values']
             stack.add_widget(box)
 
+    def choose_file_popup(self,title, cb):
+        from kivy.uix.popup import Popup
+        from kivy.uix.filechooser import FileChooserListView
+        from conf import get_last_dir, set_last_dir
+        f = FileChooserListView(path =get_last_dir(self))
+        def valid(*args):
+            p.dismiss()
+        f.bind(on_submit= valid)
+        p = Popup(content=f)
+        p.title = title
+        def inner(*args):
+            if p.content.selection:
+                selection = p.content.selection[0]
+                from os.path import split
+                set_last_dir(self,split(selection)[0])
+                cb(selection)
+        p.on_dismiss = inner
+        p.open()
+
     def load_file(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
-        reader = csv.DictReader(file(filepath, 'rb'))
-        header = reader.fieldnames
-        stack = self.ids['stack']
-        print 'reading file with header', header
-        remaining_header = set(header) - set(['qt','source','template','dual'])
-        for index, obj in enumerate(reader):
-            qt = int(obj['qt'])
-            verso = 'down' if obj['dual'] else 'normal'
-            box = StackPart()
-            box.source = obj['source']
-            box.qt = qt
-            box.verso = verso
-            box.template = obj['template']
-            values = dict()
-            for attr in remaining_header:
-                v = obj.get(attr, None)
-                if v is not None:
-                    values[attr] = v
-            box.values = values
-            stack.add_widget(box)
+        with open(filepath, 'rb') as csvfile:
+            dialect = csv.Sniffer().sniff(csvfile.read(1024), delimiters=";,")
+            csvfile.seek(0)
+            reader = csv.DictReader(csvfile, dialect = dialect)
+            header = reader.fieldnames
+            stack = self.ids['stack']
+            remaining_header = set(header) - set(['qt','source','template','dual'])
+            boxes= list()
+            for index, obj in enumerate(reader):
+                #print index, obj
+                if set([obj[_v] for _v in obj]) == set(dialect.delimiter):#skipping empty row made of ;;;;;; or ,,,,,
+                    continue
+                qt = 1
+                if 'qt' in obj:
+                    qt = int(obj['qt'])
+                verso = 'normal'
+                if 'dual' in obj:
+                    if not obj['dual'] or obj['dual'].lower() == 'false':
+                        verso = 'normal'
+                    else:
+                        verso = 'down'
+                box = StackPart()
+                box.verso = verso
+                box.qt = qt
+                if 'template' in obj:
+                    box.template = obj['template']
+                if 'source' in obj:
+                    box.source = obj['source']
+                values = dict()
+                for attr in remaining_header:
+                    v = obj.get(attr, None)
+                    if v is not None:
+                        if isinstance(v, basestring):
+                            v= unicode(v, 'latin-1')
+                        values[attr] = v
+                box.values = values
+                stack.add_widget(box)
+                boxes.append(box)
+            boxes.reverse()
+            def inner(*args):
+                b= boxes.pop()
+                b.realise(withValue=True)
+                if not boxes:
+                    Clock.unschedule(inner)
+            Clock.schedule_interval(inner, .1)
 
     def export_file(self, filepath='mycsvfile.csv'):
-        print 'do the relapth for template and values also'
         from collections import OrderedDict
         from conf import gamepath
         from os.path import relpath, isfile
@@ -481,7 +534,7 @@ class BGDeckMaker(BoxLayout):
                 qt_front+=c.qt
             else:
                 qt_back+=c.qt
-        num_part = len(grid.children)
+        num_part = len([_c for _c in grid.children if isinstance(_c, StackPart)])
         label = "Stack made of %s parts / %s Cards: %s Front - %s Back"%(num_part,qt,qt_front,qt_back)
         self.ids['stats'].text = label
 

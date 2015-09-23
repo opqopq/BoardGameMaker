@@ -120,7 +120,6 @@ class BGDesigner(FloatLayout):
         target = klass()
         child = self.selection[0]
         #Remove it from me
-        print 'removing child', child
         self.ids.content.remove_widget(child)
         child_node = self.nodes[child]
         self.ids.fields.remove_node(self.nodes[child])
@@ -290,7 +289,6 @@ class BGDesigner(FloatLayout):
                 continue
             template.remove_widget(target)
             self.insert_field(target)
-        print 'End load', self.current_template.size
 
     def new(self,*args):
         for nodeIndex, node in self.nodes.items():
@@ -330,7 +328,7 @@ class BGDesigner(FloatLayout):
                 tmpls.append('%s%s: %.2f'%(prepend, attr, value))
             elif vtype in  (type({}), ObservableDict):
                 for _v in value:
-                    if isfile(value[_v]) and save_relpath:
+                    if isfile(unicode(value[_v],'latin-1')) and save_relpath:
                         value[_v] = relpath(value[_v], gamepath)
                 tmpls.append('%s%s: %s'%(prepend, attr,value))
             elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):

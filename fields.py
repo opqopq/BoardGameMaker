@@ -16,6 +16,7 @@ from kivy.graphics.fbo import Fbo
 from utils.symbol_label import SymbolLabel
 from kivy.uix.effectwidget import EffectWidget
 from editors import *
+from conf import gamepath, find_path
 
 Builder.load_file('kv/fields.kv')
 
@@ -385,7 +386,9 @@ class TextField(Label, Field):
         ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('color', ColorEditor),
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
-        ('font', FontChoiceEditor) ])
+        ('font', FontChoiceEditor) ,
+        ('padding_x', IntEditor), ('padding_y', IntEditor)
+    ])
     # ('font_size', IntEditor), ('font_name', FontChoiceEditor), ('bold', BooleanEditor),  ('italic', BooleanEditor)])
     #Keep old static font size
     static_font_size = NumericProperty()
@@ -455,13 +458,9 @@ class ImageField(Image, Field):
     source_filters = ['*.jpg','*.gif','*.jpeg','*.bmp','*.png']
 
     def on_source(self, instance, source):
-        if not isfile(source):
-            from conf import gamepath
-            if isfile(join(gamepath, source)):
-                self.source = join(gamepath, self.source)
-                return
-            from conf import log
-            log('Source does not exist for ImageField %s: %s'%(self.name, source))
+        src = find_path(source)
+        if src:
+            self.source = src
 
 class ColorField(Field):
     "Display a color on a rectangle"
@@ -487,8 +486,7 @@ class ImgChoiceField(Image, Field):
 
     def on_selection(self, instance, selection):
         if self.choices:
-            from conf import path_reader
-            self.source = path_reader(self.choices[selection])
+            self.source = find_path(self.choices[selection])
 
     def on_choices(self, instance, choices):
         self.selection_values = choices.keys()
@@ -499,14 +497,9 @@ class ImgChoiceField(Image, Field):
             self.on_selection(self, self.selection)
 
     def on_source(self, instance, source):
-        if not isfile(source):
-            from conf import gamepath
-            if isfile(join(gamepath, source)):
-                self.source = join(gamepath, self.source)
-                return
-            from conf import log
-            log('Source does not exist for ImageChoiceField %s: %s'%(self.name, source))
-
+        src = find_path(source)
+        if src:
+            self.source = src
 
 class ColorChoiceField(Field):
     "This widget will display an image base on a choice, helds in choices dict"
@@ -584,12 +577,8 @@ class SubImageField(Field):
 
     def on_dimension(self, instance, dimension):
         from kivy.core.image import Image
-        path = dimension[0]
-        if not isfile(path):
-            from conf import gamepath
-            path = join(gamepath, path)
-            if not isfile(path):
-                raise ValueError('Invalid path for image to take subimage from', dimension[0])
+        path = find_path(dimension[0])
+        if not path: raise ValueError('Invalid path for image to take subimage from', dimension[0])
         IMG = Image(path).texture
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
@@ -606,15 +595,9 @@ class TransfoField(Field):
     Image = ObjectProperty()
 
     def on_source(self, instance, source):
-        if not isfile(source):
-            from conf import gamepath
-            if isfile(join(gamepath, source)):
-                self.source = join(gamepath, self.source)
-                return
-            from conf import log
-            log('Source does not exist for TransfoField %s: %s'%(self.name, source))
-        self.Image = PILImage.open(source)
-        if isfile(source):
+        source = find_path(source)
+        if source:
+            self.Image = PILImage.open(source)
             for xfo in self.xfos:
                 self.Image = xfo(self.Image)
         self.prepare_texture()
@@ -650,14 +633,8 @@ class SvgField(Field):
     default_attr = 'source'
 
     def on_source(self,instance, source):
-        if not isfile(source):
-            from conf import gamepath
-            if isfile(join(gamepath, source)):
-                self.source = join(gamepath, self.source)
-                return
-            from conf import log
-            log('Source does not exist for SVGField %s: %s'%(self.name, source))
-        else:
+        source = find_path(source)
+        if source:
             with self.canvas:
                 from kivy.graphics.svg import Svg
                 Svg(source)
@@ -702,15 +679,10 @@ class SourceShapeField(ShapeField):
 
     def on_source(self,instance, source):
         from kivy.core.image import Image
-        if not isfile(source):
-            from conf import gamepath
-            if isfile(join(gamepath, source)):
-                self.source = join(gamepath, self.source)
-                return
-            from conf import log
-            log('Source does not exist for SourceShapeField %s: %s'%(self.name, source))
-        self.texture = Image(source).texture
-        self.on_texture_wrap(self, self.texture_wrap)
+        source = find_path(source)
+        if source:
+            self.texture = Image(source).texture
+            self.on_texture_wrap(self, self.texture_wrap)
 
 class LineField(ShapeField):
     #Just goigng from lower left to upper right. is it even useful ?

@@ -6,9 +6,10 @@ todos= [
     "P2: repair autofit for the last simple error in the +1 in fit size",
     "P3: bgg browser v2 - file & links",
     "P3: may be change the autofit label to growth until BOTH width & hieght are depassed",
+    "P2: still some error in picture memory geneation: no way to be sure it works",
+    "P3: do some advancement /progress stuff to help waiting for the ethingy like PDF gen",
    'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
     'import template field in template - almost, except for values in valuetree',
-    'super bug: card format <-> tabbedpanel bug',
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
     'for field d&d/move, apply rotation effect to angle when calcultaing the drama',
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
@@ -25,7 +26,6 @@ from kivy.lang import Builder
 Builder.load_file('kv/bgm.kv')
 ##############################################
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import StringProperty
 class RootWidget(BoxLayout):
 
@@ -66,7 +66,7 @@ class RootWidget(BoxLayout):
             try:
                 self.on_screen_name(self, 'Console', False)
             except ValueError:
-                print 'Additional Screen disabled: resorting to print: ',
+                print 'Console/Log Screen disabled: resorting to print: ',
                 print text, stack
                 return
         if not stack:
@@ -82,7 +82,7 @@ class BGMApp(App):
     def build(self):
         root =  RootWidget()
         from conf import gamepath
-        root.ids['deck'].file_chooser.load_folder(gamepath)
+        #root.ids['deck'].file_chooser.load_folder(gamepath)
         return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):
