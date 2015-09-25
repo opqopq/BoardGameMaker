@@ -3,9 +3,8 @@
 todos= [
     "P3: comprendre pourquoi les cm n'en sont point",
     'P3: change virtual screen stack',
-    "P2: repair autofit for the last simple error in the +1 in fit size",
     "P3: bgg browser v2 - file & links",
-    "P3: may be change the autofit label to growth until BOTH width & hieght are depassed",
+    "p2: how to have, in designer a way to edit intelligent code, like python sentence ?"
     "P2: still some error in picture memory geneation: no way to be sure it works",
     "P3: do some advancement /progress stuff to help waiting for the ethingy like PDF gen",
    'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',

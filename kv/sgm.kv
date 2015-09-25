@@ -205,6 +205,7 @@
             size_hint_x: .67
             orientation: 'vertical'
             RelativeLayout:
+                id: FL
                 canvas.before:
                     Color:
                         rgb:.7,.7,.7
@@ -214,9 +215,8 @@
                 Scatter:
                     id: preview
                     do_rotation: False
-                    x: root.x + 100
-                    center_y: root.center_y +100
                     #center_x: root.center_x
+                    #pos_hint: {'center_x':.5, 'center_y':.5}
             BoxLayout:
                 size_hint_y: None
                 orientation: "horizontal"

@@ -56,7 +56,6 @@ class RuledScatter(ScatterLayout):
             self.htick = [Line(points=(x*cm(1),-10, x*cm(1),+5)) for x in range(2+int(self.width/cm(1)))]
             self.vtick = [Line(points=(-10, y*cm(1),+5, y*cm(1))) for y in range(2+int(self.height/cm(1)))]
 
-
 class TreeFieldEntry(TreeViewNode, BoxLayout):
     target = ObjectProperty(None)
 
@@ -423,7 +422,7 @@ class BGDesigner(FloatLayout):
         tmpls.append('\tsize: %s, %s'%(w,h))
         for node in self.ids.fields.root.nodes:
             field = node.target
-            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ, save_relpath = save_relpath)
+            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
         #Prepend include
         if imports:
             tmpls.insert(0, "")

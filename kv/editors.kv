@@ -332,6 +332,27 @@
                 text: "Cancel"
                 on_press: root.dismiss()
 
+<CodeEditorPopup@Popup>
+    size_hint: None, None
+    title: 'Code Edition for %s'%self.name
+    GridLayout:
+        cols: 1
+        CodeInput:
+            id: cpicker
+            text: unicode(root.text,'latin-1')
+#:import KivyLexer kivy.extras.highlight.KivyLexer
+            lexer: KivyLexer()
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(cpicker)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
 
 <Point>:
     canvas:

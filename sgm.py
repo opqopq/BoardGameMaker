@@ -78,6 +78,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
     is_all_folder = StringProperty(False)
 
     def on_state(self, target, state):
+        self.realise()
         if state == 'down':
             f= Factory.get('FileItemOption')()
             self.add_widget(f)
@@ -143,14 +144,15 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.name
             return
-        App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
+        #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
         def inner(*args):
-            #Here is hould loop on the template to apply them on values
+            from kivy.base import EventLoop
+            EventLoop.idle()
             cim = tmpl.toImage()
             cim.texture.flip_vertical()
             self.ids['img'].texture = cim.texture
-            App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
+            #App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
 
 class StackPart(ButtonBehavior, BoxLayout):
@@ -171,22 +173,25 @@ class StackPart(ButtonBehavior, BoxLayout):
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.template
             return
-        App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
+        #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
         if withValue:
             tmpl.apply_values(self.values)
         def inner(*args):
             #Here is hould loop on the template to apply them on values
+            from kivy.base import EventLoop
+            EventLoop.idle()
+
             self.tmplWidget = tmpl
-            cim =  tmpl.toImage()
+            cim = tmpl.toImage()
             cim.texture.flip_vertical()
             self.ids['img'].texture = cim.texture
-            App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
+            #App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
 
     def on_press(self):
         if self.last_touch.is_double_tap :
-            self.selected= False
+            self.selected = False
         else:
             if not self.selected:
                 if self.parent.last_selected:
@@ -195,6 +200,7 @@ class StackPart(ButtonBehavior, BoxLayout):
                 self.parent.last_selected = self
 
     def on_selected(self, instance, selected):
+        self.realise(True)
         if self.selected:
             #Add Remove Button
             b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
@@ -210,11 +216,25 @@ class StackPart(ButtonBehavior, BoxLayout):
                     p.name = self.template
                     options = p.ids['options']
                     #print 'editing options with ', self.values
-
                     options.values = self.values
                     options.tmplPath = self.template #trigger options building on popup
                     p.stackpart = self
                     p.open()
+                    p.do_layout()
+                    p.content.do_layout()
+                    from kivy.clock import Clock
+                    def _inner(*args):
+                        prev = p.ids['preview']
+                        tmpl = prev.children[0]
+                        TS = tmpl.size
+                        PS = prev.size
+                        W_ratio = float(.9*PS[0])/TS[0]
+                        H_ratio = float(.9*PS[1])/TS[1]
+                        ratio = min(W_ratio, H_ratio)
+                        x,y = p.ids['FL'].center
+                        prev.center = ratio * x, ratio * y
+                        p.ids['preview'].scale = ratio
+                    Clock.schedule_once(_inner, 0)
                 be.bind(on_press = inner)
                 self.add_widget(be)
                 anim = Animation(width=W, duration=.1)
@@ -472,6 +492,7 @@ class BGDeckMaker(BoxLayout):
                 b.realise(withValue=True)
                 if not boxes:
                     Clock.unschedule(inner)
+                    print 'Import/Inner is over'
             Clock.schedule_interval(inner, .1)
 
     def export_file(self, filepath='mycsvfile.csv'):

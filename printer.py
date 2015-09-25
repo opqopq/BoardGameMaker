@@ -59,6 +59,7 @@ class PDFBook:
             print PICT_BY_SHEET , 'pictures by sheet'
 
         for i in range((len(fps)/PICT_BY_SHEET)+1):
+            print 'Printing pages %s. Remaingin %s'%(i, len(fps))
             #Add PAge if fps left
             if fps:
                 for row in range(NUM_ROW):
@@ -78,13 +79,13 @@ class PDFBook:
                                         tmplWidget = tmplWidget[-1]
                                     else:
                                         raise NameError('No such template: '+ item.template)
-                                    print 'this will not work: we need to force the creation of image somewhere to force creation of pixels'
                                     print 'here to be added: adding on realizer, exporting & then removing. more tricky'
                                 if item.values:
                                     tmplWidget.apply_values(item.values)
                                 cim = tmplWidget.toImage()
-                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw')
-                                src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
+                                pim = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
+                                src = ImageReader(pim)
+                                #src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
                             else:
                                 src = item.source
                         except IndexError:
@@ -121,7 +122,7 @@ class PDFBook:
                                     print 'this will not work: we need to force the creation of image somewhere to force creation of pixels'
                                     print 'here to be added: adding on realizer, exporting & then removing. more tricky'
                                 cim = tmplWidget.toImage()
-                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw', 0,1)
+                                pim = frombuffer('RGBA',cim.size, cim._texture.pixels,'raw', 'RGBA',0,1)
                                 src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
                             else:
                                 src = item.source

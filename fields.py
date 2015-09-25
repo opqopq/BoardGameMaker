@@ -419,9 +419,11 @@ class TextField(Label, Field):
             from textwrap import wrap
             self._single_line_text = self.text
             self.text = '\n'.join(wrap(self.text))
+            self.max_lines = 1
         else:
             if self._single_line_text:
-                self.text=self._single_line_text
+                self.text = self._single_line_text
+                self.max_lines = 1
 
     def on_text(self, base, *args):
         self._single_line_text = self.text.replace('\n', '')
@@ -444,11 +446,16 @@ class TextField(Label, Field):
             if changed:
                 #No need to test for grownth:
                 return
+            init_fint_size = self.font_size
             #Auto fit to growth
             while self._label.get_extents(self.text)[0]<= self.width and self._label.get_extents(self.text)[1]<= self.height:
                 if self.max_font_size and self.font_size>=self.max_font_size:
                     break
                 self.font_size+=1
+            else:#at taht precise point, if the font size has indeed been increased, their is at least on dimension by which we go too far => shrkink it
+                if self.font_size != init_fint_size: #do that only if there has been some changed
+                    self.font_size-=1
+
 
 class ImageField(Image, Field):
     mask = StringProperty()

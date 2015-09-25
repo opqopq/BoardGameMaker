@@ -91,7 +91,6 @@ class BGTemplate(Field, RelativeLayout):
         ctxs = set()
         for k,r in rules:
             ctxs.add(r.ctx)
-            #print k,  k.key, k.parents #, k.get_bases(),
             attrs[k] = (k.match, r.properties.keys())
         for ctx in ctxs:
             for dclass in ctx.dynamic_classes:
