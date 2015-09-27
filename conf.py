@@ -181,3 +181,33 @@ def get_last_dir(src=None):
     if src is None or not(src in DirCache):
         src = 'last'
     return DirCache[src]
+
+
+def toImage(self, bg_color=(1,1,1,0)):
+    #create image widget with texture == to a snapshot of me
+    from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
+    from kivy.core.image import Image as CoreImage
+
+    if self.parent is not None:
+        canvas_parent_index = self.parent.canvas.indexof(self.canvas)
+        self.parent.canvas.remove(self.canvas)
+
+    fbo = Fbo(size=self.size, with_stencilbuffer=True)
+
+    with fbo:
+        ClearColor(*bg_color)
+        ClearBuffers()
+        Scale(1, -1, 1)
+        Translate(-self.x, -self.y - self.height, 0)
+
+    fbo.add(self.canvas)
+    fbo.draw()
+
+    cim = CoreImage(fbo.texture, filename = '%s.png'%id(self))
+
+    fbo.remove(self.canvas)
+
+    if self.parent is not None:
+        self.parent.canvas.insert(canvas_parent_index, self.canvas)
+
+    return cim

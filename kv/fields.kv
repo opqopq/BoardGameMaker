@@ -6,6 +6,11 @@
 <.designed>
     designed: True
     canvas.after:
+        #First, re-create the rotation effect of angle
+        Rotate:
+            angle: self.angle
+            origin: self.center # if scatter self.width/2, self.height/2
+            axis: 0,0,1
         #Border Frame - designer
         Color:
             rgba: (.2,.2,.2,1) if self.selected else (0,0,0,0)
@@ -38,6 +43,13 @@
         Line:
             width: 2
             circle: self.right-5, self.center_y, 2.5
+        #End the rotation stuff for designed
+        Rotate:
+            angle: -self.angle
+            origin: self.center # if scatter self.width/2, self.height/2
+            axis: 0,0,1
+
+
     Label:
         is_context: True
         size_hint_y: None

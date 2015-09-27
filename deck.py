@@ -29,22 +29,29 @@ class TreeViewField(TreeViewNode,BoxLayout):
         bl = BoxLayout(orientation="horizontal")
         self.add_widget(bl)
         if self.pre_label:
-            bl.add_widget(ToggleButton(size_hint_x=.25, halign='left', shorten=True, text=self.pre_label))
+            bl.add_widget(Label(size_hint_x=.25, halign='left', shorten=True, text=self.pre_label))
             bl.add_widget(self.editor.create(self.pre_label, self.name,size_hint_x=.75))
         else:
             b = ToggleButton(size_hint_x=.4, halign='left', shorten=True, text=self.name)
             e = self.editor.create(self.name, self.name,size_hint_x=.75)
             t = AdvancedCodeEditor(self.editor.target).create(self.name, self.name, size_hint_x=.75)
             def switch(*args):
-                if b.state=='down':
+                if e in bl.children:
                     bl.remove_widget(e)
                     bl.add_widget(t)
+                    self.editor.target.code_behind[self.name] = t.children[-1].text
                 else:
                     bl.remove_widget(t)
                     bl.add_widget(e)
+                    del self.editor.target.code_behind[self.name]
             b.bind(on_press=switch)
             bl.add_widget(b)
-            bl.add_widget(e)
+            #if code behind, directly switch to advanced editor with proper stuff
+            if self.name in self.editor.target.code_behind:
+                bl.add_widget(t)
+                b.state = 'down'
+            else:
+                bl.add_widget(e)
 
 class ScriptTree(TreeView):
 

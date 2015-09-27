@@ -137,7 +137,11 @@ class AdvancedCodeEditor(AdvancedTextEditor):
         from kivy.uix.button import Button
         from kivy.uix.codeinput import CodeInput
 
-        ti = TextInput(text=str(getattr(self.target, keyname)))
+        codetext= str(getattr(self.target, keyname))
+        if name in self.target.code_behind:
+            #print self.target, name, self.target.code_behind[name]
+            codetext = self.target.code_behind[name]
+        ti = TextInput(text=codetext)
         ti.size_hint_x = .8
 
         b = Button(text='...')
@@ -148,7 +152,11 @@ class AdvancedCodeEditor(AdvancedTextEditor):
 
         def cbtxt(*args):
             code = CodeWrapper(args[0].text)
-            setattr(self.target,keyname, code.execute())
+            try:
+                setattr(self.target,keyname, code.execute())
+            except NameError:
+                print "erreur while evaluating code"
+            self.target.code_behind[keyname] = code.code
             t.stored_value = code
             ti.text = args[0].text
 
@@ -158,11 +166,7 @@ class AdvancedCodeEditor(AdvancedTextEditor):
             cp_width = min(Window.size)
             size = Vector(Window.size)*.9
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-            if isinstance(t.stored_value, CodeWrapper):
-                _t = t.stored_value.code
-            else:
-                _t = str(getattr(self.target,keyname))
-            popup = CodeEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = _t, multiline = True)
+            popup = CodeEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = ti.text, multiline = True)
             popup.open()
 
         b.on_press = button_callback

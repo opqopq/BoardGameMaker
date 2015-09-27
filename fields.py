@@ -99,7 +99,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
-    not_exported = ['cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
+    not_exported = ["code_behind", 'cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -117,6 +117,10 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color'])])
 
     Type = 'Field'
+
+    #place to hold all kv codes from designeer
+    code_behind = DictProperty()
+
 
     def on_selected(self, instance, selected):
         self.focused = selected
@@ -184,6 +188,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
         import inspect
         self.params = OrderedDict()
         self.menu = OrderedDict()
+        self.code_behind = dict()
         for klass in reversed(inspect.getmro(self.__class__)):
             if not issubclass(klass, Field):
                 continue
@@ -212,11 +217,14 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
             #Remove non attribute stuff
             if not isinstance(attr, (Property, dict, list, int, float, tuple, basestring)):
                 continue
+            if attrName == 'is_context':
+                continue
             try:
                 instance = getattr(self, attrName)
                 binstance = getattr(other, attrName)
                 if binstance != instance:
                     results.add(attrName)
+                    #print 'diff', attrName, instance, binstance
             except (KeyError, AttributeError), E:
                 import traceback
                 print 'While GetDelta between %s and %s: Issue with key %s. Maybe due to styles: %s'%(self,other, attrName, self.styles)
@@ -275,22 +283,29 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     def on_touch_down(self, touch):
         if self.designed:
             origin = Vector(*touch.pos)
+            #Convert origin to take into account self.angle
             for pos in [(self.center_x,self.y+5), (self.center_x, self.top-5),(self.x+5, self.center_y),(self.right-5,self.center_y),(self.right-5, self.top-5),(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5,self.y+5)]:
-                if self.selected and origin.distance(Vector(*pos)) <5:
-                    touch.ud['do_resize'] = True
-                    touch.grab(self)
-                    #Calculate the mode of resizing
-                    ox,oy = touch.opos
-                    cx,cy = self.center
-                    touch.ud['LEFT'] = ox<cx
-                    touch.ud['DOWN'] = oy<cy
-                    if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
-                        touch.ud['movement'] = 'y'
-                    if pos in [(self.x+5, self.center_y), (self.right-5, self.center_y)]:
-                        touch.ud['movement'] = 'x'
-                    if pos in [(self.x+5, self.y+5),(self.x+5, self.top-5), (self.right-5, self.top-5), (self.right-5,self.y+5)]:
-                        touch.ud['movement'] = 'xy'
-                    return True
+                if self.selected:
+                    VECTOR = Vector(*pos)
+                    if self.angle:
+                        deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
+                        deltapos =  deltapos.rotate(self.angle)
+                        VECTOR = deltapos + self.center
+                    if origin.distance(VECTOR) <5:
+                        touch.ud['do_resize'] = True
+                        touch.grab(self)
+                        #Calculate the mode of resizing
+                        ox,oy = touch.opos
+                        cx,cy = self.center
+                        touch.ud['LEFT'] = ox<cx
+                        touch.ud['DOWN'] = oy<cy
+                        if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
+                            touch.ud['movement'] = 'y'
+                        if pos in [(self.x+5, self.center_y), (self.right-5, self.center_y)]:
+                            touch.ud['movement'] = 'x'
+                        if pos in [(self.x+5, self.y+5),(self.x+5, self.top-5), (self.right-5, self.top-5), (self.right-5,self.y+5)]:
+                            touch.ud['movement'] = 'xy'
+                        return True
             if self.collide_point(*touch.pos):
                 touch.grab(self)
                 #Define if resized is on
@@ -456,7 +471,6 @@ class TextField(Label, Field):
                 if self.font_size != init_fint_size: #do that only if there has been some changed
                     self.font_size-=1
 
-
 class ImageField(Image, Field):
     mask = StringProperty()
     attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor), ('mask', FileEditor)])
@@ -590,21 +604,35 @@ class SubImageField(Field):
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
 
-class TransfoField(Field):
+class TransfoField(Field, Image):
     "Transform an image file thourgh different methods registered in img_xfos.py"
     default_attr = 'source'
     not_exported = ['texture', 'Image']
     attrs = {'source': FileEditor, 'xfos': TransfoListEditor}
 
     texture = ObjectProperty(allownone=True)
-    source = StringProperty()
+    src = ObjectProperty()
     xfos = ListProperty()
     Image = ObjectProperty()
 
     def on_source(self, instance, source):
-        source = find_path(source)
-        if source:
-            self.Image = PILImage.open(source)
+        #if file path : proceed
+        from PIL.Image import frombuffer, FLIP_TOP_BOTTOM
+        self.Image = None
+        print 'if emmpty image, froce through eventloop idle'
+        if isinstance(source, basestring):
+            source = find_path(source)
+            if source:
+                from kivy.core.image import Image as CoreImage
+                cim = CoreImage(source)
+                print cim, source, cim.image, cim.texture, #cim.texture.pixels
+                self.Image = frombuffer('RGBA', cim.size, cim.texture.pixels, 'raw', 'RGBA',0,1)
+        else: #widget case
+            from conf import toImage
+            cim = toImage(source)
+            self.Image = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
+        if self.Image:
+            self.Image.transpose(FLIP_TOP_BOTTOM)
             for xfo in self.xfos:
                 self.Image = xfo(self.Image)
         self.prepare_texture()
@@ -615,22 +643,29 @@ class TransfoField(Field):
 
     def prepare_texture(self):
         self.texture = None
-        #Flip it, for kv
-        from kivy.core.image import Image as KImage, ImageData
-        #Pseicla case for luminace mode
-        if self.Image.mode.startswith('L'):
-            from kivy.logger import Logger
-            Logger.warn('Greyscale picture in XFOField: resorting to disk usage')
-            self.Image.save('build/%s.png'%id(self))
-            ktext = KImage('build/%s.png'%id(self)).texture
-            self.texture = ktext
-            return
-        #Standard mode: flip the
-        flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
-        w, h = flip.size
-        from img_xfos import img_modes
-        imgdata = ImageData(w, h, img_modes[flip.mode], data=flip.tobytes())
-        ktext = Texture.create_from_data(imgdata)
+        from io import BytesIO
+        data = BytesIO()
+        self.Image.save(data,'png')
+        from kivy.core.image import Image as CoreImage
+        cim = CoreImage(data, ext='png')
+        self.texture = cim.texture
+        if 0:
+            #Flip it, for kv
+            from kivy.core.image import Image as KImage, ImageData
+            #Pseicla case for luminace mode
+            if self.Image.mode.startswith('L'):
+                from kivy.logger import Logger
+                Logger.warn('Greyscale picture in XFOField: resorting to disk usage')
+                self.Image.save('build/%s.png'%id(self))
+                ktext = KImage('build/%s.png'%id(self)).texture
+                self.texture = ktext
+                return
+            #Standard mode: flip the
+            flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
+            w, h = flip.size
+            from img_xfos import img_modes
+            imgdata = ImageData(w, h, img_modes[flip.mode], data=flip.tobytes())
+            ktext = Texture.create_from_data(imgdata)
         self.texture = ktext
 
 class SvgField(Field):
@@ -644,6 +679,7 @@ class SvgField(Field):
         if source:
             with self.canvas:
                 from kivy.graphics.svg import Svg
+                print source
                 Svg(source)
 
 class ShapeField(Field):

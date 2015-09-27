@@ -3,7 +3,7 @@ __author__ = 'MRS.OPOYEN'
 
 
 from fields import Field
-from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty
+from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
@@ -93,8 +93,48 @@ class BGTemplate(Field, RelativeLayout):
             ctxs.add(r.ctx)
             attrs[k] = (k.match, r.properties.keys())
         for ctx in ctxs:
+            #print ctx.dynamic_classes, ctx.rules
             for dclass in ctx.dynamic_classes:
+                rule = list(r for s,r in ctx.rules if s.key == dclass.lower()).pop()
+                #print dclass, rule
                 t = Factory.get(dclass)()
+                #print [(tc,tc.z) for tc in t.children]
+                class prox:
+                        value= 0
+                _prox= prox()
+                #print [(r.name, r.properties.get('z',_prox).value) for r in rule.children]
+                rcs = []
+                for r in rule.children:
+                    rcs.append(r)
+                    rcs.sort(key=lambda x: x.properties.get("z",_prox).value)
+                rcs.reverse()
+                    #simulate what has been done for template
+                #print [(r.name, r.properties.get('z',_prox).value) for r in rcs]
+                for tc,rc in zip(t.children, rcs):
+                    #print tc, rc
+                    for p,v in rc.properties.items():
+                        if getattr(tc,p) !=  v.co_value:
+                            #Get code, it may be interessting
+                            #but first, test if it is not simply a tuple or boolean:
+                            if str(getattr(tc,p)) == str(v.value): continue
+                            #print "Co Value test", tc, p, "'%s'"%getattr(tc,p), "'%s'"%v.value, str(getattr(tc,p)) == str(v.value)
+                            if type(getattr(tc,p)) in (type(()), type(list()), ObservableList):
+                                #try if we are not comparing simply stuff
+                                try:
+                                    _res = 0
+                                    theval = eval(v.value)
+                                    if len(getattr(tc,p)) != len(theval):
+                                        raise ValueError('Compared iterables do not have the same list size')
+                                    for _v,_cv in zip(getattr(tc,p), theval):
+                                        if _v!=_cv:
+                                            _res+=1
+                                    if not _res:
+                                        #The list or tuple are the same => should not be considered as code.
+                                        continue
+                                except Exception, e:
+                                    print 'Trying to guess code behing %s did not work'%p, e
+
+                            tc.code_behind[p] = v.value
                 if isinstance(t, BGTemplate):
                     t.name = dclass
                     for ID in t.ids:

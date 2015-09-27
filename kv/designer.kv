@@ -121,6 +121,13 @@
     width: 80
     background_color: 0,.2,1,.6
 
+<WrappedLabel@ScrollView>:
+    text: ""
+    Label:
+        text_size: self.size
+        valign: 'top'
+        text: root.text
+
 <BGDesigner>:
     BoxLayout:
         orientation: "horizontal"
@@ -346,7 +353,7 @@
                         Button:
                             text: "Template Text Preview"
                             #:import F kivy.factory.Factory
-                            on_press: F.Popup(title='Template Text Preview', size_hint=(None,None), width=.8*root.width, height=.8*root.height, pos=(.1*root.width,.1*root.height), content=F.Label(text=root.export_kv().replace('\t','    ').replace('\r\n','\n'))).open()
+                            on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
                             size_hint_y: None
                             height: 30
 

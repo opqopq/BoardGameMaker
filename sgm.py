@@ -93,6 +93,24 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         if self.last_touch.is_double_tap and self.state=='normal':#directly add it to the pool
             self.add_item("1", 'normal')
 
+    def apply_item(self,name):
+        print 'applying name on select'
+        from os.path import relpath
+        stack = App.get_running_app().root.ids['deck'].ids['stack']
+        print 'cur sel from stack', stack.last_selected
+        if stack.last_selected:
+            sel = stack.last_selected
+            if not sel.template:
+                if self.name.startswith(gamepath):
+                    fold = relpath(self.name, gamepath)
+                else:
+                    fold = self.name
+                sel.template = "@%s"%fold
+                #no, actually, should better open a edit popup with proper template stuff
+                sel.realise(True)
+            print sel.qt, sel.verso, sel.template, sel.values
+            print sel.name
+
     def add_item(self, qt, verso):
             from os.path import relpath
             stack = App.get_running_app().root.ids['deck'].ids['stack']

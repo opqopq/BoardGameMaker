@@ -4,14 +4,13 @@ todos= [
     "P3: comprendre pourquoi les cm n'en sont point",
     'P3: change virtual screen stack',
     "P3: bgg browser v2 - file & links",
-    "p2: how to have, in designer a way to edit intelligent code, like python sentence ?"
-    "P2: still some error in picture memory geneation: no way to be sure it works",
+    "P4: still some error in picture memory geneation to be confirmed: no way to be sure it works",
     "P3: do some advancement /progress stuff to help waiting for the ethingy like PDF gen",
    'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
     'import template field in template - almost, except for values in valuetree',
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
-    'for field d&d/move, apply rotation effect to angle when calcultaing the drama',
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
+    "Bug: there is something wrong with the is_context parameter which is applied on all field ????"
 ]
 
 for i,todo in enumerate(todos):

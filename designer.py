@@ -313,6 +313,11 @@ class BGDesigner(FloatLayout):
         if isinstance(field, BGTemplate):
             imports.append(field.src)
         for attr in field.getChangedAttributes(restrict=True):
+            #Check if code behind:
+            if attr in field.code_behind:
+                #print 'Attr %s has been changed and should be written down. One could write the code behind:'%attr, field.code_behind[attr]
+                tmpls.append('%s%s: %s'%(prepend, attr, field.code_behind[attr]))
+                continue
             #convert name to ID
             value = getattr(field,attr)
             vtype = type(value)
@@ -354,9 +359,9 @@ class BGDesigner(FloatLayout):
                 tmpls.append('%s%s: %s'%(prepend, attr, value))
         if isinstance(field, LinkedField):
             for child_field in field.children:
-                if hasattr(child_field, 'is_context') and child_field.is_context:
+                if getattr(child_field, 'is_context', False):
                     continue
-                print 'todo: child to process', child_field
+                print 'todo: child of linked field to process', child_field
         tmpls.append('')
 
     def save(self,PATH=None,*args):
@@ -392,6 +397,7 @@ class BGDesigner(FloatLayout):
         #    deck.update_tmpl(self.current_template.name)
 
     def export_kv(self):
+        print " -- EXPORT KV  -- "*10
         relativ = self.ids.cb_relative.active
         save_cm = self.ids.cb_cm.active
         save_relpath = self.ids.cb_relpath.active
@@ -429,6 +435,10 @@ class BGDesigner(FloatLayout):
             for imp in imports:
                 tmpls.insert(0,"#:include %s"%imp)
         from os import linesep
+        print '*'*60
+        print "Export KV"
+        print linesep.join(tmpls)
+        print '*'*60
         return linesep.join(tmpls)
 
     def on_selection(self, instance, selection):

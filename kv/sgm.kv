@@ -139,6 +139,17 @@
             size: self.parent.size
             allow_stretch: True
     Button:
+        id: apply_button
+        size_hint: .25 if root.parent and root.parent.name.endswith('.kv') else None , 1
+        width: 0 #will only apply if it is a template otherwise size hint will prevail
+        on_press: root.parent.apply_item(root.parent.name)
+        background_color: 0,0,0,0
+        Image:
+            source: 'img/apply.png'
+            pos: self.parent.pos
+            size: self.parent.size
+            allow_stretch: True
+    Button:
         size_hint: .33 , 1
         on_press: root.parent.add_item(qt.text, dual.state)
         background_color: 0,0,0,0
