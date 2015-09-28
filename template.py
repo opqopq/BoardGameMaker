@@ -25,19 +25,7 @@ class BGTemplate(Field, RelativeLayout):
 
     @classmethod
     def FromFile(cls, filename):
-        from os.path import abspath, isfile, join
-        from conf import gamepath
-        if "@" in filename: #Only using subone
-            name, filename = filename.split('@')
-        else:
-            name = ""
-        if not isfile(filename):
-            #try with gamepath ?
-            if isfile(join(gamepath,path_reader(filename))):
-                filename = join(gamepath, path_reader(filename))
-        #Here, we convert to abspath / normpath, as filename is used to index rules by kivy. avoid reimporting rules
-        filepath = abspath(path_reader(filename))
-        filename = filepath
+        name, filename = find_template_path(filename)
         #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
         # Remove any former trace of the file
@@ -50,7 +38,7 @@ class BGTemplate(Field, RelativeLayout):
             from conf import log, alert
             import traceback
             alert(str(E))
-            print 'Error while trying to import Template ',filename
+            print '[Error] While trying to import Template ',filename
             log(E, traceback.print_exc())
             res = list()
         if name:
@@ -113,7 +101,7 @@ class BGTemplate(Field, RelativeLayout):
                 for tc,rc in zip(t.children, rcs):
                     #print tc, rc
                     for p,v in rc.properties.items():
-                        if getattr(tc,p) !=  v.co_value:
+                        if hasattr(tc,p) and getattr(tc,p) !=  v.co_value:
                             #Get code, it may be interessting
                             #but first, test if it is not simply a tuple or boolean:
                             if str(getattr(tc,p)) == str(v.value): continue
@@ -374,5 +362,19 @@ def LoadTemplateFolder(folder="Templates"):
 from conf import CP
 if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):
     LoadTemplateFolder()
-else:
-    print 'No Template Libray Loading requested'
+
+def find_template_path(filename):
+    from os.path import abspath, isfile, join
+    from conf import gamepath
+    if "@" in filename: #Only using subone
+        name, filename = filename.split('@')
+    else:
+        name = ""
+    if not isfile(filename):
+        #try with gamepath ?
+        if isfile(join(gamepath,path_reader(filename))):
+            filename = join(gamepath, path_reader(filename))
+    #Here, we convert to abspath / normpath, as filename is used to index rules by kivy. avoid reimporting rules
+    filepath = abspath(path_reader(filename))
+    filename = filepath
+    return name, filename

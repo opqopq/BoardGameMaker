@@ -56,7 +56,6 @@
     size: 100, 100
 
 <StackPart>:
-    source: ""
     height: 150
     spacing: 20
     padding: 20
@@ -386,13 +385,13 @@
                 padding: 10
                 on_children: root.compute_stats(self)
                 last_selected: None
-                #Progressbar when loading folder
-                ProgressBar:
-                    id: load_progress
-                    size_hint_y: None
-                    height: 30
         Label:
             id: stats
             size_hint_y: None
             height: 30
             font_size: 20
+        #Progressbar when loading or printing
+        ProgressBar:
+            id: load_progress
+            size_hint_y: None
+            height: 30

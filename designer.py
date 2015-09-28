@@ -254,7 +254,6 @@ class BGDesigner(FloatLayout):
     def load(self, templateName):
         #First clean a little
         self.new()
-        print 'see if there is a better way to moving the template around. maybe a copy ?'
         if '@' in templateName:
             #load from file:
             from template import BGTemplate
@@ -385,19 +384,22 @@ class BGDesigner(FloatLayout):
             from conf import alert
             alert('Template %s already exists !'%PATH)
             return
-        templateList.register(BGTemplate.FromText(kv))
         from conf import alert
         alert('Template %s saved'%self.current_template.name)
         #Force update on deck widget
         from kivy.app import App
         deck = App.get_running_app().root.ids.deck
-        print 'todo: impact all template from current deck to reflect what is happening'
+        stack = deck.ids['stack']
+        from template import find_template_path
+        for child in stack.children:
+            if not hasattr(child, 'template'): continue
+            _, tpath = find_template_path(getattr(child, 'template'))
+            if tpath.endswith(PATH):
+                child.realise()
         print 'todo: how do I save pultiple template on a single KV file ? '
-        #if deck.ids.tmpl_tree.current_tmpl_name == self.current_template.name:
-        #    deck.update_tmpl(self.current_template.name)
 
     def export_kv(self):
-        print " -- EXPORT KV  -- "*10
+        #print " -- EXPORT KV  -- "*10
         relativ = self.ids.cb_relative.active
         save_cm = self.ids.cb_cm.active
         save_relpath = self.ids.cb_relpath.active

@@ -76,6 +76,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
     name = StringProperty()
     source = StringProperty()
     is_all_folder = StringProperty(False)
+    tmplWidget = ObjectProperty()
 
     def on_state(self, target, state):
         self.realise()
@@ -142,24 +143,43 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             ##########################################################
             qt = int(qt)
             if self.is_all_folder:
-                print self, self.source, self.name, self.is_all_folder
+                #print self, self.source, self.name, self.is_all_folder
                 #It is a folder, add all the imge from folder
-                for f in os.listdir(self.is_all_folder):
-                    if f.endswith(('.jpg','.jpeg', '.png','.gif','.kv')):
-                        box = StackPart()
-                        box.name = f
-                        box.source = os.path.join(self.is_all_folder,f)
-                        box.qt =qt
-                        box.verso = verso
-                        if f.endswith('.kv'):
-                            if self.is_all_folder.startswith(gamepath):
-                                fold = relpath(self.is_all_folder, gamepath)
-                            else:
-                                fold = self.is_all_folder
-                            box.template = "@%s"%os.path.join(fold,f)
-                            #box.source = 'img/card_template.png'
-                            box.realise()
-                        stack.add_widget(box)
+                for fiv in self.parent.children:
+                    if fiv.is_all_folder: continue
+                    box = StackPart()
+                    box.name = fiv.name
+                    box.source = os.path.join(self.is_all_folder, fiv.name)
+                    box.qt =qt
+                    box.verso = verso
+                    if fiv.name.endswith('.kv'):
+                        if self.is_all_folder.startswith(gamepath):
+                            fold = relpath(self.is_all_folder, gamepath)
+                        else:
+                            fold = self.is_all_folder
+                        box.template = "@%s"%os.path.join(fold, fiv.name)
+                        #box.source = 'img/card_template.png'
+                        box.realise()
+                    stack.add_widget(box)
+                    from kivy.base import EventLoop
+                    EventLoop.idle()
+
+                # for f in os.listdir(self.is_all_folder):
+                #     if f.endswith(('.jpg','.jpeg', '.png','.gif','.kv')):
+                #         box = StackPart()
+                #         box.name = f
+                #         box.source = os.path.join(self.is_all_folder,f)
+                #         box.qt =qt
+                #         box.verso = verso
+                #         if f.endswith('.kv'):
+                #             if self.is_all_folder.startswith(gamepath):
+                #                 fold = relpath(self.is_all_folder, gamepath)
+                #             else:
+                #                 fold = self.is_all_folder
+                #             box.template = "@%s"%os.path.join(fold,f)
+                #             #box.source = 'img/card_template.png'
+                #             box.realise()
+                #         stack.add_widget(box)
             else:
                 box = StackPart()
                 box.name = self.name
@@ -168,11 +188,12 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 box.verso = verso
                 stack.add_widget(box)
                 if self.name.endswith('.kv'):
+                    box.tmplWidget = self.tmplWidget
                     if self.name.startswith(gamepath):
                         fold = relpath(self.name, gamepath)
                     else:
                         fold = self.name
-                    box.template="@%s"%fold
+                    box.template = "@%s"%fold
                     box.realise()
 
     def realise(self,*args):
@@ -186,9 +207,12 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             tmpl = BGTemplate.FromFile(self.name)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.name
+            from conf import alert
+            alert('Error while loading %s template'%self.name)
+
             return
         #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
-
+        self.tmplWidget = tmpl
         def inner(*args):
             from kivy.base import EventLoop
             EventLoop.idle()
@@ -205,6 +229,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     tmplWidget = ObjectProperty()
     name = StringProperty()
     values = DictProperty()
+    source = StringProperty()
 
     def realise(self,withValue = False):
         #Force the creation of an image from self.template, thourhg real display
@@ -215,6 +240,8 @@ class StackPart(ButtonBehavior, BoxLayout):
             tmpl = BGTemplate.FromFile(self.template)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.template
+            from conf import alert
+            alert('Error while loading template %s '%self.template)
             return
         #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
@@ -224,7 +251,6 @@ class StackPart(ButtonBehavior, BoxLayout):
             #Here is hould loop on the template to apply them on values
             from kivy.base import EventLoop
             EventLoop.idle()
-
             self.tmplWidget = tmpl
             cim = tmpl.toImage()
             cim.texture.flip_vertical()
@@ -233,17 +259,15 @@ class StackPart(ButtonBehavior, BoxLayout):
         Clock.schedule_once(inner, -1)
 
     def on_press(self):
-        if self.last_touch.is_double_tap :
-            self.selected = False
-        else:
-            if not self.selected:
-                if self.parent.last_selected:
-                    self.parent.last_selected.selected = False
-                self.selected = True
-                self.parent.last_selected = self
+        self.selected = not(self.selected)
+        if self.selected: #update on dad selection
+            if self.parent.last_selected:
+                self.parent.last_selected.selected = False
+            self.parent.last_selected = self
 
     def on_selected(self, instance, selected):
-        self.realise(True)
+        if self.template:
+            self.realise(True)
         if self.selected:
             #Add Remove Button
             b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
@@ -406,7 +430,29 @@ class BGDeckMaker(BoxLayout):
                         sizes.add(BGTemplate.FromFile(cs.template).size)
             if len(sizes) == 1:
                 FFORMAT = sizes.pop()
-        prepare_pdf(self.ids['stack'], FFORMAT)
+        #Now add the advancement gauge
+        progress = self.ids['load_progress']
+        progress.value = 0
+        size, book = prepare_pdf(self.ids['stack'], FFORMAT)
+        progress.max = size
+        from kivy.clock import Clock
+        step_counter = range(size)
+
+        def inner(*args):
+            step_counter.pop()
+            progress.value +=1
+            book.generation_step()
+            if not step_counter:
+                Clock.unschedule(inner)
+                book.save()
+                book.show()
+                from conf import alert
+                alert('PDF Export completed')
+
+        Clock.schedule_interval(inner,.1)
+        return True
+
+        Clock.schedule_interval(inner,.1)
 
     def load_template_lib(self, force_reload = False):
         #Same as load_folder('/Templates') but with delay to avoid clash
@@ -614,13 +660,14 @@ class BGDeckMaker(BoxLayout):
         qt_front = 0
         qt_back = 0
         for index,c in enumerate(grid.children):
-            if not isinstance(c, Factory.get('StackPart')): continue
-            c.row=len(grid.children)-index-1
-            qt+=c.qt
+            if not isinstance(c, Factory.get('StackPart')):
+                continue
+            c.row = len(grid.children)-index
+            qt += c.qt
             if c.verso == 'normal':
-                qt_front+=c.qt
+                qt_front += c.qt
             else:
-                qt_back+=c.qt
+                qt_back += c.qt
         num_part = len([_c for _c in grid.children if isinstance(_c, StackPart)])
         label = "Stack made of %s parts / %s Cards: %s Front - %s Back"%(num_part,qt,qt_front,qt_back)
         self.ids['stats'].text = label

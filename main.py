@@ -5,7 +5,6 @@ todos= [
     'P3: change virtual screen stack',
     "P3: bgg browser v2 - file & links",
     "P4: still some error in picture memory geneation to be confirmed: no way to be sure it works",
-    "P3: do some advancement /progress stuff to help waiting for the ethingy like PDF gen",
    'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
     'import template field in template - almost, except for values in valuetree',
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",

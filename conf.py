@@ -108,7 +108,6 @@ def alert(text, status_color=(0,0,0,1), keep = False):
         try:
             app.alert(text, status_color, keep)
         except AttributeError:
-            print 'ALERT did not work. Reverting to print:'
             print '\t', text, status_color, keep
 
 def start_file(path):
