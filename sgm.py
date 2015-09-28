@@ -100,16 +100,41 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         print 'cur sel from stack', stack.last_selected
         if stack.last_selected:
             sel = stack.last_selected
+            #if selected stackpart was an image, copy the source file to values, to be applied on templ
             if not sel.template:
-                if self.name.startswith(gamepath):
-                    fold = relpath(self.name, gamepath)
-                else:
-                    fold = self.name
-                sel.template = "@%s"%fold
-                #no, actually, should better open a edit popup with proper template stuff
-                sel.realise(True)
-            print sel.qt, sel.verso, sel.template, sel.values
-            print sel.name
+                sel.values['default'] = sel.source
+            #Replace template
+            if self.name.startswith(gamepath):
+                fold = relpath(self.name, gamepath)
+            else:
+                fold = self.name
+            #Creta & open the popup for all details
+            p = Factory.get('TemplateEditPopup')()
+            p.name = fold
+            options = p.ids['options']
+            options.values = sel.values
+            options.tmplPath = "@%s"%fold #trigger options building on popup
+            p.stackpart = sel
+            p.open()
+            p.do_layout()
+            p.content.do_layout()
+            from kivy.clock import Clock
+            def _inner(*args):
+                prev = p.ids['preview']
+                tmpl = prev.children[0]
+                TS = tmpl.size
+                PS = prev.size
+                W_ratio = float(.9*PS[0])/TS[0]
+                H_ratio = float(.9*PS[1])/TS[1]
+                ratio = min(W_ratio, H_ratio)
+                x,y = p.ids['FL'].center
+                prev.center = ratio * x, ratio * y
+                p.ids['preview'].scale = ratio
+            Clock.schedule_once(_inner, 0)
+            print "ensure, once apply that the template change to the proper one:", "@%s"%fold
+            #sel.template = "@%s"%fold
+            #print sel.qt, sel.verso, sel.template, sel.values
+            #print sel.name
 
     def add_item(self, qt, verso):
             from os.path import relpath
@@ -272,6 +297,7 @@ class StackPart(ButtonBehavior, BoxLayout):
         return blank
 
 class TemplateEditTree(TreeView):
+    "Use in Template Edit Popup to display all possible fields"
     tmplPath = StringProperty()
     current_selection = ObjectProperty()
     values = DictProperty() #values from template, if any
@@ -355,30 +381,52 @@ class TemplateEditPopup(Popup):
 class BGDeckMaker(BoxLayout):
     cancel_load = BooleanProperty()
 
+    tmplsLib = ObjectProperty()
+
     def empty_stack(self):
         self.ids['stack'].clear_widgets()
 
     def prepare_print(self):
         from printer import prepare_pdf
         from conf import card_format
-        prepare_pdf(self.ids['stack'], (card_format.width, card_format.height))
+        FFORMAT = (card_format.width, card_format.height)
+        #Do that only if fit format is not forced
+        if not self.ids['force_format'].active:
+            sizes = set()
+            for cs in self.ids['stack'].children:
+                if not isinstance(cs, StackPart):
+                    continue
+                if not cs.template:
+                    sizes.add(FFORMAT)
+                else:
+                    if cs.tmplWidget:
+                        sizes.add(tuple(cs.tmplWidget.size))
+                    else:
+                        from template import BGTemplate
+                        sizes.add(BGTemplate.FromFile(cs.template).size)
+            if len(sizes) == 1:
+                FFORMAT = sizes.pop()
+        prepare_pdf(self.ids['stack'], FFORMAT)
 
-    def load_template_lib(self):
+    def load_template_lib(self, force_reload = False):
         #Same as load_folder('/Templates') but with delay to avoid clash
-        for kv in os.listdir('Templates'):
-            if not kv.endswith('.kv'): continue
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
         pictures.clear_widgets()
-        tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')])
+        if self.tmplsLib and not force_reload:
+            for c in self.tmplsLib:
+                pictures.add_widget(c)
+            return
+        tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
+        print tmpls
         C = len(tmpls)
         progress.max = C
         progress.value = 1
-        pg = Factory.get('PictureGrid')()
 
         def inner(*args):
             if not tmpls:
                 Clock.unschedule(inner)
+                self.tmplsLib = pictures.children[:]
                 return
             _f = os.path.join('Templates',tmpls.pop())
             img = FileViewItem(source="", name=_f)

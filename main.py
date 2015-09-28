@@ -10,7 +10,8 @@ todos= [
     'import template field in template - almost, except for values in valuetree',
     "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
-    "Bug: there is something wrong with the is_context parameter which is applied on all field ????"
+    "Bug: there is something wrong with the is_context parameter which is applied on all field ????",
+    "P4: how to force template list reloading.",
 ]
 
 for i,todo in enumerate(todos):

@@ -318,12 +318,18 @@
                                 values: ['cm','px']
                                 text: 'cm'
                             Label:
-                                text: "Keep Ratio"
+                                text: "Keep Ratio:"
                             CheckBox:
                                 ratio: 1
                                 active: True
                                 id: keep_ratio
                                 on_active: CARD.keep_ratio = self.active
+                            Label:
+                                text: "Force Fit Format:"
+                            CheckBox:
+                                ratio: 1
+                                active: False
+                                id: force_format
                     AccordionItem:
                         title: 'Templates'
                         Button:

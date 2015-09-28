@@ -480,7 +480,7 @@ class ImageField(Image, Field):
 
     def on_source(self, instance, source):
         src = find_path(source)
-        if src:
+        if src and src != source:
             self.source = src
 
 class ColorField(Field):
