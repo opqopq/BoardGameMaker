@@ -5,6 +5,8 @@
 #:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
 #:import StickyButton utils.stickybutton.StickyButton
 
+#:set LIGHTGREY (.7,.7,.7)
+
 <Icon@ToggleButtonBehavior+BoxLayout>:
     source: ""
     text: ""
@@ -101,7 +103,7 @@
     on_parent: self.pos = (self.parent.x, self.parent.y+20) if self.parent else (0,0)
     Label:
         text: "1"
-        font_size: max(root.width/10, 10)
+        font_size: max(root.width/11, 9)
         size_hint_x: .15
         id: qt
         halign: 'right'
@@ -164,7 +166,7 @@
     group: 'fileitem'
     size_hint: None, 1
     width: self.height
-    spacing: 10
+    spacing: 0
     canvas.before:
         Color:
             rgba: (0,0,1,1) if self.state == 'down' else (1,1,1,0)
@@ -181,9 +183,9 @@
         id: img
         allow_stretch: True
         source: root.source
-        size_hint_y: .9
+        size_hint_y: .8
     Label:
-        size_hint: 1, .1
+        size_hint: 1, .15
         font_size:  max(root.width/10, 10)
         text_size: self.size
         halign: "center"
@@ -218,7 +220,7 @@
                 id: FL
                 canvas.before:
                     Color:
-                        rgb:.7,.7,.7
+                        rgb: LIGHTGREY
                     Line:
                         rectangle: 0,0, self.width, self.height
                         width: 3
@@ -368,7 +370,7 @@
                 do_scroll_y: False
                 canvas.before:
                     Color:
-                        rgb: .7,.7,.7
+                        rgb: LIGHTGREY
                     Rectangle:
                         size: self.size
                         pos: self.pos
@@ -377,6 +379,12 @@
         ScrollView:
             #size_hint_y: .3
             do_scroll_x: False
+            canvas.before:
+                Color:
+                    rgb: LIGHTGREY
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
             GridLayout:
                 cols: 1
                 size_hint: 1, None
@@ -385,13 +393,19 @@
                 padding: 10
                 on_children: root.compute_stats(self)
                 last_selected: None
+        #Progressbar when loading or printing
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            ProgressBar:
+                id: load_progress
+            Button:
+                id: stop_action
+                size_hint_x: None
+                width: 0
+                on_press: root.cancel_action = True
         Label:
             id: stats
             size_hint_y: None
             height: 30
             font_size: 20
-        #Progressbar when loading or printing
-        ProgressBar:
-            id: load_progress
-            size_hint_y: None
-            height: 30

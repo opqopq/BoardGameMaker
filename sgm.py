@@ -1,6 +1,5 @@
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.uix.image import AsyncImage, Image
 from kivy.uix.behaviors import ButtonBehavior, ToggleButtonBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
@@ -84,7 +83,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             f= Factory.get('FileItemOption')()
             self.add_widget(f)
             from kivy.animation import Animation
-            anim = Animation(size_hint_y=0.25, duration=.1)
+            anim = Animation(size_hint_y=0.2, duration=.1)
             anim.start(f)
         else:
         #remove the choice box
@@ -131,6 +130,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 x,y = p.ids['FL'].center
                 prev.center = ratio * x, ratio * y
                 p.ids['preview'].scale = ratio
+                #forcing x to 0
+                prev.x = 5
             Clock.schedule_once(_inner, 0)
             print "ensure, once apply that the template change to the proper one:", "@%s"%fold
             #sel.template = "@%s"%fold
@@ -163,23 +164,6 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                     stack.add_widget(box)
                     from kivy.base import EventLoop
                     EventLoop.idle()
-
-                # for f in os.listdir(self.is_all_folder):
-                #     if f.endswith(('.jpg','.jpeg', '.png','.gif','.kv')):
-                #         box = StackPart()
-                #         box.name = f
-                #         box.source = os.path.join(self.is_all_folder,f)
-                #         box.qt =qt
-                #         box.verso = verso
-                #         if f.endswith('.kv'):
-                #             if self.is_all_folder.startswith(gamepath):
-                #                 fold = relpath(self.is_all_folder, gamepath)
-                #             else:
-                #                 fold = self.is_all_folder
-                #             box.template = "@%s"%os.path.join(fold,f)
-                #             #box.source = 'img/card_template.png'
-                #             box.realise()
-                #         stack.add_widget(box)
             else:
                 box = StackPart()
                 box.name = self.name
@@ -271,12 +255,12 @@ class StackPart(ButtonBehavior, BoxLayout):
         if self.selected:
             #Add Remove Button
             b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
-            b.bind(on_press = lambda x: self.parent.remove_widget(self))
+            b.bind(on_press=lambda x: self.parent.remove_widget(self))
             self.add_widget(b)
             from kivy.animation import Animation
             W = 100
             if self.template:#it is a template: add edit button
-                W=90
+                W = 90
                 be = Factory.get('HiddenRemoveButton')(source='img/writing_blue.png')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
@@ -298,9 +282,12 @@ class StackPart(ButtonBehavior, BoxLayout):
                         W_ratio = float(.9*PS[0])/TS[0]
                         H_ratio = float(.9*PS[1])/TS[1]
                         ratio = min(W_ratio, H_ratio)
-                        x,y = p.ids['FL'].center
+                        x, y = p.ids['FL'].center
                         prev.center = ratio * x, ratio * y
                         p.ids['preview'].scale = ratio
+                        #forcing x to 0
+                        prev.x = 5
+
                     Clock.schedule_once(_inner, 0)
                 be.bind(on_press = inner)
                 self.add_widget(be)
@@ -403,7 +390,7 @@ class TemplateEditPopup(Popup):
         self.stackpart.ids['img'].texture = cim.texture
 
 class BGDeckMaker(BoxLayout):
-    cancel_load = BooleanProperty()
+    cancel_action = BooleanProperty(False)
 
     tmplsLib = ObjectProperty()
 
@@ -460,7 +447,7 @@ class BGDeckMaker(BoxLayout):
         pictures = self.ids['pictures']
         pictures.clear_widgets()
         if self.tmplsLib and not force_reload:
-            for c in self.tmplsLib:
+            for c in reversed(self.tmplsLib):
                 pictures.add_widget(c)
             return
         tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
@@ -482,45 +469,42 @@ class BGDeckMaker(BoxLayout):
         Clock.schedule_interval(inner, .1)
 
     def load_folder(self, folder):
-        self.cancel_load = False
-        from functools import partial
-        if not folder: return
-        #FOLD = False
+        self.cancel_action = False
+        if not folder:
+            return
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
         pictures.clear_widgets()
-        C = len( [x for x in os.listdir(folder) if x.endswith(('.jpg','.png','.gif','.kv'))])
+        C = len([x for x in os.listdir(folder) if x.endswith(('.jpg','.png','.gif','.kv'))])
         progress.max = C
         progress.value = 1
-        pg = Factory.get('PictureGrid')()
-        pg.add_widget(FileViewItem(source='img/AllFolder2.png', is_all_folder = folder, name="Add %d Imgs"%C))
-        def inner(_f,_pictures,_progress, *args):
-            if self.cancel_load:
+        #pg = Factory.get('PictureGrid')()
+        pictures.add_widget(FileViewItem(source='img/AllFolder2.png', is_all_folder = folder, name="Add %d Imgs"%C))
+        docs = sorted([x.lower() for x in os.listdir(folder) if x.endswith(('.jpg','.jpeg', '.png','.gif', '.kv'))], reverse=True)
+        #ensure the stop button is reachable
+        self.ids['stop_action'].width = 80
+        self.ids['stop_action'].text = 'Stop'
+        def inner(*args):
+            if docs:
+                _f = docs.pop()
+                if _f.endswith('.kv'): #it is a template:
+                    source = 'img/card_template.png'
+                    _f = os.path.join(folder, _f)
+                else:
+                    source  = os.path.join(folder,_f)
+                img = FileViewItem(source=source, name=_f)
+                pictures.add_widget(img)
+                progress.value += 1
+                if _f.endswith('.kv'):
+                    img.realise()
+            if self.cancel_action or not docs:
+                self.cancel_action = True
+                Clock.unschedule(inner)
+                self.ids['stop_action'].width = 0
+                self.ids['stop_action'].text = ''
+                progress.value = 0
                 return False
-            #FOLD = True
-            if _f.endswith('.kv'): #it is a template:
-                source = 'img/card_template.png'
-                #source = ""
-                _f = os.path.join(folder, _f)
-            else:
-                source  = os.path.join(folder,_f)
-            img = FileViewItem(source=source, name=_f)
-            _pictures.add_widget(img)
-            _progress.value += 1
-            if _f.endswith('.kv'):
-                img.realise()
-        for index,f in enumerate(sorted(os.listdir(folder))):
-            if f.endswith(('.jpg','.jpeg', '.png','.gif', '.kv')):
-                Clock.schedule_once(partial(inner, f, pg, progress),0.001*index)
-        def complete(*args):
-            #have the grid appear in here
-            pg_scroll = self.ids['pg_scroll']
-            self.ids['pg_scroll'].remove_widget(pictures)
-            pg_scroll._viewport = None
-            pg_scroll.add_widget(pg)
-            self.ids['pictures'] = pg
-        Clock.schedule_once(complete, 0.01*(index+1))
-        #self.ids['options'].folded = FOLD
+        Clock.schedule_interval(inner,.025)
 
     def load_file_json(self, filepath='deck.json'):
         import json
