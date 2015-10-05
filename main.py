@@ -11,6 +11,8 @@ todos= [
     "bug: Mac OSX: when scatter ruled in designer is added a field and the field is move, it crahs",
     "Bug: there is something wrong with the is_context parameter which is applied on all field ????",
     "P4: how to force template list reloading.",
+    "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
+    "change stackpart selected to toggle button behavior"
 ]
 
 for i,todo in enumerate(todos):
@@ -37,9 +39,9 @@ class RootWidget(BoxLayout):
             # elif name == 'PrintPreview':
             #     from printer import BGPrinter
             #     self.ids['printer'] = last = BGPrinter(name=name)
-            # elif name == 'Layout':
-            #     from layout import BGLayoutMaker
-            #     self.ids['layout'] = last = BGLayoutMaker(name=name)
+            elif name == 'Layout':
+                from layout import BGLayoutMaker
+                self.ids['layout'] = last = BGLayoutMaker(name=name)
 #            elif name == 'Console':
 #                from console import BGConsole
 #                self.ids['bgconsole'] = last = BGConsole(name=name, updated=False)
@@ -75,12 +77,11 @@ class RootWidget(BoxLayout):
 from kivy.app import App
 
 class BGMApp(App):
-    title = "Kivy Board Game Maker"
+    title = "Board Game Maker"
 
     def build(self):
-        root =  RootWidget()
-        from conf import gamepath
-        #root.ids['deck'].file_chooser.load_folder(gamepath)
+        root = RootWidget()
+        root.ids.deck.load_template_lib(force_reload=True, background_mode=True)
         return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):

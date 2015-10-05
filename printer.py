@@ -54,6 +54,12 @@ class PDFBook:
         "Will be called in order to show some advancement"
 
         i, row, col, face, item = self.index.pop()
+        item.print_index = {
+            'pagenum':i,
+            'stackrow': row,
+            'stackcol': col,
+            'pageface': face
+        }
         #print 'step on', i, row, col, face, item, self.current_face, self.current_page_num
         face_index = 0 if self.current_face=='F' else 1
         if self.current_face != face:

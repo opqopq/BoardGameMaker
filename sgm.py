@@ -80,7 +80,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
     def on_state(self, target, state):
         self.realise()
         if state == 'down':
-            f= Factory.get('FileItemOption')()
+            f = Factory.get('FileItemOption')()
+            f.is_all_folder = self.is_all_folder
             self.add_widget(f)
             from kivy.animation import Animation
             anim = Animation(size_hint_y=0.2, duration=.1)
@@ -90,7 +91,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             self.remove_widget(self.children[0])
 
     def on_press(self):
-        if self.last_touch.is_double_tap and self.state=='normal':#directly add it to the pool
+        if self.last_touch.is_double_tap:#directly add it to the pool
             self.add_item("1", 'normal')
 
     def apply_item(self,name):
@@ -441,17 +442,20 @@ class BGDeckMaker(BoxLayout):
 
         Clock.schedule_interval(inner,.1)
 
-    def load_template_lib(self, force_reload = False):
+    def load_template_lib(self, force_reload = False, background_mode = False):
         #Same as load_folder('/Templates') but with delay to avoid clash
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
+        if background_mode:
+            pictures = Factory.get('PictureGrid')()
         pictures.clear_widgets()
         if self.tmplsLib and not force_reload:
             for c in reversed(self.tmplsLib):
+                if c.parent:
+                    c.parent.remove_widget(c)
                 pictures.add_widget(c)
             return
         tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
-        print tmpls
         C = len(tmpls)
         progress.max = C
         progress.value = 1

@@ -196,6 +196,12 @@ class BGDesigner(FloatLayout):
         self.insert_field(target)
         #Select the new field
         self.selection = [target,]
+        #Ensure it is put on top of the canvas
+
+        # somz add/remove to change layout
+        parent = self.ids.content
+        parent.remove_widget(target)
+        parent.add_widget(target)
 
     def insert_field(self, target, parent = None):
         from fields import Field
@@ -264,7 +270,7 @@ class BGDesigner(FloatLayout):
         #Empty current list
         self.new()
         #Create a c# opy
-        self.current_template = template.blank()
+        self.current_template = template#.blank()
         self.ids.tmplName.text = template.name
         #Done by chaging the width & hiehgt tyhingy
         #self.ids.content.size = template.size
@@ -302,8 +308,9 @@ class BGDesigner(FloatLayout):
         self.ids.tmpl_width.text = "%.2f"%card_format.width
         self.ids.tmpl_height.text = "%.2f"%card_format.height
 
-    def export_field(self, field, tmpls, imports, level, save_cm, relativ, save_relpath):
+    def export_field(self, field, tmpls, imports, directives, level, save_cm, relativ, save_relpath):
         from fields import LinkedField
+        from types import FunctionType
         prepend = '\t'*level
         #Remove field from any not desired attrbiute for export
         field.prepare_export()
@@ -311,6 +318,10 @@ class BGDesigner(FloatLayout):
         #Include KV file if templateField
         if isinstance(field, BGTemplate):
             imports.append(field.src)
+        #print 'Code Neginhf(', field.code_behind
+        print 'field directives', field, field.directives
+        if field.directives:
+            directives.extend(field.directives)
         for attr in field.getChangedAttributes(restrict=True):
             #Check if code behind:
             if attr in field.code_behind:
@@ -351,9 +362,15 @@ class BGDesigner(FloatLayout):
                         if isfile(item) and save_relpath:
                             item = relpath(item, gamepath)
                         sub.append('"%s"'%item)
+                    elif isinstance(item, FunctionType): #replace the function by its name without the ""
+                        sub.append('%s'%item.func_name)
                     else:
                         sub.append(str(item))
-                tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
+                if len(sub) != 1:
+                    tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
+                else: #only: add a ',' at the end, to have kv understand it is a tuple
+                    tmpls.append('%s%s: '%(prepend, attr) + sub[0] + ',')
+
             else:
                 tmpls.append('%s%s: %s'%(prepend, attr, value))
         if isinstance(field, LinkedField):
@@ -404,6 +421,7 @@ class BGDesigner(FloatLayout):
         save_cm = self.ids.cb_cm.active
         save_relpath = self.ids.cb_relpath.active
         imports = list()
+        directives = self.current_template.directives[:]
         #Will be used to find a interresting base for relpath
         w = self.ids.tmpl_width.text
         h = self.ids.tmpl_height.text
@@ -430,12 +448,18 @@ class BGDesigner(FloatLayout):
         tmpls.append('\tsize: %s, %s'%(w,h))
         for node in self.ids.fields.root.nodes:
             field = node.target
-            self.export_field(field, tmpls, imports, level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
+            self.export_field(field, tmpls, imports, directives, level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
         #Prepend include
         if imports:
             tmpls.insert(0, "")
             for imp in imports:
                 tmpls.insert(0,"#:include %s"%imp)
+        print "directives at the end" , directives
+        if directives:
+            tmpls.insert(0,"")
+            for directive in directives:
+                tmpls.insert(0, "#:%s"%directive)
+
         from os import linesep
         print '*'*60
         print "Export KV"
@@ -568,6 +592,15 @@ class BGDesigner(FloatLayout):
             unit = self.selection[0]
             self.ids.content.remove_widget(unit)
             self.ids.fields.remove_node(self.nodes[unit])
+            #Also tell the properties tree to update
+            params = self.ids.params
+            params.current_field == None
+            params.clear_widgets()
+            params.nodes = dict()
+            params.root.nodes = [] # as clear widgets does not works
+            params.root.text = ""
+
+
             del self.selection[0]
 
     def move_up_selection(self,*args):
@@ -642,6 +675,10 @@ class FieldTreeView(TreeView):
         if selected_node:
             if hasattr(selected_node,'target'):
                 self.designer.selection = [selected_node.target]
+                # somz add/remove to change layout
+                parent = selected_node.target.parent
+                parent.remove_widget(selected_node.target)
+                parent.add_widget(selected_node.target)
                 self.designer.display_field_attributes(selected_node.target)
 
 #Need to put it at the end because klass needed in kv

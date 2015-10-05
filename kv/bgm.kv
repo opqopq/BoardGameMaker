@@ -5,21 +5,6 @@
 
 #:import BGGDeck sgm.BGDeckMaker
 
-<Template>:
-    do_rotation: False
-    do_scale: False
-    do_translation: True,True
-    center: self.parent.center if self.parent else (600,150)
-    #pos: 250,200
-    #size: 700,100
-    pos_hint: 0,0
-    canvas.before:
-        Color:
-            rgba:1,.3,.3,.8
-        Rectangle:
-            size:(self.width+0,self.height+0)
-#             pos: (-5,-5)
-
 <ImageButton@ButtonBehavior+BoxLayout>:
     source: None
     text: ""
@@ -54,7 +39,7 @@
             width: 100
             on_text: root.screen_name = self.text
             text: 'Deck'
-            values: 'Deck','Browser','Designer', 'Settings' #'PrintPreview','Layout','Console','Script',
+            values: 'Deck','Browser','Designer', 'Layout', 'Settings' #'PrintPreview','Console','Script',
         LabelButton:
             id: message
             on_press: app.alert('')# dismiss message

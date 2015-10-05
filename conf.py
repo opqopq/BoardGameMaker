@@ -94,14 +94,6 @@ def log(text, stack=None):
     else:
         print text, stack
 
-
-def wait_cursor(value=None):
-    if value is not None:
-        App.get_running_app().root.wait_mode = bool(value)
-    else:
-        App.get_running_app().root.wait_mode = not App.get_running_app().root.wait_mode
-
-
 def alert(text, status_color=(0,0,0,1), keep = False):
     app = App.get_running_app()
     if app:
@@ -136,7 +128,6 @@ def fill_env(*args):
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)
-
 
 def CreateConfigPanel():
     from kivy.uix.settings import SettingsWithTabbedPanel as Settings
@@ -181,7 +172,6 @@ def get_last_dir(src=None):
         src = 'last'
     return DirCache[src]
 
-
 def toImage(self, bg_color=(1,1,1,0)):
     #create image widget with texture == to a snapshot of me
     from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
@@ -201,7 +191,8 @@ def toImage(self, bg_color=(1,1,1,0)):
 
     fbo.add(self.canvas)
     fbo.draw()
-
+    from kivy.base import EventLoop
+    #EventLoop.idle()
     cim = CoreImage(fbo.texture, filename = '%s.png'%id(self))
 
     fbo.remove(self.canvas)

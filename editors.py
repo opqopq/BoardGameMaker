@@ -125,39 +125,61 @@ class AdvancedTextEditor(TextEditor):
         return t
 
 class CodeWrapper(object):
-    def __init__(self, code):
+    def __init__(self, code, target):
         self.code = code
+        tmpl = target.template
+        self.context = dict()
+        #Then with any NEW child no know by IDS
+        for dir in tmpl.directives:
+            name, imppath = [x.strip() for x in dir[7:].split()]
+            self.context[name] = imppath
+        #Designer
+        for infant in target.designer.nodes:
+            if infant.name:
+                self.context[infant.name] = infant
+        print 'Final context', self.context
 
-    def execute(self):
-        return eval(self.code)
+    def execute(self, context=None):
+        if context is None:
+            context = self.context
+        if self.code:
+            return eval(self.code, context)
 
 class AdvancedCodeEditor(AdvancedTextEditor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.button import Button
-        from kivy.uix.codeinput import CodeInput
+
+        t = BoxLayout(orientation='horizontal')
 
         codetext= str(getattr(self.target, keyname))
         if name in self.target.code_behind:
             #print self.target, name, self.target.code_behind[name]
             codetext = self.target.code_behind[name]
+
         ti = TextInput(text=codetext)
+        def cb(instance,value):
+            if not t.parent: #we are not actually on the screen at this stage
+                return
+            code = CodeWrapper(value,self.target)
+            try:
+                print self.target.template.ids.keys()
+                setattr(self.target,keyname, code.execute() or value)
+            except NameError, e:
+                print "erreur while evaluating code behind %s of %s:"%(keyname, self.target), e
+            self.target.code_behind[keyname] = code.code
+            t.stored_value = code
+
+        ti.bind(text=cb)
+
         ti.size_hint_x = .8
 
         b = Button(text='...')
 
-        t = BoxLayout(orientation='horizontal')
         t.add_widget(ti)
         t.add_widget(b)
 
         def cbtxt(*args):
-            code = CodeWrapper(args[0].text)
-            try:
-                setattr(self.target,keyname, code.execute())
-            except NameError:
-                print "erreur while evaluating code"
-            self.target.code_behind[keyname] = code.code
-            t.stored_value = code
             ti.text = args[0].text
 
         #Create callback for button that would start a modal
@@ -193,7 +215,9 @@ class TransfoListEditor(Editor):
         t=Button(text="Define")
         def cbimg(value):
             try:
-                setattr(self.target, keyname, value)
+                for v in value:
+                    self.target.directives.append('import %s img_xfos.%s'%(v.func_name, v.func_name))
+                setattr(self.target, keyname, value )
                 t.stored_value = value
             except ValueError,E:
                 from conf import log

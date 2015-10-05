@@ -99,7 +99,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
-    not_exported = ["code_behind", 'cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
+    not_exported = ["directives", "code_behind", 'cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -121,6 +121,11 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     #place to hold all kv codes from designeer
     code_behind = DictProperty()
 
+    #Includes all the directives, like import or set.
+    directives = ListProperty()
+
+    #Pointer to the template we are part of. easier for evaluating context of a template
+    template = ObjectProperty()
 
     def on_selected(self, instance, selected):
         self.focused = selected
@@ -316,21 +321,24 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
                 return True
             else:
                 self.selected = False
-                self.designer.selection = list()
+                if hasattr(self, 'designer'):
+                    self.designer.selection = list()
         return super(Field, self).on_touch_down(touch)
 
     def on_touch_up(self, touch):
-        if self.designed  and touch.grab_current==self:
+        if self.designed and touch.grab_current==self:
             # Here I should watch if shift is set, then it would be an append.
             self.selected = True
             #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
-            if self.designer.selection and self.designer.selection[0] is not self:
+            if hasattr(self,"designer") and  self.designer.selection and self.designer.selection[0] is not self:
                 self.designer.selection[0].selected = False
-            self.designer.selection = [self]
+            if getattr(self, "designer", False):
+                self.designer.selection = [self]
             touch.ungrab(self)
         return super(Field, self).on_touch_up(touch)
 
     def on_touch_move(self, touch):
+        print self.designed, touch.grab_current, self
         if self.designed and touch.grab_current==self:
             if touch.ud['do_resize']: #Resize
                 LEFT = touch.ud['LEFT']
@@ -369,6 +377,8 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     def add_widget(self, widget, index=0):
         #replacing index by z-index
         super(Field, self).add_widget(widget, getattr(widget,'z',0))
+        #Duplicate pointer to template
+        widget.template = self.template
         #Re order them according to z elt:
         cs = self.children[:]
         cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
@@ -410,7 +420,7 @@ class TextField(Label, Field):
     default_attr = "text"
     _single_line_text = StringProperty()
 
-    not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text']
+    not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text', 'max_lines']
     font = ListProperty(['DroidSans.ttf', 8,False, False])
 
     def on_size(self,instance, size):
@@ -606,67 +616,63 @@ class SubImageField(Field):
 
 class TransfoField(Field, Image):
     "Transform an image file thourgh different methods registered in img_xfos.py"
-    default_attr = 'source'
-    not_exported = ['texture', 'Image']
-    attrs = {'source': FileEditor, 'xfos': TransfoListEditor}
+    default_attr = 'src'
+    not_exported = ['texture', 'Image', 'norm_image_size']
+    attrs = {'src': FileEditor, 'xfos': TransfoListEditor}
 
-    texture = ObjectProperty(allownone=True)
+    texture = ObjectProperty()
     src = ObjectProperty()
     xfos = ListProperty()
-    Image = ObjectProperty()
+    #PIL Image used between xfo
+    Image = ObjectProperty(None, allownone = True)
 
-    def on_source(self, instance, source):
+    def on_src(self, instance, src):
+        #unbind on old stuff
+        #bind on new
+        if isinstance(src, Field):
+            d = dict()
+            d[src.default_attr] = self.update
+            src.bind(**d)
+        if src:
+            self.update()
+
+    def update(self,*args):
         #if file path : proceed
         from PIL.Image import frombuffer, FLIP_TOP_BOTTOM
+        from kivy.clock import Clock
+        SRC = [self.src]
         self.Image = None
-        print 'if emmpty image, froce through eventloop idle'
-        if isinstance(source, basestring):
-            source = find_path(source)
-            if source:
-                from kivy.core.image import Image as CoreImage
-                cim = CoreImage(source)
-                print cim, source, cim.image, cim.texture, #cim.texture.pixels
-                self.Image = frombuffer('RGBA', cim.size, cim.texture.pixels, 'raw', 'RGBA',0,1)
-        else: #widget case
-            from conf import toImage
-            cim = toImage(source)
-            self.Image = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
-        if self.Image:
-            self.Image.transpose(FLIP_TOP_BOTTOM)
-            for xfo in self.xfos:
-                self.Image = xfo(self.Image)
-        self.prepare_texture()
+        def inner(*args):
+            #ugly hack from nonlocal variable in pythnon 2
+            source = SRC[0]
+            if isinstance(source, basestring):
+                source = find_path(source)
+                if source:
+                    from kivy.core.image import Image as CoreImage
+                    cim = CoreImage(source)
+                    self.Image = frombuffer('RGBA', cim.size, cim.texture.pixels, 'raw', 'RGBA',0,1)
+            elif isinstance(source, Field): #widget case
+                from kivy.base import EventLoop
+                EventLoop.idle()
+                from conf import toImage
+                cim = toImage(source)
+                self.Image = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
+            if self.Image:
+                self.Image.transpose(FLIP_TOP_BOTTOM)
+                for xindex, xfo in enumerate(self.xfos):
+                    self.Image = xfo(self.Image)
+                #Standard mode: flip the
+                flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
+                from img_xfos import img_modes
+                ktext = Texture.create( size = flip.size)
+                ktext.blit_buffer(flip.tobytes(), colorfmt = img_modes[flip.mode])
+                self.texture = ktext
+
+        Clock.schedule_once(inner,-1)
 
     def on_xfos(self, instance, xfos):
-        if self.source:
-            self.on_source(instance, self.source)
-
-    def prepare_texture(self):
-        self.texture = None
-        from io import BytesIO
-        data = BytesIO()
-        self.Image.save(data,'png')
-        from kivy.core.image import Image as CoreImage
-        cim = CoreImage(data, ext='png')
-        self.texture = cim.texture
-        if 0:
-            #Flip it, for kv
-            from kivy.core.image import Image as KImage, ImageData
-            #Pseicla case for luminace mode
-            if self.Image.mode.startswith('L'):
-                from kivy.logger import Logger
-                Logger.warn('Greyscale picture in XFOField: resorting to disk usage')
-                self.Image.save('build/%s.png'%id(self))
-                ktext = KImage('build/%s.png'%id(self)).texture
-                self.texture = ktext
-                return
-            #Standard mode: flip the
-            flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
-            w, h = flip.size
-            from img_xfos import img_modes
-            imgdata = ImageData(w, h, img_modes[flip.mode], data=flip.tobytes())
-            ktext = Texture.create_from_data(imgdata)
-        self.texture = ktext
+        if self.src:
+            self.update()
 
 class SvgField(Field):
     source = StringProperty()

@@ -31,9 +31,7 @@ def perspective_transform(size, points):
     return inner
 
 def grey(img):
-    print 'entry:', img.size, img.mode
     gimg =  ImageOps.grayscale(img)
-    print 'output', gimg.size, gimg.mode
     return gimg
 
 def grey2(img):

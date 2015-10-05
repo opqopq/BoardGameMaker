@@ -333,9 +333,15 @@
                                 id: force_format
                     AccordionItem:
                         title: 'Templates'
-                        Button:
-                            text: 'Load Templates Library'
-                            on_press: root.load_template_lib()
+                        GridLayout:
+                            cols:1
+                            Button:
+                                text: 'Templates Library'
+                                on_press: root.load_template_lib()
+                            Button:
+                                text: 'Re Load Templates Library'
+                                on_press: root.load_template_lib(force_reload = True)
+
                     AccordionItem:
                         title: "Scripts"
                         GridLayout:

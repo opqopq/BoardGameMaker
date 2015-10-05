@@ -3,13 +3,13 @@ __author__ = 'MRS.OPOYEN'
 
 
 from fields import Field
-from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList
+from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList, ListProperty
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
-from editors import editors_map
+from editors import editors_map, FileEditor
 from kivy.uix.relativelayout import RelativeLayout
-from os.path import isdir
+from kivy.uix.carousel import Carousel
 from conf import path_reader
 
 class BGTemplate(Field, RelativeLayout):
@@ -18,13 +18,35 @@ class BGTemplate(Field, RelativeLayout):
     # dpi = NumericProperty(150, name="DPI")
     name = "TMPL"
     source = OptionProperty('text', options=['file', 'text'])
-    not_exported = ['ids', 'src']
+    not_exported = ['ids', 'src', 'print_index']
+
+    src = StringProperty()
+
+    attrs = {'src': FileEditor}
+    #Now for the special attributes only used when printing the objects
+    print_index = DictProperty()
 
     def __repr__(self):
         return '<Template #%s>'%self.name
 
+    def add_widget(self, widget, index=0):
+        #replacing index by z-index
+        super(Field, self).add_widget(widget, getattr(widget,'z',0))
+        #Duplicate pointer to template
+        widget.template = self
+        #Re order them according to z elt:
+        cs = self.children[:]
+        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
+        self.children = cs
+        #Also reorder canvas
+        for cindex, c in enumerate(self.children):
+            if not self.canvas.indexof(c.canvas) == -1:
+                self.canvas.remove(c.canvas)
+            self.canvas.insert(0,c.canvas)
+
     @classmethod
     def FromFile(cls, filename):
+        print 'From File with', filename
         name, filename = find_template_path(filename)
         #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
@@ -82,11 +104,17 @@ class BGTemplate(Field, RelativeLayout):
             attrs[k] = (k.match, r.properties.keys())
         for ctx in ctxs:
             #print ctx.dynamic_classes, ctx.rules
+            #print ctx, ctx.directives
             for dclass in ctx.dynamic_classes:
                 rule = list(r for s,r in ctx.rules if s.key == dclass.lower()).pop()
                 #print dclass, rule
                 t = Factory.get(dclass)()
-                #print [(tc,tc.z) for tc in t.children]
+                t.directives = [x[1] for x in ctx.directives]
+                eval_context = dict()
+                eval_context.update(t.ids)
+                for _d in t.directives:
+                    n,v = _d[7:].split()
+                    eval_context[n] = v
                 class prox:
                         value= 0
                 _prox= prox()
@@ -110,7 +138,7 @@ class BGTemplate(Field, RelativeLayout):
                                 #try if we are not comparing simply stuff
                                 try:
                                     _res = 0
-                                    theval = eval(v.value)
+                                    theval = eval(v.value, eval_context)
                                     if len(getattr(tc,p)) != len(theval):
                                         raise ValueError('Compared iterables do not have the same list size')
                                     for _v,_cv in zip(getattr(tc,p), theval):
@@ -128,7 +156,7 @@ class BGTemplate(Field, RelativeLayout):
                     for ID in t.ids:
                         #Force field name to ID
                         t.ids[ID].name = ID
-                    t.src = filename
+                    t.src = "@%s"%filename
                     if not t.attrs:
                         #force a reset of orederedict to avoid singleton effect
                         t.attrs = OrderedDict()

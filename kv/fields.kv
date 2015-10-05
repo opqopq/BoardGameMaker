@@ -93,6 +93,8 @@
         PopMatrix
 
 <BGTemplate>:
+#:import CARD conf.card_format
+    size: CARD.width, CARD.height
     canvas.before:
         PushMatrix
         Rotate:
@@ -186,16 +188,6 @@
             size: self.size
             texture: self.texture
 
-<TransfoField>:
-    canvas:
-        Rectangle:
-            size: self.size
-            pos: self.pos
-            texture: self.texture
-
-<SvgField>:
-#The source/filename will be done thourgh on_source, as it is not working directly with canvas
-
 <RectangleField>:
     canvas:
         Color:
@@ -231,6 +223,7 @@
             dash_offset: self.dash_offset
             ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
 
+
 <EllipseFField>:
     canvas:
         Color:
@@ -243,6 +236,7 @@
             source: self.source
             texture: self.texture
 
+
 <LineField>:
     canvas:
         Color:
@@ -254,6 +248,7 @@
             dash_length: self.dash_length
             dash_offset: self.dash_offset
             points: self.x, self.y, self.x+self.width, self.y+ self.height
+
 
 <PolygonField>:
     canvas:
@@ -310,22 +305,6 @@
             vertices: self.vertices
             indices: range(len(self.vertices)/4)
             mode: self.mode
-            #source: self.source
-            #texture: self.texture
-        StencilUse
-    canvas.after:
-        #Remove mask
-        StencilPop
-
-
-<Root2Widget>:
-    size: cm(5), cm(8)
-    canvas.before:
-        StencilPush
-        Mesh:
-            vertices: self.vertices
-            indices: range(len(self.vertices)/4)
-            mode: 'triangle_fan'
             #source: self.source
             #texture: self.texture
         StencilUse
