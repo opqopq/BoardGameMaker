@@ -14,7 +14,7 @@ class LayoutEditor(Popup):
     target = ObjectProperty()
     layout_maker = ObjectProperty()
 
-class LayoutPlaceHolder(Scatter):
+class OLayoutPlaceHolder(Scatter):
     index = NumericProperty()
     selected = BooleanProperty()
 
@@ -26,8 +26,14 @@ class LayoutPlaceHolder(Scatter):
             self.parent.parent.parent.edit_ph()
         return Scatter.on_touch_down(self,touch)
 
+
+from fields import Field
+class LayoutPlaceHolder(Field):
+    index = NumericProperty()
+    scale = 1
+
 class BGLayoutMaker(FloatLayout):
-    selected_ph = ObjectProperty(rebind=True)
+    selected_ph = ObjectProperty(rebind=True, allownone = True)
     pages = ListProperty()
     page_index = NumericProperty(0)
 
@@ -58,9 +64,16 @@ class BGLayoutMaker(FloatLayout):
             self.selected_ph.selected = False
         page.index+=1
         ph = LayoutPlaceHolder(index=page.index, size= (CARD.width, CARD.height))
+        ph.designed = True #trigger on designed
         page.add_widget(ph)
         self.selected_ph = ph
         return ph
+
+    def remove_ph(self):
+        if self.selected_ph:
+            page = self.ids.page
+            page.remove_widget(self.selected_ph)
+            self.selected_ph = None
 
     def add_img_ph(self, object):
         ph = self.add_ph()
@@ -76,7 +89,7 @@ class BGLayoutMaker(FloatLayout):
 
     def rotate_ph(self, angle=90):
         if self.selected_ph:
-            self.selected_ph.rotation += angle
+            self.selected_ph.angle += angle
 
     def update_selected_ph(self,w, h, x, y, rotation):
         print "called with w:%s; h:%s; x:%s; y:%s; rotation:%s"%(w,h,x,y,rotation)
@@ -113,9 +126,9 @@ class BGLayoutMaker(FloatLayout):
 
     def add_page(self):
         p = Factory.Page()
-        self.remove_widget(self.pages[-1])
+        self.ids.view.remove_widget(self.pages[-1])
         self.pages.append(p)
-        self.add_widget(p)
+        self.ids.view.add_widget(p)
         self.ids['page'] = p
         self.page_index = len(self.pages) - 1
         self.ids.page_index.text = 'Page %d'%len(self.pages)
@@ -124,16 +137,16 @@ class BGLayoutMaker(FloatLayout):
     def remove_page(self):
         if len(self.pages)>1:
             p = self.pages[self.page_index]
-            self.remove_widget(p)
-            self.add_widget(self.pages[max(self.page_index-1,0)])
+            self.ids.view.remove_widget(p)
+            self.ids.view.add_widget(self.pages[max(self.page_index-1,0)])
             self.ids['page'] = self.pages[max(self.page_index-1,0)]
             del self.pages[self.page_index]
 
     def set_page(self, page_index):
         page_index = int(page_index.split()[-1])-1
-        self.remove_widget(self.pages[self.page_index])
+        self.ids.view.remove_widget(self.pages[self.page_index])
         self.page_index = page_index
-        self.add_widget(self.pages[self.page_index])
+        self.ids.view.add_widget(self.pages[self.page_index])
         self.ids['page'] = self.pages[self.page_index]
         self.ids.page_index.text = 'Page %d'%(self.page_index+1)
 

@@ -127,6 +127,11 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     #Pointer to the template we are part of. easier for evaluating context of a template
     template = ObjectProperty()
 
+    def on_focus(self,instance, focus):
+        if self.designed and focus:
+            self.selected = focus
+        #if not focused anymore, it does not means that it is not current selection
+
     def on_selected(self, instance, selected):
         self.focused = selected
 
@@ -136,7 +141,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
             if text in ('left','right','up','down'):
                 DIR = 'x'
                 STEP = 1
-                if 'ctrl' in modifiers:
+                if 'ctrl' in modifiers or 'meta' in modifiers:
                     STEP *= 10
                 if text == 'left':
                     STEP *= -1
@@ -289,7 +294,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
         if self.designed:
             origin = Vector(*touch.pos)
             #Convert origin to take into account self.angle
-            for pos in [(self.center_x,self.y+5), (self.center_x, self.top-5),(self.x+5, self.center_y),(self.right-5,self.center_y),(self.right-5, self.top-5),(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5,self.y+5)]:
+            for pos in [(self.center_x,self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
                 if self.selected:
                     VECTOR = Vector(*pos)
                     if self.angle:
@@ -304,11 +309,11 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
                         cx,cy = self.center
                         touch.ud['LEFT'] = ox<cx
                         touch.ud['DOWN'] = oy<cy
-                        if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
+                        if pos in [(self.center_x, self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius)]:
                             touch.ud['movement'] = 'y'
-                        if pos in [(self.x+5, self.center_y), (self.right-5, self.center_y)]:
+                        if pos in [(self.x+self.sel_radius, self.center_y), (self.right-self.sel_radius, self.center_y)]:
                             touch.ud['movement'] = 'x'
-                        if pos in [(self.x+5, self.y+5),(self.x+5, self.top-5), (self.right-5, self.top-5), (self.right-5,self.y+5)]:
+                        if pos in [(self.x+self.sel_radius, self.y+self.sel_radius),(self.x+self.sel_radius, self.top-self.sel_radius), (self.right-self.sel_radius, self.top-self.sel_radius), (self.right-self.sel_radius, self.y+self.sel_radius)]:
                             touch.ud['movement'] = 'xy'
                         return True
             if self.collide_point(*touch.pos):
@@ -338,7 +343,6 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
         return super(Field, self).on_touch_up(touch)
 
     def on_touch_move(self, touch):
-        print self.designed, touch.grab_current, self
         if self.designed and touch.grab_current==self:
             if touch.ud['do_resize']: #Resize
                 LEFT = touch.ud['LEFT']

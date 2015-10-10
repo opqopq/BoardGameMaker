@@ -481,26 +481,35 @@ class FileEditor(Editor):
 
 class TemplateFileEditor(Editor):
     #Just like a fileeditor, but tmplPAth are in the form NAME@PATH
+
     def getWidgets(self, name, keyname, **kwargs):
         from os.path import split
-        t=Button(text="...", **kwargs)
+        from kivy.uix.boxlayout import BoxLayout
+
+        t = BoxLayout(orientation='horizontal')
+        ti = TextInput(text=str(getattr(self.target, keyname)))
+        ts = Button(text="...", **kwargs)
+        t.add_widget(ti)
+        t.add_widget(ts)
+
         #Create a callback for the modal frame
         def cbimg(instance):
             s = instance.ids.fpicker.selection
+            val = instance.ids.tmpl_name.text
             if len(s) and isfile(s[0]):
-                setattr(self.target, keyname, s[0])
-                print 'here start a popup will list of choice from tmpl '
-                from template import BGTemplate
-                tmpls = BGTemplate.FromField(s[0])
-                if len(tmpls) == 1:
-                    t.stored_value = '%s@%s'%(tmpls[0].name, s[0])
-                    t.text = tmpls[0].name
-                else:
-                    print 'in here the popup'
-                    t.stored_value = instance.ids.fpicker.selection[0]
-                    t.text = split(s[0])[-1]
+                _name = val
+                if val == '-':
+                    _name = ''
+                t.stored_value = '%s@%s'%(_name, s[0])
+                ti.text = t.stored_value
+                setattr(self.target, keyname, t.stored_value)
             else:
-                t.text="..."
+                ti.text="..."
+        def cbtext(instance, value):
+            t.stored_value = ti.text
+            #Do some check first ?
+            setattr(self.target, keyname, t.stored_value)
+        ti.bind(text=cbtext)
         #Create callback for button that would start a modal
         def button_callback(instance):
             from kivy.core.window import Window
@@ -509,9 +518,9 @@ class TemplateFileEditor(Editor):
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
             filters = getattr(self.target, '%s_filters'%keyname, [])
             #filters= ['*.jpg', '*.png','*.jpeg','*.gif']
-            popup = FileEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg, filters=filters )
+            popup = TemplateFileEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg, filters=filters )
             popup.open()
-        t.bind(on_press=button_callback)
+        ts.bind(on_press=button_callback)
         t.target_key = keyname
         t.stored_value = None
         t.target_attr = name
@@ -976,6 +985,26 @@ class FileEditorPopup(Popup):
     cb = ObjectProperty()
     path = StringProperty(".")
     filters = ListProperty()
+
+class TemplateFileEditorPopup(Popup):
+    name = StringProperty()
+    cb = ObjectProperty()
+    path = StringProperty(".")
+    filters = ListProperty()
+
+    def set_bgtemplates(self):
+        from template import BGTemplate
+        spinner = self.ids.tmpl_name
+        sels = self.ids.fpicker.selection
+        spinner.text = '-'
+        spinner.values=['-']
+        if sels:
+            src = sels[0]
+            if src.endswith('.kv'):
+                tmpls = BGTemplate.FromFile(src)
+                for tmpl in tmpls:
+                    print tmpl.name
+                    spinner.values.append(tmpl.name)
 
 class ColorEditorPopup(Popup):
     name = StringProperty()

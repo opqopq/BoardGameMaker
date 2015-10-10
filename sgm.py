@@ -12,7 +12,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.treeview import TreeView
 from deck import TreeViewField
 from fields import Field
-from conf import gamepath
+from conf import gamepath, FILE_FILTER
 import os, os.path
 
 Builder.load_file('kv/sgm.kv')
@@ -51,26 +51,6 @@ class FolderTreeView(TreeView):
 
     load_func = callback
 
-class DynamicQuantity(BoxLayout):
-    selected = BooleanProperty()
-
-    def on_selected(self, instance, selected):
-        if self.selected:
-            label = self.children[0]
-            try:
-                v = int(label.text)
-            except ValueError:
-                v = 0
-            slider = Slider(min=0, max=100, value = 0, size_hint_y=None, height= 20)
-            def v_setter(_i, _v):
-                label.text = "%s"%(int(_v))
-                self.parent.qt = int(_v)
-            slider.bind(value=v_setter)
-            self.add_widget(slider)
-        else:
-            if len(self.children)>2: #not only the 'qt' label & the label itself
-                self.remove_widget(self.children[0])
-
 class FileViewItem(ToggleButtonBehavior, BoxLayout):
     name = StringProperty()
     source = StringProperty()
@@ -95,10 +75,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             self.add_item("1", 'normal')
 
     def apply_item(self,name):
-        print 'applying name on select'
         from os.path import relpath
         stack = App.get_running_app().root.ids['deck'].ids['stack']
-        print 'cur sel from stack', stack.last_selected
         if stack.last_selected:
             sel = stack.last_selected
             #if selected stackpart was an image, copy the source file to values, to be applied on templ
@@ -149,6 +127,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 #It is a folder, add all the imge from folder
                 for fiv in self.parent.children:
                     if fiv.is_all_folder: continue
+                    if fiv.name.endswith('.csv'): continue
                     box = StackPart()
                     box.name = fiv.name
                     box.source = os.path.join(self.is_all_folder, fiv.name)
@@ -165,6 +144,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                     stack.add_widget(box)
                     from kivy.base import EventLoop
                     EventLoop.idle()
+            elif self.name.endswith('.csv'):
+                App.get_running_app().root.ids.deck.load_file(self.name)
             else:
                 box = StackPart()
                 box.name = self.name
@@ -246,7 +227,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     def on_press(self):
         self.selected = not(self.selected)
         if self.selected: #update on dad selection
-            if self.parent.last_selected:
+            if self.parent.last_selected and self.parent.last_selected != self:
                 self.parent.last_selected.selected = False
             self.parent.last_selected = self
 
@@ -254,10 +235,13 @@ class StackPart(ButtonBehavior, BoxLayout):
         if self.template:
             self.realise(True)
         if self.selected:
+            from kivy.uix.boxlayout import BoxLayout
+            BOX = BoxLayout(orientation='vertical', size_hint=(None, None))
             #Add Remove Button
             b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
-            self.add_widget(b)
+            #self.add_widget(b)
+            BOX.add_widget(b)
             from kivy.animation import Animation
             W = 100
             if self.template:#it is a template: add edit button
@@ -291,15 +275,17 @@ class StackPart(ButtonBehavior, BoxLayout):
 
                     Clock.schedule_once(_inner, 0)
                 be.bind(on_press = inner)
-                self.add_widget(be)
+                #self.add_widget(be)
+                BOX.add_widget(be)
                 anim = Animation(width=W, duration=.1)
                 anim.start(be)
+            self.add_widget(BOX)
             anim = Animation(width=W, duration=.1)
             anim.start(b)
         else:
             self.remove_widget(self.children[0])
-            if self.template:
-                self.remove_widget(self.children[0])
+            #if self.template:
+            #    self.remove_widget(self.children[0])
 
     def Copy(self):
         blank = self.__class__()
@@ -455,6 +441,7 @@ class BGDeckMaker(BoxLayout):
                     c.parent.remove_widget(c)
                 pictures.add_widget(c)
             return
+        from template import LoadTemplateFolder, templateList
         tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
         C = len(tmpls)
         progress.max = C
@@ -466,6 +453,7 @@ class BGDeckMaker(BoxLayout):
                 self.tmplsLib = pictures.children[:]
                 return
             _f = os.path.join('Templates',tmpls.pop())
+            templateList.register_file(_f)
             img = FileViewItem(source="", name=_f)
             pictures.add_widget(img)
             progress.value += 1
@@ -479,12 +467,12 @@ class BGDeckMaker(BoxLayout):
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
         pictures.clear_widgets()
-        C = len([x for x in os.listdir(folder) if x.endswith(('.jpg','.png','.gif','.kv'))])
+        C = len([x for x in os.listdir(folder) if x.endswith(FILE_FILTER)])
         progress.max = C
         progress.value = 1
         #pg = Factory.get('PictureGrid')()
         pictures.add_widget(FileViewItem(source='img/AllFolder2.png', is_all_folder = folder, name="Add %d Imgs"%C))
-        docs = sorted([x.lower() for x in os.listdir(folder) if x.endswith(('.jpg','.jpeg', '.png','.gif', '.kv'))], reverse=True)
+        docs = sorted([x.lower() for x in os.listdir(folder) if x.endswith(FILE_FILTER)], reverse=True)
         #ensure the stop button is reachable
         self.ids['stop_action'].width = 80
         self.ids['stop_action'].text = 'Stop'
@@ -493,6 +481,9 @@ class BGDeckMaker(BoxLayout):
                 _f = docs.pop()
                 if _f.endswith('.kv'): #it is a template:
                     source = 'img/card_template.png'
+                    _f = os.path.join(folder, _f)
+                elif _f.endswith('.csv'):
+                    source = 'img/csv.png'
                     _f = os.path.join(folder, _f)
                 else:
                     source  = os.path.join(folder,_f)

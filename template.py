@@ -7,7 +7,7 @@ from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, Dic
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
-from editors import editors_map, FileEditor
+from editors import editors_map, FileEditor, TemplateFileEditor
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.carousel import Carousel
 from conf import path_reader
@@ -22,7 +22,7 @@ class BGTemplate(Field, RelativeLayout):
 
     src = StringProperty()
 
-    attrs = {'src': FileEditor}
+    attrs = {'src': TemplateFileEditor}
     #Now for the special attributes only used when printing the objects
     print_index = DictProperty()
 
@@ -156,7 +156,8 @@ class BGTemplate(Field, RelativeLayout):
                     for ID in t.ids:
                         #Force field name to ID
                         t.ids[ID].name = ID
-                    t.src = "@%s"%filename
+                    #escape from recursion issue between on_src & from file
+                    #t.src = "@%s"%filename
                     if not t.attrs:
                         #force a reset of orederedict to avoid singleton effect
                         t.attrs = OrderedDict()
@@ -287,6 +288,27 @@ class BGTemplate(Field, RelativeLayout):
                             child.source = v
                         setattr(child, attrName, v)
 
+    def on_src(self, instance, filename):
+        print 'Recreating & wrap self from src', filename
+        mes = BGTemplate.FromFile(filename)
+        if mes:
+            me = mes[-1]
+            inner_tmpls = [x for x in self.children if isinstance(x, BGTemplate)]
+            if len(inner_tmpls)==1:
+                #There was one template: remove it
+                self.remove_widget(inner_tmpls[0])
+            self.add_widget(me)
+            print 'should I copy some properties to self ', self, me
+            self.size = me.size
+            self.pos = me.pos
+            def cross_pos(instance, value):
+                me.pos  = value
+            def cross_size(instance, value):
+                me.size = value
+            self.bind(pos=cross_pos)
+            self.bind(size=cross_size)
+
+
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
 from kivy.properties import DictProperty
@@ -383,9 +405,6 @@ def LoadTemplateFolder(folder="Templates"):
     from os.path import join
     for kv in glob(join(folder, '*.kv')):
         templateList.register_file(kv)
-        #for tmpl in BGTemplate.FromFile(kv):
-        #    templateList.register(tmpl)
-
 
 from conf import CP
 if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):

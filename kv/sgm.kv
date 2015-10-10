@@ -20,42 +20,51 @@
         text: root.text
         size_hint_y: .1
 
-<DynamicQuantity>:
-    orientation: 'vertical'
-    #size_hint: None, None
-    #size: 100,100
-    size_hint: None, None
-    width: 100
-    height: 150
+<DynamicQuantity@BoxLayout>:
+    size_hint_x: None
     init_qt: 1
-    padding: 0,50,0,10
-    spacing: 10
     Label:
-        text: 'Qt'
-        size_hint_y: .1
-        #height: 10
-        font_size: 20
-    TextInput:
-        multiline: False
-        disabled: not(root.selected)
         text: "%s"%root.init_qt
         id: qt
         font_size: 36
-        size_hint_y: None
-        height: 50
-        on_text: root.parent.qt = int(self.text); app.compute_stats(None)
+        size_hint: None, None
+        size: 58, 50
+        on_text: root.parent.parent.qt = int(self.text); app.compute_stats(None)
+    BoxLayout:
+        size_hint_x: None
+        width: 30
+        orientation: 'vertical'
+        StickyButton:
+            text: "^"
+            background_color: 1,1,1,.5
+            #size_hint: None, None
+            #size: 15,17
+            on_press: qt.text = str(int(qt.text)+1)
+        StickyButton:
+            text: "v"
+            background_color: 1,1,1,.5
+            #size_hint: None, None
+            #size: 15,17
+            on_press: qt.text = str(max(int(qt.text)-1,0))
+
 
 
 <HiddenRemoveButton@ButtonBehavior+Image>:
     #source: 'img/Delete_icon.png'
     text: 'Remove'
-    size_hint: None, None
-    width: 0
+    size_hint_x: None
+    width: 15
 
 <RVImage@ToggleButtonBehavior+Image>:
     source: 'img/recto.png' if self.state =='normal' else 'img/verso.png'
-    size_hint: None, None
-    size: 100, 100
+    #size_hint: None, None
+    #size: 100, 100
+    size_hint_x: None
+
+<EditOptionLayout@BoxLayout>:
+    size_hint_x: None
+    orientation: 'vertical'
+
 
 <StackPart>:
     height: 150
@@ -87,14 +96,29 @@
             text: split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
             size_hint_y: .1
             font_size: img.height/10
-    DynamicQuantity:
-        id: qt
-        selected: root.selected
-        init_qt: root.qt
-    RVImage:
-        id: dual
-        state: root.verso
-        on_state: root.verso = self.state ;  app.compute_stats(None)
+    BoxLayout:
+        size_hint_x: None
+        disabled: not(root.selected)
+        orientation: 'vertical'
+        canvas.after:
+            Color:
+                rgb: 0,0,0
+            Line:
+                rectangle: self.x, self.y, self.width, self.height
+
+        DynamicQuantity:
+            id: qt
+            selected: root.selected
+            init_qt: root.qt
+            canvas.after:
+                Color:
+                    rgb: 0,0,0
+                Line:
+                    rectangle: self.x, self.y, self.width, self.height
+        RVImage:
+            id: dual
+            state: root.verso
+            on_state: root.verso = self.state ;  app.compute_stats(None)
 
 <FileItemOption@BoxLayout>
     size_hint_y:  .05
@@ -125,7 +149,6 @@
             #size: 15,17
             on_press: qt.text = str(max(int(qt.text)-1,0))
     RVImage:
-        #text: 'Dual'
         id: dual
         size_hint: .33, 1
     Button:
@@ -282,14 +305,14 @@
                                 text: 'PDF'
                                 source: 'img/print.png'
                                 on_press: root.prepare_print()
-                            Icon:
-                                text: 'Import'
-                                on_press: root.choose_file_popup("Choose CSV file to import", root.load_file)
-                                source: 'img/import.png'
+                            #Icon:
+                            #    text: 'Import'
+                            #    on_press: root.choose_file_popup("Choose CSV file to import", root.load_file)
+                            #    source: 'img/import.png'
                             Icon:
                                 text: 'Export'
                                 source: 'img/export.png'
-                                on_press: root.export_file()
+                                on_press: root.choose_file_popup("Choose CSV Export file name", root.export_file)
                     AccordionItem:
                         title: "Fit Format"
                         GridLayout:

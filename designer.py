@@ -144,13 +144,19 @@ class BGDesigner(FloatLayout):
         from functools import partial
         cp_width = min(Window.size)*.8
         cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-        tcp = Factory.get('TmplChoicePopup')(pos= cp_pos, size= (cp_width/4,cp_width))
-        theList = tcp.ids.tmpl_list
-        def cb(sel):
-            tcp.dismiss()
-            if sel:
-                from template import templateList
-                tmpl= templateList[sel]
+        from editors import TemplateFileEditorPopup
+        tcp = TemplateFileEditorPopup(pos= cp_pos, size= (cp_width,cp_width))
+        tcp.name =' New Template Field'
+        def cb(instance):
+            s = instance.ids.fpicker.selection
+            val = instance.ids.tmpl_name.text
+            if len(s) and isfile(s[0]):
+                _name = val
+                if val == '-':
+                    _name = ''
+                tmplname = '%s@%s'%(_name, s[0])
+                from template import BGTemplate
+                tmpl = BGTemplate.FromFile(tmplname).pop()
                 childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
                 #Deal with Template Properties:
@@ -182,10 +188,14 @@ class BGDesigner(FloatLayout):
                             pre_label = field.name or field.id or field.Type
                             self.ids.fields.add_node(TreeViewField(pre_label=pre_label, name = field.default_attr, editor=w), node)
                 self.selection = [tmpl]
-        for tmpl in sorted(templateList.templates):
-            b = Button(text=tmpl, size_hint_y=None, height=30)
-            b.on_press = partial(cb, tmpl)
-            theList.add_widget(b)
+
+            else:
+                from conf import alert
+                alert('Wrong selection in template:' + s)
+        #for tmpl in sorted(templateList.templates):
+        #    b = Button(text=tmpl, size_hint_y=None, height=30)
+        #    b.on_press = partial(cb, tmpl)
+        #    theList.add_widget(b)
         tcp.cb = cb
         tcp.open()
 
@@ -204,7 +214,6 @@ class BGDesigner(FloatLayout):
         parent.add_widget(target)
 
     def insert_field(self, target, parent = None):
-        from fields import Field
         #Make Them designer still
         target.designed = True
         target.designer = self

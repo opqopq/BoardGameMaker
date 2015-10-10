@@ -313,6 +313,37 @@
                 text: "Cancel"
                 on_press: root.dismiss()
 
+
+<TemplateFileEditorPopup@Popup>:
+    size_hint: None, None
+    name: 'Template Field'
+    title: 'Choose src for %s'%self.name
+    GridLayout:
+        cols:1
+        FileChooserListView:
+        #FileChooserThumbView:
+            id: fpicker
+            path: get_last_dir(root)
+            filters: ['*.kv']
+            on_selection: root.set_bgtemplates()
+            #on_canceled: root.dismiss()
+        Spinner:
+            id: tmpl_name
+            text: '-'
+            values: ['-']
+            size_hint_y: None
+            height: 30
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: set_last_dir(root, fpicker.path); root.dismiss(); root.cb(root)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
 <TextEditorPopup@Popup>
     size_hint: None, None
     title: 'Text Edition for %s'%self.name

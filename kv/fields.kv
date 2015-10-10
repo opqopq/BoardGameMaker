@@ -5,6 +5,7 @@
 
 <.designed>
     designed: True
+    sel_radius: 10
     canvas.after:
         #First, re-create the rotation effect of angle
         Rotate:
@@ -20,29 +21,29 @@
             dash_length: 5
         # Resize Band
         Line:
-            circle: self.right-5, self.top-5, 2.5
+            circle: self.right-self.sel_radius, self.top-self.sel_radius, self.sel_radius/2
             width:2
         Line:
             width: 2
-            circle: self.right-5, self.y+5, 2.5
+            circle: self.right-self.sel_radius, self.y+self.sel_radius, self.sel_radius/2
         Line:
             width: 2
-            circle: self.x+5, self.top-5, 2.5
+            circle: self.x+self.sel_radius, self.top-self.sel_radius, self.sel_radius/2
         Line:
             width: 2
-            circle: self.x+5, self.y+5, 2.5
+            circle: self.x+self.sel_radius, self.y+self.sel_radius, self.sel_radius/2
         Line:
-            circle: self.center_x, self.top-5, 2.5
+            circle: self.center_x, self.top-self.sel_radius, self.sel_radius/2
             width:2
         Line:
             width: 2
-            circle: self.center_x, self.y+5, 2.5
+            circle: self.center_x, self.y+self.sel_radius, self.sel_radius/2
         Line:
             width: 2
-            circle: self.x+5, self.center_y, 2.5
+            circle: self.x+self.sel_radius, self.center_y, self.sel_radius/2
         Line:
             width: 2
-            circle: self.right-5, self.center_y, 2.5
+            circle: self.right-self.sel_radius, self.center_y, self.sel_radius/2
         #End the rotation stuff for designed
         Rotate:
             angle: -self.angle
