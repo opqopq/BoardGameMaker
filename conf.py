@@ -122,7 +122,6 @@ def fill_env(*args):
     ENV['log'] = log
     from template import templateList
     ENV['tmpls'] = templateList
-    ENV['DEFAULT_TEMPLATE'] = templateList['Default']
     from printer import prepare_pdf
     ENV['prepare_pdf'] = prepare_pdf
     ENV['stack'] = root.ids['deck'].ids['stack']
@@ -159,7 +158,6 @@ def find_path(path):
         log('Source does not exist at path %s'%(path))
     else:
         return path_reader(path)
-
 
 DirCache={'last':gamepath}
 

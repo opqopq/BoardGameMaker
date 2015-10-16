@@ -1,7 +1,7 @@
 #:import HoverBehavior utils.hoverable.HoverBehavior
 #:import CARD conf.card_format
 #:import RuledScatter designer.RuledScatter
-#:import Field fields.Field
+#:import Field fields.BaseField
 
 <FieldTaskButton@ButtonBehavior+HoverBehavior+Image>
     radius: 40
@@ -20,6 +20,13 @@
             width: self.radius/20
 
 
+<RuledScatter>:
+    canvas.before:
+        Color:
+            rgb: 1,1,1
+        Rectangle:
+            size: self.size
+
 <TreeFieldEntry>:
 #Use on the right tree containing added field
     padding: 10,0,10,0
@@ -31,7 +38,7 @@
         source: "img/%s.png"%root.target.Type if root.target and isfile("img/%s.png"%root.target.Type) else "img/misc.png"
         size_hint: .25,1
     Label:
-        text: (root.target.name or root.target.Type[:-5] if root.target and isinstance(root.target, Field) and root.target.Type.endswith('Field') else (root.target.Type if root.target and isinstance(root.target, Field) else ""))
+        text: (root.target.name or root.target.Type[:-5] if root.target and isinstance(root.target, Field)  else (root.target.Type if root.target and isinstance(root.target, Field) else ""))
         size_hint: .75,1
 
 <FieldEntry@ButtonBehavior+HoverBehavior+BoxLayout>:
@@ -72,7 +79,7 @@
             pos: self.pos
             size: self.size
     Image:
-        source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
+        source: "img/TemplateField.png"
         size_hint: .25,1
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
@@ -137,7 +144,82 @@
             max_size: 0.6*root.width
             TabbedPanel:
                 do_default_tab: False
-                #tab_pos: 'left_top'
+                TabbedPanelItem:
+                    text: 'Template'
+                    Accordion:
+                        orientation: 'vertical'
+                        AccordionItem:
+                            collapse: False
+                            title: 'Fields'
+                            GridLayout:
+                                #size_hint_y: None
+                                cols: 1
+                                ScrollView:
+                                    FieldTreeView:
+                                        designer: root
+                                        indent_level: 0
+                                        #hide_root: True
+                                        size_hint_y: None
+                                        #size_hint_x: None
+                                        width: self.parent.width if self.parent else 200
+                                        on_minimum_height: self.height = self.minimum_height
+                                        on_minimum_width: self.width= self.minimum_width
+                                        id: fields
+                                        root_options: {'text': 'Fields' if not root.current_template else root.current_template.template_name}
+                                        canvas.before:
+                                            Color:
+                                                rgb: .2,.2,.2
+                                            Rectangle:
+                                                size: self.size
+                                                pos: self.pos
+                                Splitter:
+                                    sizable_from: 'top'
+                                    ScrollView:
+                                        TreeView:
+                                            on_minimum_height: self.height= self.minimum_height
+                                            id: params
+                                            current_field: None
+                                            size_hint_y:  None
+                                            #hide_root: bool(root.selection)
+                        AccordionItem:
+                            title: 'File'
+                            GridLayout:
+                                #size_hint_y: None
+                                cols: 1
+                                spacing: 10
+                                BoxLayout:
+                                    orientation: "horizontal"
+                                    size_hint_y: None
+                                    height: 30
+                                    id: bl_name
+                                    Label:
+                                        text: "Name: "
+                                        size_hint_x: None
+                                        width: 50
+                                    TextInput:
+                                        id: tmplName
+                                        size_hint_x: None
+                                        width: bl_name.width-50-10
+                                        text: root.current_template.template_name
+                                        on_text: if root.current_template: root.current_template.template_name = tmplName.text
+                                Icon:
+                                    source: 'img/new.png'
+                                    on_press: root.new()
+                                    text: 'New'
+                                Icon:
+                                    text: "Tmpl Preview"
+                                    #:import F kivy.factory.Factory
+                                    on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
+                                    source: 'img/PrintPreview.png'
+                                Icon:
+                                    source: 'img/fileexport.png'
+                                    on_press: root.save()
+                                    text: 'Save'
+                                Icon:
+                                    height: 40
+                                    source: 'img/filesaveas2.png'
+                                    on_press: root.save(root.current_template.template_name)
+                                    text: 'Save As'
                 TabbedPanelItem:
                     text: 'Library'
                     GridLayout:
@@ -180,182 +262,6 @@
                                         id: effects_stack
                                         size_hint_y: None
                                         on_minimum_height: self.height = self.minimum_height
-                TabbedPanelItem:
-                    text: 'Template'
-                    GridLayout:
-                        #size_hint_y: None
-                        cols: 1
-                        BoxLayout:
-                            size_hint_y: None
-                            height: 45
-                            Label:
-                                text: "Zoom:"
-                                padding_x: 150
-                                size_hint_x: .2
-                                #width: 30
-                            Slider:
-                                range:0.01,4
-                                value: 1
-                                size_hint_x: 1
-                                on_value: content.scale = self.value#; content.pos= 150,50
-                                orientation: 'horizontal'
-                                canvas.before:
-                                    Color:
-                                        rgba: .2,.2,.2,.2
-                                    Rectangle:
-                                        pos: self.pos
-                                        size: self.size
-                        ScrollView:
-                            FieldTreeView:
-                                designer: root
-                                indent_level: 0
-                                #hide_root: True
-                                size_hint_y: None
-                                #size_hint_x: None
-                                width: self.parent.width if self.parent else 200
-                                on_minimum_height: self.height = self.minimum_height
-                                on_minimum_width: self.width= self.minimum_width
-                                id: fields
-                                root_options: {'text': 'Fields'}
-                                canvas.before:
-                                    Color:
-                                        rgb: .2,.2,.2
-                                    Rectangle:
-                                        size: self.size
-                                        pos: self.pos
-                        Splitter:
-                            sizable_from: 'top'
-                            ScrollView:
-                                TreeView:
-                                    on_minimum_height: self.height= self.minimum_height
-                                    id: params
-                                    current_field: None
-                                    size_hint_y:  None
-                                    #hide_root: bool(root.selection)
-                TabbedPanelItem:
-                    text: 'File'
-                    GridLayout:
-                        #size_hint_y: None
-                        cols: 1
-                        BoxLayout:
-                            orientation: 'horizontal'
-                            size_hint_y: None
-                            height: 30
-                            canvas.before:
-                                Color:
-                                    rgb: .3,.3,.9,.5
-                                Rectangle:
-                                    size: self.size
-                                    pos: self.pos
-                            FieldTaskButton:
-                                size_hint_x: .25
-                                source: 'img/filenew.png'
-                                on_press: root.new()
-                                radius: .8*self.parent.height
-                            FieldTaskButton:
-                                size_hint_x: .25
-                                source: 'img/filesave.png'
-                                on_press: root.save()
-                                radius: .8*self.parent.height
-                            FieldTaskButton:
-                                size_hint_x: .25
-                                source: 'img/filesaveas.png'
-                                on_press: root.save(root.current_template.name)
-                                radius: .8*self.parent.height
-                            FieldTaskButton:
-                                size_hint_x: .25
-                                source: 'img/fileopen.png'
-                                radius: .8*self.parent.height
-                        BoxLayout:
-                            orientation: "horizontal"
-                            size_hint_y: None
-                            height: 30
-                            Label:
-                                text: "Name: "
-                                size_hint_x: None
-                                width: 50
-                            TextInput:
-                                id: tmplName
-                                text: "TMPL"
-                                on_text: if root.current_template: root.current_template.name = tmplName.text
-                        BoxLayout:
-                            orientation: 'horizontal'
-                            size_hint_y: None
-                            height: 30
-                            Label:
-                                text: "W:"
-                                size_hint_x: .1
-                            TextInput:
-                                id: tmpl_width
-                                text: "%.2f"%CARD.width
-                                on_text: root.update_tmpl_size()
-                                size_hint_x: .3
-                            Label:
-                                text: "H:"
-                                size_hint_x: .1
-                            TextInput:
-                                id: tmpl_height
-                                text: "%.2f"%CARD.height
-                                on_text: root.update_tmpl_size()
-                                size_hint_x: .3
-                            Spinner:
-                                values: 'px','cm'
-                                text: 'px'
-                                on_text: root.change_tmpl_unit()
-                                size_hint_x: .2
-                                id: tmpl_unit
-                        BoxLayout:
-                            size_hint_y: None
-                            height: 30
-                            CheckBox:
-                                id: cb_overwrite
-                                size_hint_x: .1
-                            Label:
-                                text: "Overwrite on save"
-                        BoxLayout:
-                            size_hint_y: None
-                            height: 30
-                            CheckBox:
-                                id: cb_relative
-                                active: True
-                                size_hint_x: .1
-                            Label:
-                                text: "Save relative Size/Pos"
-                        BoxLayout:
-                            size_hint_y: None
-                            height: 30
-                            CheckBox:
-                                id: cb_relpath
-                                size_hint_x: .1
-                                active: True
-                            Label:
-                                text: "Save Path relative to GAMEPATH"
-                        BoxLayout:
-                            size_hint_y: None
-                            height: 30
-                            CheckBox:
-                                id: cb_cm
-                                size_hint_x: .1
-                                active: True
-                            Label:
-                                text: "Save in cm"
-
-                        Button:
-                            text: "Export"
-                            on_press: root.save()
-                            size_hint_y: None
-                            height: 30
-                        Button:
-                            text: "Return to Deck"
-                            on_press: app.set_screen('Deck')
-                            size_hint_y: None
-                            height: 30
-                        Button:
-                            text: "Template Text Preview"
-                            #:import F kivy.factory.Factory
-                            on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
-                            size_hint_y: None
-                            height: 30
 
         #Center layout, with template
         FloatLayout
@@ -386,23 +292,59 @@
                     id: tasks
                     size_hint_x:  None
                     #col_default_width: 60
-            RuledScatter:
-                id: content
-                do_rotation: False
-                do_scale: False
-                pos: background.x+50,100
-                size_hint: None, None
-                size: CARD.width, CARD.height
+            StencilView:
+                pos: background.x,0
+                RuledScatter:
+                    id: content
+                    do_rotation: False
+                    do_scale: False
+                    pos: background.x+50,100
+                    size_hint: None, None
+                    size: root.current_template.size
+                    bgcol: .7,.7,.7,.7
+                    canvas.before:
+                        Color:
+                            rgba: self.bgcol
+                        Rectangle:
+                            size: self.size
+
+            #Option bar with zoom
+            BoxLayout:
+                size_hint_y: None
+                height: 45
+                x: background.x
                 canvas.before:
                     Color:
-                        rgba: .5,.5,.5,.5
+                        rgb: .7,.7,.7
                     Rectangle:
-                        pos: 0,0
                         size: self.size
-                    Color:
-                        rgb: 0,0,0
-                    Line:
-                        rectangle: 0,0,self.width,self.height
+                        pos: self.pos
+                Label:
+                    text: "Zoom:"
+                    padding_x: 150
+                    size_hint_x: None
+                    #width: 60
+                Slider:
+                    range:0.01,4
+                    value: 1
+                    size_hint_x: .8
+                    on_value: content.scale = self.value; content.pos= background.x+50,100
+                    orientation: 'horizontal'
+                    canvas.before:
+                        Color:
+                            rgba: .2,.2,.2,.2
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: "Show Surface:"
+                    size_hint_x: None
+                    width: 120
+                CheckBox:
+                    on_active: content.bgcol = (.7,.7,.7,.7) if self.active else (1,1,1,1)
+                    active: True
+                    size_hint_x: None
+                    width: 30
 
 <TmplChoicePopup>:
     BoxLayout:

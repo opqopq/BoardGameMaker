@@ -53,6 +53,38 @@
     },
     {
         "type": "title",
+        "title": "Designer"
+    },
+    {
+    "type": "bool",
+    "title": "Overwrite on Save",
+    "desc": "Directly overwrite template on save",
+    "section": "Designer",
+    "key": "OVERWRITE_SAVED_TMPL"
+    },
+    {
+    "type": "bool",
+    "title": "Save relative Size/Pos",
+    "desc": "On Template Export, save Size & Pos relative to Template Size & Pos",
+    "section": "Designer",
+    "key": "TMPL_RELATIVE_SIZE_POS"
+    },
+    {
+    "type": "bool",
+    "title": "Save Path Relative to Gamepath",
+    "desc": "Convert all Path to relpath to Gamepath",
+    "section": "Designer",
+    "key": "TMPL_RELATIVE_GAMEPATH"
+    },
+    {
+    "type": "bool",
+    "title": "Save in CM",
+    "desc": "Save size & pos in CM instead of pixels",
+    "section": "Designer",
+    "key": "SAVE_IN_CM"
+    },
+    {
+        "type": "title",
         "title": "Format"
     },
     {

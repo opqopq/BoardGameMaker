@@ -1,11 +1,10 @@
 """Contains all the diffrents fields for template"""
 
 from collections import OrderedDict
-from os.path import isfile, join
 from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.factory import Factory
-from kivy.lang import Builder
+from kivy.properties import ObservableDict, ObservableList, ObservableReferenceList
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.texture import Texture
 from PIL import Image as PILImage
@@ -17,6 +16,8 @@ from utils.symbol_label import SymbolLabel
 from kivy.uix.effectwidget import EffectWidget
 from editors import *
 from conf import gamepath, find_path
+from os.path import relpath
+
 
 Builder.load_file('kv/fields.kv')
 
@@ -29,56 +30,27 @@ from styles import getStyle
 ###############################################
 
 from kivy.graphics import ClearBuffers, ClearColor
-class BaseField(FloatLayout):
 
-    texture = ObjectProperty(None, allownone=True)
+def compare_to_root(rootsize,fieldsize):
+    "Take 2 size or pos tuple and return a string made of b/a ratio as string, rounded to 2 digits float"
+    xa, ya = rootsize
+    xb, yb = fieldsize
+    assert xa and ya
+    xratio = float(xb)/float(xa)
+    yratio = float(yb)/float(ya)
+    rounded_x = round(xratio,2)
+    rounded_y = round(yratio,2)
+    if rounded_y == 1:
+        str_y = 'root.height'
+    else:
+        str_y = '%.2f * root.height' % rounded_y
+    if rounded_x== 1:
+        str_x = 'root.width'
+    else:
+        str_x = '%.2f * root.width' % rounded_x
+    return "%s, %s" % (str_x, str_y)
 
-    alpha = NumericProperty(1)
-
-    def __init__(self, **kwargs):
-        self.canvas = Canvas()
-        with self.canvas:
-            self.fbo = Fbo(size=self.size)
-            self.fbo_color = Color(1, 1, 1, 1)
-            self.fbo_rect = Rectangle()
-
-        with self.fbo:
-            ClearColor(0,0,0,0)
-            ClearBuffers()
-
-        # wait that all the instructions are in the canvas to set texture
-        self.texture = self.fbo.texture
-        super(BaseField, self).__init__(**kwargs)
-
-    def add_widget(self, *largs):
-        # trick to attach graphics instructino to fbo instead of canvas
-        canvas = self.canvas
-        self.canvas = self.fbo
-        ret = super(BaseField, self).add_widget(*largs)
-        self.canvas = canvas
-        return ret
-
-    def remove_widget(self, *largs):
-        canvas = self.canvas
-        self.canvas = self.fbo
-        super(BaseField, self).remove_widget(*largs)
-        self.canvas = canvas
-
-    def on_size(self, instance, value):
-        self.fbo.size = value
-        self.texture = self.fbo.texture
-        self.fbo_rect.size = value
-
-    def on_pos(self, instance, value):
-        self.fbo_rect.pos = value
-
-    def on_texture(self, instance, value):
-        self.fbo_rect.texture = value
-
-    def on_alpha(self, instance, value):
-        self.fbo_color.rgba = (1, 1, 1, value)
-
-class Field(HoverBehavior, FocusBehavior, FloatLayout):
+class BaseField(HoverBehavior, FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
     selected = BooleanProperty(False)
     z = NumericProperty(0)
@@ -99,7 +71,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
-    not_exported = ["directives", "code_behind", 'cls', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
+    not_exported = ['template', "directives", "code_behind", 'sel_radius', 'cls', 'focus','focused', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -188,11 +160,6 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
             for k in klass.not_exported:
                 self.black_list.add(k)
 
-    def __init__(self, **kwargs):
-        "Create a subclassable list of attributes to display"
-        super(Field, self).__init__(**kwargs)
-        self.derive_infos()
-
     def derive_infos(self):
         #Compute menu & params
         import inspect
@@ -200,7 +167,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
         self.menu = OrderedDict()
         self.code_behind = dict()
         for klass in reversed(inspect.getmro(self.__class__)):
-            if not issubclass(klass, Field):
+            if not issubclass(klass, BaseField):
                 continue
             for k,v in klass.attrs.items():
                 self.params[k] = v
@@ -251,7 +218,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
         blank.name = (self.name or self.Type ) +'-copy'
         if with_children:
             for child in self.children:
-                if not isinstance(child, Field):
+                if not isinstance(child, BaseField):
                     continue
                 print 'copying child', child
                 blank.add_widget(child.Copy(with_children))
@@ -289,6 +256,115 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
                 b.add_widget(editor.widget)
                 box.add_widget(b)
         return box
+
+    def on_z(self, instance, value):
+        #Resort all dad'children
+        if self.parent:
+            cs = self.parent.children[:]
+            cs.sort(key=lambda x: x.z, reverse=True)
+            self.parent.children= cs
+            #Also reorder canvas
+            for c in cs:
+                self.parent.canvas.remove(c.canvas)
+                self.parent.canvas.insert(0,c.canvas)
+
+
+    def export_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
+        from types import FunctionType
+        from template import BGTemplate
+        tmpls = list()
+        imports = list()
+        directives = list()
+        prepend = '\t'*level
+        field = self
+        #If we have no connection to master template, what is the point of this comparison.
+        if relativ and not self.template:
+            relativ = False
+        #Remove field from any not desired attrbiute for export
+        field.prepare_export()
+        tmpls.append('%s%s:'%((level-1)*'\t',field.Type))
+        #Include KV file if templateField
+        if isinstance(field, BGTemplate):
+            tmpls[0] = '%s%s:'%((level-1)*'\t',field.template_name)
+            imports.append(field.src.split('@')[-1])
+        if field.directives:
+            directives.extend(field.directives)
+        for attr in field.getChangedAttributes(restrict=True):
+            #Check if code behind:
+            if attr in field.code_behind:
+                #print 'Attr %s has been changed and should be written down. One could write the code behind:'%attr, field.code_behind[attr]
+                tmpls.append('%s%s: %s'%(prepend, attr, field.code_behind[attr]))
+                continue
+            #convert name to ID
+            value = getattr(field,attr)
+            vtype = type(value)
+            #print 'exporting field', attr, vtype
+            if attr == 'name':
+                tmpls.append('%sid: %s'%(prepend,value))
+            elif  isinstance(value, basestring):
+                if isfile(value) and save_relpath:
+                    value = relpath(value, gamepath)
+                tmpls.append('%s%s: "%s"'%(prepend,attr, value))
+            elif vtype == type(1.0):
+                tmpls.append('%s%s: %.2f'%(prepend, attr, value))
+            elif vtype in  (type({}), ObservableDict):
+                for _v in value:
+                    try:
+                        _uni = unicode(value[_v], 'latin-1')
+                    except TypeError: #can not coerce float in latin -1
+                        _uni = unicode(value[_v])
+                    if isfile(_uni) and save_relpath:
+                        value[_v] = relpath(value[_v], gamepath)
+                tmpls.append('%s%s: %s'%(prepend, attr,value))
+            elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
+                if attr in ("size","pos"):
+                    if relativ:
+                        tmpls.append('%s%s: %s'%(prepend, attr, compare_to_root(self.template.size,value)))
+                        continue
+                    if save_cm:
+                        tmpls.append('%s%s: '%(prepend,attr)+', '.join(["cm(%.2f)"%(v/cm(1)) for v in value]))
+                        continue
+                #Looping and removing bracket
+                sub = []
+                for item in value:
+                    if isinstance(item, float):
+                        sub.append('%.2f'%item)
+                    elif isinstance(item, basestring):
+                        if isfile(item) and save_relpath:
+                            item = relpath(item, gamepath)
+                        sub.append('"%s"'%item)
+                    elif isinstance(item, FunctionType): #replace the function by its name without the ""
+                        sub.append('%s'%item.func_name)
+                    else:
+                        sub.append(str(item))
+                if len(sub) != 1:
+                    tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
+                else: #only: add a ',' at the end, to have kv understand it is a tuple
+                    tmpls.append('%s%s: '%(prepend, attr) + sub[0] + ',')
+
+            else:
+                tmpls.append('%s%s: %s'%(prepend, attr, value))
+        if isinstance(field, LinkedField):
+            for child in field.children:
+                if getattr(child, 'is_context', False):
+                    continue
+                if not isinstance(child, BaseField):
+                    continue
+                t,i,d = child.export_field(level=level+1, relativ=relativ, save_cm = save_cm, save_relpath = save_relpath)
+                tmpls.extend(t)
+                imports.extend(i)
+                directives.extend(d)
+        tmpls.append('')
+        return (tmpls, imports, directives)
+
+#class Field(HoverBehavior, FocusBehavior, FloatLayout):
+from kivy.uix.relativelayout import RelativeLayout
+class Field( BaseField, RelativeLayout):
+
+    def __init__(self, **kwargs):
+        "Create a subclassable list of attributes to display"
+        RelativeLayout.__init__(self,**kwargs)
+        self.derive_infos()
 
     def on_touch_down(self, touch):
         if self.designed:
@@ -365,22 +441,120 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
                 if self.selected:
                     self.x += touch.dx
                     self.y += touch.dy
-        return super(Field, self).on_touch_move(touch)
-
-    def on_z(self, instance, value):
-        #Resort all dad'children
-        if self.parent:
-            cs = self.parent.children[:]
-            cs.sort(key=lambda x: x.z, reverse=True)
-            self.parent.children= cs
-            #Also reorder canvas
-            for c in cs:
-                self.parent.canvas.remove(c.canvas)
-                self.parent.canvas.insert(0,c.canvas)
+        return RelativeLayout.on_touch_move(self,touch)
 
     def add_widget(self, widget, index=0):
         #replacing index by z-index
-        super(Field, self).add_widget(widget, getattr(widget,'z',0))
+        RelativeLayout.add_widget(self,widget, getattr(widget,'z',0))
+        #Duplicate pointer to template
+        widget.template = self.template
+        #Re order them according to z elt:
+        cs = self.children[:]
+        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
+        self.children = cs
+        #Also reorder canvas
+        for cindex, c in enumerate(self.children):
+            if not self.canvas.indexof(c.canvas) == -1:
+                self.canvas.remove(c.canvas)
+            self.canvas.insert(0,c.canvas)
+
+    def remove_widget(self, widget):
+        super(RelativeLayout,self).remove_widget(widget)
+        cs = self.children[:]
+        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
+        self.children = cs
+        #Also reorder canvas
+        for cindex, c in enumerate(self.children):
+            self.canvas.remove(c.canvas)
+            self.canvas.insert(0,c.canvas)
+
+
+class FloatField(BaseField, FloatLayout):
+    def __init__(self, **kwargs):
+        "Create a subclassable list of attributes to display"
+        FloatLayout.__init__(self,**kwargs)
+        self.derive_infos()
+
+    def on_touch_down(self, touch):
+        if self.designed:
+            origin = Vector(*touch.pos)
+            #Convert origin to take into account self.angle
+            for pos in [(self.center_x,self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
+                if self.selected:
+                    VECTOR = Vector(*pos)
+                    if self.angle:
+                        deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
+                        deltapos =  deltapos.rotate(self.angle)
+                        VECTOR = deltapos + self.center
+                    if origin.distance(VECTOR) <5:
+                        touch.ud['do_resize'] = True
+                        touch.grab(self)
+                        #Calculate the mode of resizing
+                        ox,oy = touch.opos
+                        cx,cy = self.center
+                        touch.ud['LEFT'] = ox<cx
+                        touch.ud['DOWN'] = oy<cy
+                        if pos in [(self.center_x, self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius)]:
+                            touch.ud['movement'] = 'y'
+                        if pos in [(self.x+self.sel_radius, self.center_y), (self.right-self.sel_radius, self.center_y)]:
+                            touch.ud['movement'] = 'x'
+                        if pos in [(self.x+self.sel_radius, self.y+self.sel_radius),(self.x+self.sel_radius, self.top-self.sel_radius), (self.right-self.sel_radius, self.top-self.sel_radius), (self.right-self.sel_radius, self.y+self.sel_radius)]:
+                            touch.ud['movement'] = 'xy'
+                        return True
+            if self.collide_point(*touch.pos):
+                touch.grab(self)
+                #Define if resized is on
+                touch.ud['do_resize'] = False
+                #Display params if duoble tap
+                if touch.is_double_tap:
+                    self.designer.display_field_attributes(self)
+                return True
+            else:
+                self.selected = False
+                if hasattr(self, 'designer'):
+                    self.designer.selection = list()
+        return super(FloatField, self).on_touch_down(touch)
+
+    def on_touch_up(self, touch):
+        if self.designed and touch.grab_current==self:
+            # Here I should watch if shift is set, then it would be an append.
+            self.selected = True
+            #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
+            if hasattr(self,"designer") and  self.designer.selection and self.designer.selection[0] is not self:
+                self.designer.selection[0].selected = False
+            if getattr(self, "designer", False):
+                self.designer.selection = [self]
+            touch.ungrab(self)
+        return super(FloatField, self).on_touch_up(touch)
+
+    def on_touch_move(self, touch):
+        if self.designed and touch.grab_current==self:
+            if touch.ud['do_resize']: #Resize
+                LEFT = touch.ud['LEFT']
+                DOWN = touch.ud['DOWN']
+                MOV_X = 'x' in touch.ud['movement']
+                MOV_Y = 'y' in touch.ud['movement']
+                if MOV_Y:
+                    if DOWN:
+                        self.y += touch.dy
+                        self.height -= touch.dy
+                    else:
+                        self.height += touch.dy
+                if MOV_X:
+                    if LEFT:
+                        self.x += touch.dx
+                        self.width -= touch.dx
+                    else:
+                        self.width += touch.dx
+            else:#Move
+                if self.selected:
+                    self.x += touch.dx
+                    self.y += touch.dy
+        return FloatLayout.on_touch_move(self,touch)
+
+    def add_widget(self, widget, index=0):
+        #replacing index by z-index
+        FloatLayout.add_widget(self,widget, getattr(widget,'z',0))
         #Duplicate pointer to template
         widget.template = self.template
         #Re order them according to z elt:
@@ -403,7 +577,7 @@ class Field(HoverBehavior, FocusBehavior, FloatLayout):
             self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
 
-class TextField(Label, Field):
+class TextField(Label, FloatField):
     autofit = BooleanProperty(False)
     multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
@@ -485,9 +659,8 @@ class TextField(Label, Field):
                 if self.font_size != init_fint_size: #do that only if there has been some changed
                     self.font_size-=1
 
-class ImageField(Image, Field):
-    mask = StringProperty()
-    attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor), ('mask', FileEditor)])
+class ImageField(Image, FloatField):
+    attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
     source_filters = ['*.jpg','*.gif','*.jpeg','*.bmp','*.png']
@@ -507,10 +680,11 @@ class BorderField(Field):
     "Draw 4 lines around parent"
     border_width=NumericProperty(1)
     border_color=ListProperty((1,1,1,1))
-    attrs={'border_width': AdvancedIntEditor , 'border_color': ColorEditor}
+    border_radius=NumericProperty(0)
+    attrs={'border_width': AdvancedIntEditor , 'border_color': ColorEditor, 'border_radius': AdvancedIntEditor}
     default_attr = 'border_color'
 
-class ImgChoiceField(Image, Field):
+class ImgChoiceField(Image, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
     choices = DictProperty()
     attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
@@ -557,7 +731,7 @@ class ColorChoiceField(Field):
         else:
             self.on_selection(instance, self.selection)
 
-class SymbolField(SymbolLabel, Field):
+class SymbolField(SymbolLabel, FloatField):
     source=StringProperty()
     default_attr = 'text'
 
@@ -618,7 +792,7 @@ class SubImageField(Field):
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
 
-class TransfoField(Field, Image):
+class TransfoField(Field):#, Image):
     "Transform an image file thourgh different methods registered in img_xfos.py"
     default_attr = 'src'
     not_exported = ['texture', 'Image', 'norm_image_size']
@@ -633,7 +807,7 @@ class TransfoField(Field, Image):
     def on_src(self, instance, src):
         #unbind on old stuff
         #bind on new
-        if isinstance(src, Field):
+        if isinstance(src, BaseField):
             d = dict()
             d[src.default_attr] = self.update
             src.bind(**d)
@@ -655,7 +829,7 @@ class TransfoField(Field, Image):
                     from kivy.core.image import Image as CoreImage
                     cim = CoreImage(source)
                     self.Image = frombuffer('RGBA', cim.size, cim.texture.pixels, 'raw', 'RGBA',0,1)
-            elif isinstance(source, Field): #widget case
+            elif isinstance(source, BaseField): #widget case
                 from kivy.base import EventLoop
                 EventLoop.idle()
                 from conf import toImage
@@ -689,7 +863,6 @@ class SvgField(Field):
         if source:
             with self.canvas:
                 from kivy.graphics.svg import Svg
-                print source
                 Svg(source)
 
 class ShapeField(Field):
@@ -778,6 +951,7 @@ class MeshField(SourceShapeField):
     def on_points(self, instance, points):
         from math import cos, sin, pi, radians
         cx, cy = self.pos
+        cx,cy = 0,0
         self.vertices = []
         for i in range(0,len(points), 2):
             self.vertices.append(cx + points[i] * self.width)
@@ -818,6 +992,7 @@ class PolygonField(SourceShapeField):
     def on_side(self, instance, side):
         from math import cos, sin, pi, radians
         cx, cy = self.center
+        cx,cy = self.width/2, self.height/2
         a = 2 * pi / side
         self.vertices = []
         for i in xrange(side):
@@ -932,34 +1107,6 @@ class MaskField(LinkedField):
         self.on_points(self, self.points)
         return ret
 
-class TextureTransfoField(LinkedField):
-    "Transform a existing field thourgh different methods registered in img_xfos.py"
-    default_attr = 'xfos'
-    not_exported = ['texture', 'Image']
-    attrs = {'xfos': TransfoListEditor}
-    texture = ObjectProperty(allownone=True)
-    xfos = ListProperty()
-    Image = ObjectProperty()
-
-    def add_widget(self, *largs):
-        largs= list (largs)
-        from kivy.graphics.texture import Texture
-        if not hasattr(largs[0],'texture'):
-            print 'not texture -> wrapping', largs[0],
-            largs[0] = textured(largs[0])
-        # trick to attach graphics instructino to fbo instead of canvas
-        ret = super(FloatLayout, self).add_widget(*largs)
-        self.texture = largs[0].texture
-        self.on_xfos(self, self.xfos)
-        return ret
-
-    def on_xfos(self):
-        if self.texture is None:
-            return
-        for xfo in self.xfos:
-            texture = xfo(texture)
-        self.texture = texture
-
 class EffectField(EffectWidget, LinkedField):
     attrs = {'effects': EffectsEditor}
     default_attr = 'effects'
@@ -1065,7 +1212,7 @@ fieldDict = dict()
 
 for klassName in globals().keys()[:]:
     klass = globals()[klassName]
-    if type(klass) == type(Field) and issubclass(klass, Field):
+    if type(klass) == type(Field) and issubclass(klass, BaseField):
         #Remove the shape from this list
         if klass is Field:
             continue

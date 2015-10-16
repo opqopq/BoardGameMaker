@@ -3,7 +3,7 @@ __author__ = 'HO.OPOYEN'
 from urllib import quote, unquote
 from kivy.uix.boxlayout import BoxLayout
 from utils.proxy_urlrequest import UrlRequest
-from conf import USE_PROXY, wait_cursor, log, alert
+from conf import USE_PROXY, alert
 from kivy.properties import StringProperty, ListProperty
 from kivy.lang import Builder
 from xml.etree import cElementTree as ET

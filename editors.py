@@ -936,7 +936,7 @@ class FieldEditor(ChoiceEditor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.spinner import Spinner
         from fields import Field
-        fields = {x.name or x.Type: x for x in self.target.parent.children if isinstance(x, Field)}
+        fields = {x.name or x.Type: x for x in self.target.parent.children if isinstance(x, BaseField)}
         text = ""
         val = getattr(self.target,keyname)
         if val:
@@ -1003,8 +1003,11 @@ class TemplateFileEditorPopup(Popup):
             if src.endswith('.kv'):
                 tmpls = BGTemplate.FromFile(src)
                 for tmpl in tmpls:
-                    print tmpl.name
-                    spinner.values.append(tmpl.name)
+                    spinner.values.append(tmpl.template_name)
+                if tmpls:
+                    spinner.text = tmpl.template_name
+                else:
+                    spinner.text = "-"
 
 class ColorEditorPopup(Popup):
     name = StringProperty()

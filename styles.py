@@ -51,7 +51,7 @@ class StyleList(EventDispatcher):
         return res
 
     def register(self,tmpl):
-        self[tmpl.name] = tmpl
+        self[tmpl.template_name] = tmpl
 
     def register_file(self, filename):
         #Remove any former trace of the file

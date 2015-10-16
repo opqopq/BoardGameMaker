@@ -449,8 +449,8 @@
         do_default_tab: False
         TabbedPanelItem:
             text: "Source"
-            #FileChooserListView:
-            FileChooserThumbView:
+            FileChooserListView:
+            #FileChooserThumbView:
                 id: fpicker
                 #:import split os.path.split
                 ##path: split(root.dimension[0])[0] if root.dimension[0] else "."
@@ -538,7 +538,7 @@
                             on_press:
                                 overlay.scale = 1,1
                                 overlay.size =img.height * img.image_ratio, img.height
-                                overlay.pos = img.x + (img.width-overlay.width)/2, img.y
+                                #overlay.pos = img.x + (img.width-overlay.width)/2, img.y
                                 img_x.text= "0.0"
                                 img_y.text= "0.0"
                                 img_width.text= "1.0"

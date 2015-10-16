@@ -27,8 +27,8 @@ class OLayoutPlaceHolder(Scatter):
         return Scatter.on_touch_down(self,touch)
 
 
-from fields import Field
-class LayoutPlaceHolder(Field):
+from template import BGTemplate
+class LayoutPlaceHolder(BGTemplate):
     index = NumericProperty()
     scale = 1
 

@@ -2,6 +2,8 @@
 #                       Fields                                   #
 ##################################################################
 
+#:import CARD conf.card_format
+
 
 <.designed>
     designed: True
@@ -21,29 +23,29 @@
             dash_length: 5
         # Resize Band
         Line:
-            circle: self.right-self.sel_radius, self.top-self.sel_radius, self.sel_radius/2
+            circle: self.right-root.sel_radius, self.top-root.sel_radius, root.sel_radius/2
             width:2
         Line:
             width: 2
-            circle: self.right-self.sel_radius, self.y+self.sel_radius, self.sel_radius/2
+            circle: self.right-root.sel_radius, self.y+root.sel_radius, root.sel_radius/2
         Line:
             width: 2
-            circle: self.x+self.sel_radius, self.top-self.sel_radius, self.sel_radius/2
+            circle: self.x+root.sel_radius, self.top-root.sel_radius, root.sel_radius/2
         Line:
             width: 2
-            circle: self.x+self.sel_radius, self.y+self.sel_radius, self.sel_radius/2
+            circle: self.x+root.sel_radius, self.y+root.sel_radius, root.sel_radius/2
         Line:
-            circle: self.center_x, self.top-self.sel_radius, self.sel_radius/2
+            circle: self.center_x, self.top-root.sel_radius, root.sel_radius/2
             width:2
         Line:
             width: 2
-            circle: self.center_x, self.y+self.sel_radius, self.sel_radius/2
+            circle: self.center_x, self.y+root.sel_radius, root.sel_radius/2
         Line:
             width: 2
-            circle: self.x+self.sel_radius, self.center_y, self.sel_radius/2
+            circle: self.x+root.sel_radius, self.center_y, root.sel_radius/2
         Line:
             width: 2
-            circle: self.right-self.sel_radius, self.center_y, self.sel_radius/2
+            circle: self.right-root.sel_radius, self.center_y, root.sel_radius/2
         #End the rotation stuff for designed
         Rotate:
             angle: -self.angle
@@ -59,7 +61,7 @@
         shorten_from: 'left'
         halign: 'right'
         text: root.name if root.name else root.Type
-        pos: (root.x, root.center_y-self.height) if root.Type!='Template' else (0, root.height/2-self.height)
+        pos: (root.x, root.center_y-self.height) if root.Type!='TemplateField' else (0, root.height/2-self.height)
         color: (1,1,1,1) if root.hovered else (0,0,0,0)
         canvas.before:
             Color:
@@ -72,18 +74,37 @@
         source: "img/%s.png"%root.Type
         size_hint: None, None
         size: 24,24
-        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='Template' else (root.center_x-self.width/2, root.y-self.height/2)
+        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='TemplateField' else (root.center_x-self.width/2, root.y-self.height/2)
         opacity: 1 if root.designed else 0
 
 
 <Field>:
     size_hint: None, None
     size: 100,100
+    sel_radius: 0
     canvas.before:
         PushMatrix
         Rotate:
             angle: self.angle
-            origin: self.center # if scatter self.width/2, self.height/2
+            origin: self.width/2, self.height/2 # self.center if floatlayout
+            axis: 0,0,1
+        Color:
+            rgba: self.bg_color
+        Rectangle:
+            size: self.size
+            pos: 0,0 #self.pos if floatlayout
+    canvas.after:
+        PopMatrix
+
+<FloatField>:
+    size_hint: None, None
+    size: 100,100
+    sel_radius: 0
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: self.angle
+            origin: self.center
             axis: 0,0,1
         Color:
             rgba: self.bg_color
@@ -94,38 +115,14 @@
         PopMatrix
 
 <BGTemplate>:
-#:import CARD conf.card_format
     size: CARD.width, CARD.height
-    canvas.before:
-        PushMatrix
-        Rotate:
-            angle: self.angle
-            origin: self.width/2, self.height/2
-            axis: 0,0,1
-    canvas.after:
-        PopMatrix
-
-
-<ImageField>:
-    canvas.before:
-        StencilPush
-        Rectangle:
-            size: self.size
-            pos: self.pos
-            source: self.mask
-        StencilUse
-
-    canvas.after:
-        #Remove mask
-        StencilPop
-
 
 <ColorField>:
     canvas:
         Color:
             rgba:self.rgba
         Rectangle:
-            pos: self.pos
+            #pos: self.pos
             size: self.size
 
 <ColorChoiceField>:
@@ -133,12 +130,8 @@
         Color:
             rgba:self.rgba
         Rectangle:
-            pos: self.pos
+            #pos: self.pos
             size: self.size
-
-<ColorFieldEditor>:
-    Button:
-        text: "Choose"
 
 <BorderImageField>:
     canvas.before:
@@ -155,37 +148,25 @@
         Color:
             rgba: self.border_color
         Line:
-            rectangle: self.x+self.border_width,self.y+self.border_width,self.width-2*self.border_width,self.height-2*self.border_width
-            #if field is scatter: rectangle: self.border_width,self.border_width,self.width-2*self.border_width,self.height-2*self.border_width
+            #if field is floatlayout: rounded_rectangle: self.x+self.border_width,self.y+self.border_width,self.width-2*self.border_width,self.height-2*self.border_width, self.border_radius
+            rounded_rectangle: self.border_width,self.border_width,self.width-2*self.border_width,self.height-2*self.border_width, self.border_radius
             width: self.border_width
 
 <ImageChoiceField>:
     source: self.choices[self.selection] if self.selection in self.choices else ""
 
-<SubImageField_OLD>:
-    #w_ratio: float(self.width)/self.sub_width if self.sub_width else 1
-    #h_ratio: float(self.height)/self.sub_height if self.sub_height else 1
-    w_ratio: float(self.width)/float(self.dimension[3]) if self.dimension[3] else 1
-    h_ratio: float(self.height)/float(self.dimension[4]) if self.dimension[4] else 1
-    StencilView:
-        size_hint: 1,1
-        size: root.size
-        pos: root.pos
-        RelativeLayout:
-            Image:
-                size_hint: None, None
-                keep_ratio: False
-                x: -root.dimension[1]*self.texture.width if self.texture else 0
-                y: -root.dimension[2] * self.texture.height if self.texture else 0
-                width: self.texture.width * root.dimension[3] if self.texture else 0
-                height: self.texture.height * root.dimension[4] if self.texture else 0
-                source: root.dimension[0] if root.dimension[0] else None
+<TransfoField>:
+    canvas.before:
+        Color:
+            rgb: 1,1,1
+        Rectangle:
+            size: self.size
+            texture: self.texture
 
 <SubImageField>:
     canvas:
-
         Rectangle:
-            pos: self.pos
+            #pos: self.pos
             size: self.size
             texture: self.texture
 
@@ -199,14 +180,16 @@
             cap: self.cap
             dash_length: self.dash_length
             dash_offset: self.dash_offset
-            rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+            #if field is floatlayout rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+            rounded_rectangle: 0,0,self.width, self.height, self.corner_radius
+
 
 <RectangleFField>:
     canvas:
         Color:
             rgba: self.line_color
         Rectangle:
-            pos: self.pos
+            #pos: self.pos
             size: self.size
             source: self.source
             texture: self.texture
@@ -222,15 +205,15 @@
             cap: self.cap
             dash_length: self.dash_length
             dash_offset: self.dash_offset
-            ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
-
+            #if field is floatlayout ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
+            ellipse: 0,0, self.width, self.height, self.angle_start, self.angle_end
 
 <EllipseFField>:
     canvas:
         Color:
             rgba: self.line_color
         Ellipse:
-            pos: self.pos
+            #pos: self.pos
             size: self.size
             angle_start: self.angle_start
             angle_end: self.angle_end
@@ -248,8 +231,8 @@
             cap: self.cap
             dash_length: self.dash_length
             dash_offset: self.dash_offset
-            points: self.x, self.y, self.x+self.width, self.y+ self.height
-
+            #if floatlayout: points: self.x, self.y, self.x+self.width, self.y+ self.height
+            points: 0,0, self.width, self.height
 
 <PolygonField>:
     canvas:
@@ -273,7 +256,8 @@
             cap: self.cap
             dash_length: self.dash_length
             dash_offset: self.dash_offset
-            points: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
+            #if floatlayout points: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
+            points: [p*(self.height if i%2 else self.width) for i,p in enumerate(self.points)]
 
 <BezierField>:
     canvas:
@@ -285,8 +269,8 @@
             cap: self.cap
             dash_length: self.dash_length
             dash_offset: self.dash_offset
-            bezier: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
-            #bezier: self.points
+            #if floatyout bezier: [p*(self.height if i%2 else self.width) + (self.y if i%2 else self.x) for i,p in enumerate(self.points)]
+            bezier: [p*(self.height if i%2 else self.width) for i,p in enumerate(self.points)]
 
 <MeshField>:
     canvas:

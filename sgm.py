@@ -11,7 +11,7 @@ from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.treeview import TreeView
 from deck import TreeViewField
-from fields import Field
+from fields import BaseField
 from conf import gamepath, FILE_FILTER
 import os, os.path
 
@@ -241,7 +241,6 @@ class StackPart(ButtonBehavior, BoxLayout):
             b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
             #self.add_widget(b)
-            BOX.add_widget(b)
             from kivy.animation import Animation
             W = 100
             if self.template:#it is a template: add edit button
@@ -279,6 +278,7 @@ class StackPart(ButtonBehavior, BoxLayout):
                 BOX.add_widget(be)
                 anim = Animation(width=W, duration=.1)
                 anim.start(be)
+            BOX.add_widget(b)
             self.add_widget(BOX)
             anim = Animation(width=W, duration=.1)
             anim.start(b)
@@ -319,7 +319,7 @@ class TemplateEditTree(TreeView):
         for tmpl in tmpls:
             tmpl.apply_values(self.values)
             #Now add on load
-            node = self.add_node(TreeViewLabel(text=tmpl.name, color_selected=(.6,.6,.6,.8)))
+            node = self.add_node(TreeViewLabel(text=tmpl.template_name, color_selected=(.6,.6,.6,.8)))
             node.is_leaf = False #add the thingy
             #point to the template
             node.template = tmpl
@@ -328,7 +328,7 @@ class TemplateEditTree(TreeView):
                 self.add_node(TreeViewField(name=pname, editor=editor(tmpl)), node)
             #Deal with KV style elemebts
             for fname in tmpl.ids.keys():
-                if not isinstance(tmpl.ids[fname], Field):
+                if not isinstance(tmpl.ids[fname], BaseField):
                     continue
                 _wid = tmpl.ids[fname]
                 if not _wid.editable:
@@ -336,7 +336,6 @@ class TemplateEditTree(TreeView):
                 if _wid.default_attr:
                     w = _wid.params[_wid.default_attr](_wid)
                     if w is not None:#None when not editable
-                        fname, _wid.default_attr, w
                         self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
             self.toggle_node(node)
             self.select_node(node) # will issue a template update
@@ -369,9 +368,9 @@ class TemplateEditPopup(Popup):
         else:
             oname,opath = oldname,""
         if opath:
-            self.stackpart.template = '%s@%s'%(tmpl.name, opath)
+            self.stackpart.template = '%s@%s'%(tmpl.template_name, opath)
         else:
-            self.stackpart.template = tmpl.name
+            self.stackpart.template = tmpl.template_name
         cim =  tmpl.toImage()
         cim.texture.flip_vertical()
         self.stackpart.ids['img'].texture = cim.texture
@@ -441,7 +440,7 @@ class BGDeckMaker(BoxLayout):
                     c.parent.remove_widget(c)
                 pictures.add_widget(c)
             return
-        from template import LoadTemplateFolder, templateList
+        from template import templateList
         tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
         C = len(tmpls)
         progress.max = C

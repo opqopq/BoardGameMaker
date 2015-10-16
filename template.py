@@ -3,7 +3,7 @@ __author__ = 'MRS.OPOYEN'
 
 
 from fields import Field
-from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList, ListProperty
+from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList, ListProperty, BooleanProperty
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
@@ -14,35 +14,32 @@ from conf import path_reader
 
 class BGTemplate(Field, RelativeLayout):
     """Template class. Made of fields able to render an image"""
-    Type = "Template"
-    # dpi = NumericProperty(150, name="DPI")
-    name = "TMPL"
+    Type = "TemplateField"
+    template_name = StringProperty('TMPL')
     source = OptionProperty('text', options=['file', 'text'])
-    not_exported = ['ids', 'src', 'print_index']
-
+    not_exported = ['ids', 'print_index','template_name', 'src']
     src = StringProperty()
 
-    attrs = {'src': TemplateFileEditor}
     #Now for the special attributes only used when printing the objects
     print_index = DictProperty()
 
     def __repr__(self):
-        return '<Template #%s>'%self.name
+        return '<Template #%s>'%self.template_name
 
     def add_widget(self, widget, index=0):
         #replacing index by z-index
-        super(Field, self).add_widget(widget, getattr(widget,'z',0))
+        a = RelativeLayout.add_widget(self, widget, getattr(widget,'z',0))
         #Duplicate pointer to template
         widget.template = self
         #Re order them according to z elt:
         cs = self.children[:]
         cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
         self.children = cs
-        #Also reorder canvas
-        for cindex, c in enumerate(self.children):
-            if not self.canvas.indexof(c.canvas) == -1:
-                self.canvas.remove(c.canvas)
-            self.canvas.insert(0,c.canvas)
+#        #Also reorder canvas
+#        for cindex, c in enumerate(self.children):
+#            if not self.canvas.indexof(c.canvas) == -1:
+#                self.canvas.remove(c.canvas)
+#            self.canvas.insert(0,c.canvas)
 
     @classmethod
     def FromFile(cls, filename):
@@ -64,7 +61,7 @@ class BGTemplate(Field, RelativeLayout):
             log(E, traceback.print_exc())
             res = list()
         if name:
-            return [r for r in res if r.name == name ]
+            return [r for r in res if r.template_name == name ]
         return res
 
     @classmethod
@@ -80,11 +77,11 @@ class BGTemplate(Field, RelativeLayout):
             t = BGTemplate()
             t.cls = (k.key,)
             Builder.apply(t)
-            t.name = k.key
+            t.template_name = k.key
         else:
             kkey = p.dynamic_classes.keys()[0]
             t = Factory.get(kkey)()
-            t.name = kkey
+            t.template_name = kkey
             #Now forcing id values to name
             for ID in t.ids:
                 t.ids[ID].name = ID
@@ -113,6 +110,7 @@ class BGTemplate(Field, RelativeLayout):
                 eval_context = dict()
                 eval_context.update(t.ids)
                 for _d in t.directives:
+                    if _d.startswith('include'): continue#only doind import at this stage
                     n,v = _d[7:].split()
                     eval_context[n] = v
                 class prox:
@@ -152,12 +150,12 @@ class BGTemplate(Field, RelativeLayout):
 
                             tc.code_behind[p] = v.value
                 if isinstance(t, BGTemplate):
-                    t.name = dclass
+                    t.template_name = dclass
                     for ID in t.ids:
                         #Force field name to ID
                         t.ids[ID].name = ID
                     #escape from recursion issue between on_src & from file
-                    #t.src = "@%s"%filename
+                    t.src = "@%s"%filename
                     if not t.attrs:
                         #force a reset of orederedict to avoid singleton effect
                         t.attrs = OrderedDict()
@@ -190,7 +188,7 @@ class BGTemplate(Field, RelativeLayout):
         class FromFieldTemplate(BGTemplate):
             def __init__(self, **kwargs):
                 BGTemplate.__init__(self, **kwargs)
-                self.name = "%s Wrapper"%field.Type
+                self.template_name = "%s Wrapper"%field.Type
                 self.add_widget(field.Copy())
                 field.size = self.size
                 self.attrs = field.attrs.copy()
@@ -257,7 +255,7 @@ class BGTemplate(Field, RelativeLayout):
     def blank(self):
         t = self.__class__()
         t.cls = self.cls
-        t.name = self.name
+        t.template_name = self.template_name
         t.Type = self.Type
         return t
 
@@ -288,25 +286,12 @@ class BGTemplate(Field, RelativeLayout):
                             child.source = v
                         setattr(child, attrName, v)
 
-    def on_src(self, instance, filename):
-        print 'Recreating & wrap self from src', filename
-        mes = BGTemplate.FromFile(filename)
-        if mes:
-            me = mes[-1]
-            inner_tmpls = [x for x in self.children if isinstance(x, BGTemplate)]
-            if len(inner_tmpls)==1:
-                #There was one template: remove it
-                self.remove_widget(inner_tmpls[0])
-            self.add_widget(me)
-            print 'should I copy some properties to self ', self, me
-            self.size = me.size
-            self.pos = me.pos
-            def cross_pos(instance, value):
-                me.pos  = value
-            def cross_size(instance, value):
-                me.size = value
-            self.bind(pos=cross_pos)
-            self.bind(size=cross_size)
+    def export_to_kv(self, level = 1, save_cm = True, relativ = True, save_relpath = True):
+        #Full export, with directives & impacts and bgtemplate
+        t,i,d = self.export_field(level, save_cm, relativ, save_relpath)
+        #Change the first line
+        t[0] =  "%s<%s@BGTemplate>:"%((level-1)*'\t',self.template_name)
+        return t,i,d
 
 
 #Now define the cache foundry for all templates
@@ -333,11 +318,11 @@ class TemplateList(EventDispatcher):
         return res
 
     def register(self,tmpl):
-        self[tmpl.name] = tmpl
+        self[tmpl.template_name] = tmpl
 
     def register_file(self, filename):
         for tmpl in BGTemplate.FromFile(filename):
-            self[tmpl.name] = tmpl
+            self[tmpl.template_name] = tmpl
             tmpl.src = filename
             tmpl.source = 'file'
 
@@ -351,7 +336,7 @@ templateList = TemplateList()
 class EmptyKlass(BGTemplate):
     def __init__(self,*args,**kwargs):
         BGTemplate.__init__(self)
-        self.name = "EmptyKlass"
+        self.template_name = "EmptyKlass"
         from fields import ImageField
         img = ImageField()
         #img.x = img.y = 0
@@ -368,22 +353,11 @@ class EmptyKlass(BGTemplate):
 
 #templateList['EmptyKlass'] = EmptyKlass()
 
-default_tmpl = """
-#:import CARD conf.card_format
-<Default@BGTemplate>:
-    size: CARD.width, CARD.height
-    ImageField:
-        id: default
-        keep_ratio: True
-        allow_stretch: True
-        size: root.size
-"""
-templateList['Default'] = BGTemplate.FromText(default_tmpl)
 
 class RedSkin(BGTemplate):
     def __init__(self, *args, **kwargs):
         BGTemplate.__init__(self, *args, **kwargs)
-        self.name = "RedSkinKlass"
+        self.template_name = "RedSkinKlass"
         from fields import ColorField
         color = ColorField()
         #color.id = "deffault"

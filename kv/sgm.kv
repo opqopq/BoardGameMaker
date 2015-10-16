@@ -295,8 +295,8 @@
                         collapse: False
                         title: "File"
                         GridLayout:
-                            rows: 1
-                            #spacing: 10
+                            cols: 1
+                            spacing: 10
                             Icon:
                                 text: 'New'
                                 source: 'img/new.png'
@@ -305,10 +305,6 @@
                                 text: 'PDF'
                                 source: 'img/print.png'
                                 on_press: root.prepare_print()
-                            #Icon:
-                            #    text: 'Import'
-                            #    on_press: root.choose_file_popup("Choose CSV file to import", root.load_file)
-                            #    source: 'img/import.png'
                             Icon:
                                 text: 'Export'
                                 source: 'img/export.png'
