@@ -183,7 +183,7 @@ class BGDesigner(FloatLayout):
         params.root.text = "%s: %s"%(target.Type,target.name)
 
         SKIP_TMPL_POS = target == self.current_template
-        SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable']
+        SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable', 'printed']
         for subNodeName in target.menu:
             subNode = self.ids.params.add_node(TreeViewLabel(text=subNodeName))
             for attr in target.menu[subNodeName]:
@@ -219,7 +219,6 @@ class BGDesigner(FloatLayout):
                     w = _wid.params[_wid.default_attr](_wid)
                     if w is not None:#None when not editable
                         self.ids.params.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
-
 
     def insert_styles(self, target):
         style_node = self.ids.params.add_node(TreeViewLabel(text="Style"))
@@ -437,9 +436,9 @@ class BGDesigner(FloatLayout):
         if self.selection:
             unit= self.selection[0]
             copy = unit.Copy()
-            ##self.insert_field(copy)
+            self.insert_field(copy)
             #Select the new field
-            ##self.selection = [copy]
+            self.selection = [copy]
 
     def remove_selection(self,*args):
         if self.selection:

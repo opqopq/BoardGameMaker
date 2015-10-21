@@ -10,6 +10,7 @@ todos= [
     "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
     "change stackpart selected to toggle button behavior",
     "when exporting to kv, for templatefield, missing specific tmpl value in export",
+    "hy does text editor appears when export liloops.kv"
 ]
 
 for i,todo in enumerate(todos):

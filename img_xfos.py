@@ -3,6 +3,23 @@ __author__ = 'opq'
 
 from PIL import Image, ImageOps
 
+__all__ =[
+    'grey','v_flip','h_flip','opacer','identity','redify', 'perspective_transform',
+    'hue_transformer',
+]
+
+def hue_transformer(img,hue=None):
+#    def inner(img):
+    rgb = img.split()
+    r= rgb[0]
+    img = img.convert('HSV')
+    hsv= img.split()
+    h= hsv[0]
+    print r.getdata()
+    print h.getdata()
+    return img
+#    return inner
+
 def perspective_transform(size, points):
     #Points are list of 4 points and their corresponding target when transformed
 
@@ -82,7 +99,8 @@ xfos = {
     'Grey': grey,
     'grey2': grey2,
     'grey_opencv': grey_opencv,
-    'perpective': perspective_transform
+    'perpective': perspective_transform,
+    'hue_transformer': hue_transformer
 }
 
 img_modes = {

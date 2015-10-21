@@ -112,10 +112,6 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 #forcing x to 0
                 prev.x = 5
             Clock.schedule_once(_inner, 0)
-            print "ensure, once apply that the template change to the proper one:", "@%s"%fold
-            #sel.template = "@%s"%fold
-            #print sel.qt, sel.verso, sel.template, sel.values
-            #print sel.name
 
     def add_item(self, qt, verso):
             from os.path import relpath
@@ -350,6 +346,7 @@ class TemplateEditPopup(Popup):
         tmpl, node = tree.current_selection
         #Here is hould loop on the template to apply them on values
         values = tree.values
+        print 'ols vlu', values
         if node:#do that only if a template has been selected. otherwise skip it
             for child_node in node.nodes:
                 for child in child_node.walk(restrict=True):
@@ -360,6 +357,9 @@ class TemplateEditPopup(Popup):
                             values[key] = sv
                         else:
                              values["%s.%s"%(child.target_attr, key)] = sv
+                        print child, key, sv
+
+        print 'values is ', values
         self.stackpart.values = values
         self.stackpart.tmplWidget = tmpl
         oldname = self.stackpart.template
@@ -541,11 +541,11 @@ class BGDeckMaker(BoxLayout):
         with open(filepath, 'rb') as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024), delimiters=";,")
             csvfile.seek(0)
-            reader = csv.DictReader(csvfile, dialect = dialect)
+            reader = csv.DictReader(csvfile, dialect=dialect)
             header = reader.fieldnames
             stack = self.ids['stack']
-            remaining_header = set(header) - set(['qt','source','template','dual'])
-            boxes= list()
+            remaining_header = set(header) - set(['qt', 'source', 'template', 'dual'])
+            boxes = list()
             for index, obj in enumerate(reader):
                 #print index, obj
                 if set([obj[_v] for _v in obj]) == set(dialect.delimiter):#skipping empty row made of ;;;;;; or ,,,,,
@@ -568,8 +568,8 @@ class BGDeckMaker(BoxLayout):
                     box.source = obj['source']
                 values = dict()
                 for attr in remaining_header:
-                    v = obj.get(attr, None)
-                    if v is not None:
+                    v = obj.get(attr, '')
+                    if v is not '':#'' means cell is empty
                         if isinstance(v, basestring):
                             v= unicode(v, 'latin-1')
                         values[attr] = v
@@ -601,6 +601,8 @@ class BGDeckMaker(BoxLayout):
                     _s = relpath(item.source, gamepath)
                 else:
                     _s = item.source
+                if item.template and item.source == 'img/card_template.png':
+                    _s = ""
                 d['source'] = _s
             else:
                 d['source'] = ""

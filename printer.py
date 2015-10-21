@@ -83,9 +83,9 @@ class PDFBook:
                 else:
                     raise NameError('No such template: '+ item.template)
                 print 'here to be added: adding on realizer, exporting & then removing. more tricky'
-            if item.values:
-                tmplWidget.apply_values(item.values)
-            cim = tmplWidget.toImage()
+                if item.values:
+                    tmplWidget.apply_values(item.values)
+            cim = tmplWidget.toImage(for_print=True)
             pim = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
             src = ImageReader(pim)
             #src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))

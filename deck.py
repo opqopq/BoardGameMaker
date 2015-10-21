@@ -99,5 +99,4 @@ class ScriptTree(TreeView):
                 print 'executing', node.scriptName,
                 script.execute()
                 print 'done'
-
         return TreeView.on_touch_down(self, touch)

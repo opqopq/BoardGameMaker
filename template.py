@@ -111,7 +111,12 @@ class BGTemplate(Field, RelativeLayout):
                 eval_context.update(t.ids)
                 for _d in t.directives:
                     if _d.startswith('include'): continue#only doind import at this stage
-                    n,v = _d[7:].split()
+                    if _d.startswith('set'):
+                        n,v = _d[4:].split(" ",1)
+                    elif _d.startswith('import'):
+                        n,v = _d[7:].split(" ",1)
+                    else:
+                        print 'Unkown KV directives skipped',_d
                     eval_context[n] = v
                 class prox:
                         value= 0
@@ -223,7 +228,7 @@ class BGTemplate(Field, RelativeLayout):
 
         return True
 
-    def toImage(self, bg_color=(1,1,1,0)):
+    def toImage(self, bg_color=(1,1,1,0), for_print = False):
         #create image widget with texture == to a snapshot of me
         from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
         from kivy.core.image import Image as CoreImage
@@ -232,7 +237,20 @@ class BGTemplate(Field, RelativeLayout):
             canvas_parent_index = self.parent.canvas.indexof(self.canvas)
             self.parent.canvas.remove(self.canvas)
 
+
+        if for_print:# make all not printed element disappear
+            disappear = set()
+            from fields import BaseField
+            for children in self.walk():
+                if not isinstance(children, BaseField):
+                    continue
+                if children.printed:
+                    continue
+                disappear.add((children, children.opacity))
+                children.opacity = 0
+
         fbo = Fbo(size=self.size, with_stencilbuffer=True)
+
 
         with fbo:
             ClearColor(*bg_color)
@@ -243,12 +261,16 @@ class BGTemplate(Field, RelativeLayout):
         fbo.add(self.canvas)
         fbo.draw()
 
-        cim = CoreImage(fbo.texture, filename = '%s.png'%id(self))
+        cim = CoreImage(fbo.texture, filename='%s.png'%id(self))
 
         fbo.remove(self.canvas)
 
+        if for_print:
+            for (children, opacity) in disappear:
+                children.opacity = opacity
         if self.parent is not None:
             self.parent.canvas.insert(canvas_parent_index, self.canvas)
+
 
         return cim
 
@@ -260,7 +282,7 @@ class BGTemplate(Field, RelativeLayout):
         return t
 
     def apply_values(self, values):
-        #print 'appy_values', self, values
+        print 'appy_values', self, values
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:
@@ -293,6 +315,94 @@ class BGTemplate(Field, RelativeLayout):
         t[0] =  "%s<%s@BGTemplate>:"%((level-1)*'\t',self.template_name)
         return t,i,d
 
+    def Oexport_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
+        t,i,d =super(BGTemplate,self).export_field(level, save_cm,relativ,save_relpath)
+        #Add specific template case
+        BL = self.blank()
+        print 'BGT export field', self.vars
+        from fields import BaseField
+        for pname, editor in self.vars.items():
+            print 'vars ', pname
+        for fname in self.ids.keys():
+            print 'ids', fname
+            if not isinstance(self.ids[fname], BaseField):
+                continue
+            _wid = self.ids[fname]
+            if not _wid.editable:
+                continue
+            if _wid.default_attr:
+                print 'current ids default', _wid.default_attr
+                me = getattr(_wid, _wid.default_attr)
+                blank = getattr(BL.ids[fname],_wid.default_attr)
+                if me!= blank:
+                    if t[-1] == '':
+                        t.pop()
+                    print 'match for', fname
+                    print 'export of it', _wid.export_field()
+
+                    attr = fname
+                    tmpls = t
+                    prepend = '\t'*(level)
+                    value = me
+                    from os.path import relpath, isfile
+                    from conf import gamepath
+                    from kivy.properties import ObservableDict, ObservableReferenceList, ObservableList
+                    from fields import compare_to_root
+                    from types import FunctionType
+                    from kivy.metrics import cm
+                    vtype = type(value)
+
+                    if attr == 'name':
+                        tmpls.append('%sid: %s'%(prepend,value))
+                    elif  isinstance(value, basestring):
+                        if isfile(value) and save_relpath:
+                            value = relpath(value, gamepath)
+                        tmpls.append('%s%s: "%s"'%(prepend,attr, value))
+                    elif vtype == type(1.0):
+                        tmpls.append('%s%s: %.2f'%(prepend, attr, value))
+                    elif vtype in  (type({}), ObservableDict):
+                        for _v in value:
+                            try:
+                                _uni = unicode(value[_v], 'latin-1')
+                            except TypeError: #can not coerce float in latin -1
+                                _uni = unicode(value[_v])
+                            if isfile(_uni) and save_relpath:
+                                value[_v] = relpath(value[_v], gamepath)
+                        tmpls.append('%s%s: %s'%(prepend, attr,value))
+                    elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
+                        if attr in ("size","pos"):
+                            if relativ:
+                                tmpls.append('%s%s: %s'%(prepend, attr, compare_to_root(self.template.size,value)))
+                                continue
+                            if save_cm:
+                                tmpls.append('%s%s: '%(prepend,attr)+', '.join(["cm(%.2f)"%(v/cm(1)) for v in value]))
+                                continue
+                        #Looping and removing bracket
+                        sub = []
+                        for item in value:
+                            if isinstance(item, float):
+                                sub.append('%.2f'%item)
+                            elif isinstance(item, basestring):
+                                if isfile(item) and save_relpath:
+                                    item = relpath(item, gamepath)
+                                sub.append('"%s"'%item)
+                            elif isinstance(item, FunctionType): #replace the function by its name without the ""
+                                sub.append('%s'%item.func_name)
+                            else:
+                                sub.append(str(item))
+                        if len(sub) != 1:
+                            tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
+                        else: #only: add a ',' at the end, to have kv understand it is a tuple
+                            tmpls.append('%s%s: '%(prepend, attr) + sub[0] + ',')
+
+                    else:
+                        tmpls.append('%s%s: %s'%(prepend, attr, value))
+
+
+
+
+
+        return t,i,d
 
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher

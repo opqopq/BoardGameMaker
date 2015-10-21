@@ -181,19 +181,27 @@ class MirrorBackground(Script):
         from conf import ENV, fill_env
         fill_env()
         if self.grey_mode:
-            print 'outch'
+            from template import BGTemplate
         from sgm import StackPart
         children = ENV['stack'].children[::-1]
         for p in children:
-            print p
             if not isinstance(p,StackPart):
                 continue
             pack = p.Copy()
-            print 'P copy:', pack
             pack.dual = not p.dual
-            print 'Adding to stack',
+
+            if self.grey_mode:
+                GS = BGTemplate.FromFile('@Templates/GreyScale.kv')[0]
+                if not pack.template:
+                    pack.values['default'] = pack.source
+                else:
+                    if not pack.tmplWidget:
+                        pack.realise(withValue = True)
+                    GS.ids.default.source = pack.tmplWidget
+                pack.template = "@Templates/GreyScale.kv"
+                pack.tmplWidget = GS
+
             ENV['stack'].add_widget(pack)
-            print 'done'
 
 
 scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]

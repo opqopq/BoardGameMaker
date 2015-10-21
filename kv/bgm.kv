@@ -38,7 +38,7 @@
             size_hint_x: None
             width: 100
             on_text: root.screen_name = self.text
-            text: 'Deck'
+            text: "Deck"
             values: 'Deck','Browser','Designer', 'Layout', 'Settings','Console','Script',
         LabelButton:
             id: message
@@ -60,6 +60,8 @@
         scancode: 32 #space
         modifiers: ['ctrl']
         id: content
+        on_children: if len(self.children)==2 and not(self.children[0].manager.activated): screen_spinner.text =  self.children[0].wrapped.name
+
         BGDeckMaker:
             id: deck
             name: 'Deck'

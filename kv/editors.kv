@@ -398,9 +398,7 @@
     title: 'Choose Points for %s'%self.name
     GridLayout:
         cols:2
-        RelativeLayout:
-            id: placeholder
-            size_hint_x: .65
+        spacing: 30
         BoxLayout:
             orientation: 'vertical'
             size_hint_x: .35
@@ -438,6 +436,14 @@
                 Button:
                     text: "Cancel"
                     on_press: root.dismiss()
+        Scatter:
+            do_rotation: False
+            do_scale: False
+            do_translation: False
+            id: ph_scatter
+            size_hint_x: .65
+            RelativeLayout:
+                id: placeholder
 
 
 <SubImageEditorPopup@Popup>:

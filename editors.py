@@ -282,8 +282,8 @@ class AdvancedIntEditor(IntEditor):
             t.stored_value+=1
 
         def mb_cb(*args):
-            setattr(self.target, keyname, int(ti.text)-1)
-            t.stored_value-=1
+            setattr(self.target, keyname, max(int(ti.text)-1,0))
+            t.stored_value=max(0, t.stored_value-1)
 
         pb.on_press = pb_cb
         mb.on_press = mb_cb
@@ -589,7 +589,6 @@ class AdvancedRangeEditor(RangeEditor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.textinput import TextInput
         from kivy.uix.boxlayout import BoxLayout
-        from utils.stickybutton import StickyButton
         r = RangeEditor.getWidgets(self, name, keyname, **kwargs)
         ti = TextInput(text = "%.2f"%getattr(self.target, keyname))
         ti.size_hint_x = .5
@@ -1238,6 +1237,7 @@ class PointListEditorPopup(Popup):
 
     def on_target(self, instance, target):
         #Ensure the copy won't have designes styles rules
+        scatter= self.ids.ph_scatter
         ph = self.ids.placeholder
         od = target.designed
         target.designed = False
@@ -1251,6 +1251,12 @@ class PointListEditorPopup(Popup):
         canvas.border_width = 1
         #canvas.border_rgba: (.2,1,.2,1)
         ph.add_widget(canvas)
+        W,H = canvas.size
+        w,h = self.size
+        w *=0.65 # left column with button
+        w -= 50
+        h-=50 #popup title bar
+        scatter.scale = min (w/W, h/H)
         self.ids['canvas'] = canvas
 
     def load_points(self, points):

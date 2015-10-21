@@ -39,7 +39,21 @@
         size_hint: .25,1
     Label:
         text: (root.target.name or root.target.Type[:-5] if root.target and isinstance(root.target, Field)  else (root.target.Type if root.target and isinstance(root.target, Field) else ""))
-        size_hint: .75,1
+        size_hint: .5,1
+    Button:
+        disabled: not(root.is_selected)
+        size_hint: .1,1
+        Image:
+            pos: self.parent.pos
+            size: self.parent.size
+            source: 'img/duplicate.png'
+    Button:
+        disabled: not(root.is_selected)
+        size_hint: .1,1
+        Image:
+            pos: self.parent.pos
+            size: self.parent.size
+            source: 'img/deleteblack.png'
 
 <FieldEntry@ButtonBehavior+HoverBehavior+BoxLayout>:
 #Used in the left scrollview with all potential fields
@@ -294,6 +308,8 @@
                     #col_default_width: 60
             StencilView:
                 pos: background.x,0
+                size_hint_y: None
+                height: background.height - 50
                 RuledScatter:
                     id: content
                     do_rotation: False
@@ -307,7 +323,6 @@
                             rgba: self.bgcol
                         Rectangle:
                             size: self.size
-
             #Option bar with zoom
             BoxLayout:
                 size_hint_y: None

@@ -66,12 +66,15 @@ class BaseField(HoverBehavior, FocusBehavior):
     #Attributes that are only used in designed mode
     attrs=OrderedDict([
             ("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor), ('size_hint', SizeHintEditor), ('pos_hint', PosHintEditor),
-            ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
+            ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('printed', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
     ])
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
     #List of attr name for this class that should not be exported from designer
-    not_exported = ['template', "directives", "code_behind", 'sel_radius', 'cls', 'focus','focused', 'width','height','parent','designed','children','selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y', 'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
+    not_exported = ['template', "directives", "code_behind", 'sel_radius', 'cls',
+                    'focus','focused', 'width','height','parent','designed','children',
+                    'selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y',
+                    'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -86,7 +89,7 @@ class BaseField(HoverBehavior, FocusBehavior):
     #Menu is an ordered dict  listing which attributes needs to be in which sub tree for editors
     #_menu work for current instance
     # menu aggregate parent info
-    _menu = OrderedDict([('Object',['name','editable','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color'])])
+    _menu = OrderedDict([('Object',['name','editable','printed','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color'])])
 
     Type = 'Field'
 
@@ -99,10 +102,21 @@ class BaseField(HoverBehavior, FocusBehavior):
     #Pointer to the template we are part of. easier for evaluating context of a template
     template = ObjectProperty()
 
+    #Boolean to remove field right beffore printing.
+    printed = BooleanProperty(True)
+
     def on_focus(self,instance, focus):
         if self.designed and focus:
             self.selected = focus
-        #if not focused anymore, it does not means that it is not current selection
+            try:
+                self._bind_keyboard()
+            except KeyError:
+                pass
+        else:
+            try:
+                self._unbind_keyboard()
+            except KeyError:
+                pass
 
     def on_selected(self, instance, selected):
         self.focused = selected
@@ -183,6 +197,7 @@ class BaseField(HoverBehavior, FocusBehavior):
         res = self.getDelta(blank)
         if restrict:#remove duplicate entr like pos/x/y or size/width/height
             res.difference_update(self.black_list)
+        print 'Changes from', self, ': ', res
         return res
 
     def getDelta(self, other):
@@ -215,7 +230,8 @@ class BaseField(HoverBehavior, FocusBehavior):
             except AttributeError, E:
                 print 'skipping attribute copying for ',attr, ':', E
         blank.parent = None
-        blank.name = (self.name or self.Type ) +'-copy'
+        if self.name:
+            blank.name = self.name +'-copy'
         if with_children:
             for child in self.children:
                 if not isinstance(child, BaseField):
@@ -267,7 +283,6 @@ class BaseField(HoverBehavior, FocusBehavior):
             for c in cs:
                 self.parent.canvas.remove(c.canvas)
                 self.parent.canvas.insert(0,c.canvas)
-
 
     def export_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
         from types import FunctionType
@@ -470,6 +485,7 @@ class Field( BaseField, RelativeLayout):
 
 
 class FloatField(BaseField, FloatLayout):
+    skip_designer = True
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
         FloatLayout.__init__(self,**kwargs)
@@ -578,6 +594,7 @@ class FloatField(BaseField, FloatLayout):
             self.canvas.insert(0,c.canvas)
 
 class TextField(Label, FloatField):
+    skip_designer = False
     autofit = BooleanProperty(False)
     multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
@@ -660,6 +677,7 @@ class TextField(Label, FloatField):
                     self.font_size-=1
 
 class ImageField(Image, FloatField):
+    skip_designer = False
     attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
@@ -686,6 +704,7 @@ class BorderField(Field):
 
 class ImgChoiceField(Image, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
+    skip_designer = False
     choices = DictProperty()
     attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     default_attr = 'selection'
@@ -703,6 +722,8 @@ class ImgChoiceField(Image, FloatField):
             self.selection = choices.keys()[0]
         else:
             #force selection
+            if not self.selection in choices:
+                self.selection = choices.keys()[0]
             self.on_selection(self, self.selection)
 
     def on_source(self, instance, source):
@@ -734,6 +755,7 @@ class ColorChoiceField(Field):
 class SymbolField(SymbolLabel, FloatField):
     source=StringProperty()
     default_attr = 'text'
+    skip_designer = False
 
     def __init__(self,**kwargs):
         SymbolLabel.__init__(self,**kwargs)
@@ -914,24 +936,19 @@ class LineField(ShapeField):
     #Just goigng from lower left to upper right. is it even useful ?
     pass
 
-class EllipseField(ShapeField):
-    angle_start = NumericProperty(0)
-    angle_end = NumericProperty(360)
-    attrs = OrderedDict([('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
-
-class RectangleField(ShapeField):
+class RectangleField(SourceShapeField):
+    skip_designer = False
     corner_radius = NumericProperty(0)
-    default_attr = 'corner_radius'
-    attrs = {'corner_radius': AdvancedIntEditor}
+    fg_color = ListProperty([1,1,1,1])
+    attrs = {'corner_radius': AdvancedIntEditor, 'fg_color': ColorEditor}
 
-class RectangleFField(SourceShapeField):
-    skip_designer = False
 
-class EllipseFField(SourceShapeField):
+class EllipseField(SourceShapeField):
     skip_designer = False
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
-    attrs = OrderedDict([('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
+    fg_color = ListProperty([1,1,1,1])
+    attrs = OrderedDict([('fg_color', ColorEditor), ('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
 
 class WireField(ShapeField):
     attrs = {'points': PointListEditor}
@@ -941,7 +958,6 @@ class WireField(ShapeField):
 class MeshField(SourceShapeField):
     skip_designer = False
     attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
-    default_attr = 'points'
     vertices = ListProperty()
     not_exported = ['vertices']
     points = ListProperty()
