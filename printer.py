@@ -12,12 +12,12 @@ from PIL.Image import frombuffer, FLIP_TOP_BOTTOM
 
 from conf import page_format
 #Page Format - to be stuck into a .ini file
-width = page_format.width
-height = page_format.height
-left = page_format.left
-right = page_format.right
-bottom = page_format.bottom
-top = page_format.top
+width = page_format.width/cm(1)
+height = page_format.height/cm(1)
+left = page_format.left/cm(1)
+right = page_format.right/cm(1)
+bottom = page_format.bottom/cm(1)
+top = page_format.top/cm(1)
 
 def center(x,y,w,h):
     return x+w/2, y+h/2
