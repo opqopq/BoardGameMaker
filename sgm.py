@@ -135,7 +135,6 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                         else:
                             fold = self.is_all_folder
                         box.template = "@%s"%os.path.join(fold, fiv.name)
-                        #box.source = 'img/card_template.png'
                         box.realise()
                     stack.add_widget(box)
                     from kivy.base import EventLoop
@@ -198,6 +197,8 @@ class StackPart(ButtonBehavior, BoxLayout):
         from kivy.clock import Clock
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
+        if not self.template:
+            return
         try:
             tmpl = BGTemplate.FromFile(self.template)[-1]
         except IndexError:
@@ -234,14 +235,14 @@ class StackPart(ButtonBehavior, BoxLayout):
             from kivy.uix.boxlayout import BoxLayout
             BOX = BoxLayout(orientation='vertical', size_hint=(None, None))
             #Add Remove Button
-            b = Factory.get('HiddenRemoveButton')(source='img/Delete_icon.png')
+            b = Factory.get('HiddenRemoveButton')(icon='trash')
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
             #self.add_widget(b)
             from kivy.animation import Animation
             W = 100
             if self.template:#it is a template: add edit button
                 W = 90
-                be = Factory.get('HiddenRemoveButton')(source='img/writing_blue.png')
+                be = Factory.get('HiddenRemoveButton')(icon='pencil')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
@@ -535,6 +536,12 @@ class BGDeckMaker(BoxLayout):
         p.on_dismiss = inner
         p.open()
 
+    def write_file_popup(self,title,cb):
+        p = Factory.get('WriteFilePopup')()
+        p.title = title
+        p.cb = cb
+        p.open()
+
     def load_file(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
@@ -562,9 +569,9 @@ class BGDeckMaker(BoxLayout):
                 box = StackPart()
                 box.verso = verso
                 box.qt = qt
-                if 'template' in obj:
+                if 'template' in obj and obj['template']:
                     box.template = obj['template']
-                if 'source' in obj:
+                if 'source' in obj and obj['source']:
                     box.source = obj['source']
                 values = dict()
                 for attr in remaining_header:
@@ -606,7 +613,8 @@ class BGDeckMaker(BoxLayout):
                 d['source'] = _s
             else:
                 d['source'] = ""
-            d['template'] = item.template
+            if item.template:
+                d['template'] = item.template
             d['dual'] = not(item.verso=='normal')
             d['values'] = item.values
             cards.append(d)
@@ -623,7 +631,7 @@ class BGDeckMaker(BoxLayout):
                     my_dict.update(**c['values'])
 
             with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
-                fields_order = ['qt','dual','template','source'] + my_dict.keys()[:]
+                fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
                 w = csv.DictWriter(f, fields_order)
                 w.writeheader()
                 for c in cards:

@@ -301,7 +301,8 @@ class BaseField(HoverBehavior, FocusBehavior):
         #Include KV file if templateField
         if isinstance(field, BGTemplate):
             tmpls[0] = '%s%s:'%((level-1)*'\t',field.template_name)
-            imports.append(field.src.split('@')[-1])
+            if field != self:
+                imports.append(field.src.split('@')[-1])
         if field.directives:
             directives.extend(field.directives)
         for attr in field.getChangedAttributes(restrict=True):
@@ -482,7 +483,6 @@ class Field( BaseField, RelativeLayout):
         for cindex, c in enumerate(self.children):
             self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
-
 
 class FloatField(BaseField, FloatLayout):
     skip_designer = True
@@ -932,16 +932,15 @@ class SourceShapeField(ShapeField):
             self.texture = Image(source).texture
             self.on_texture_wrap(self, self.texture_wrap)
 
-class LineField(ShapeField):
-    #Just goigng from lower left to upper right. is it even useful ?
-    pass
+#class LineField(ShapeField):
+#    #Just goigng from lower left to upper right. is it even useful ?
+#    pass
 
 class RectangleField(SourceShapeField):
     skip_designer = False
     corner_radius = NumericProperty(0)
     fg_color = ListProperty([1,1,1,1])
     attrs = {'corner_radius': AdvancedIntEditor, 'fg_color': ColorEditor}
-
 
 class EllipseField(SourceShapeField):
     skip_designer = False

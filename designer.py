@@ -17,6 +17,7 @@ from template import BGTemplate, templateList
 from conf import card_format, gamepath
 from deck import TreeViewField
 from os.path import isfile, split, relpath
+from utils.font_awesome import FAIcon
 
 
 class RuledScatter(ScatterLayout):
@@ -38,6 +39,7 @@ class RuledScatter(ScatterLayout):
 
 class TreeFieldEntry(TreeViewNode, BoxLayout):
     target = ObjectProperty(None)
+    designer = ObjectProperty()
 
 class TmplChoicePopup(Popup):
     cb = ObjectProperty()
@@ -85,6 +87,7 @@ class BGDesigner(FloatLayout):
             self.ids.fields_stack.add_widget(tfe)
         self.new()
         Clock.schedule_once(build)
+        self.params_cache = dict()
 
     def add_parent_field(self, field):
         "Just like add field, but this parent field will surround the current selection"
@@ -162,7 +165,7 @@ class BGDesigner(FloatLayout):
             self.ids.content.add_widget(target, len(self.ids.content.content.children))
         else:
             parent.add_widget(target)
-        child = self.ids.fields.add_node(TreeFieldEntry(target=target), parent)
+        child = self.ids.fields.add_node(TreeFieldEntry(target=target, designer = self), parent)
         self.nodes[target] = child
         #Way to come back
         child.target = target
@@ -181,6 +184,12 @@ class BGDesigner(FloatLayout):
         params.nodes = dict()
         params.root.nodes = [] # as clear widgets does not works
         params.root.text = "%s: %s"%(target.Type,target.name)
+
+        if target in self.params_cache:
+            params.root.nodes = self.params_cache[target]
+            params._trigger_layout()
+            return
+
 
         SKIP_TMPL_POS = target == self.current_template
         SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable', 'printed']
@@ -219,6 +228,8 @@ class BGDesigner(FloatLayout):
                     w = _wid.params[_wid.default_attr](_wid)
                     if w is not None:#None when not editable
                         self.ids.params.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
+
+        self.params_cache[target] = params.root.nodes[:]
 
     def insert_styles(self, target):
         style_node = self.ids.params.add_node(TreeViewLabel(text="Style"))
@@ -381,32 +392,34 @@ class BGDesigner(FloatLayout):
             #Skip this if targetting current template
             if field != self.current_template:
                 ftb = Factory.get('FieldTaskButton')
-                data=[
-                    (self.remove_selection, 'img/Deleteblack.png'),
-                    (self.duplicate_selection, 'img/duplicate.png'),
+                data = [
+                    (self.remove_selection, 'remove'),
+                    (self.duplicate_selection, 'copy'),
                 ]
                 for cb, img in data:
                     _button = ftb()
-                    _button.source = img
+                    #_button.source = img
+                    _button.icon = img
                     _button.bind(on_press=cb)
                     _button.designer = self
                     tasks.add_widget(_button)
                 ##self.insertMoveUpDownButton()
                 IMGS = Factory.get('ImageSpinner')
                 img_spinner = IMGS(text='Position')
-                img_spinner.bind(text = self.position_selection)
+                img_spinner.bind(text=self.position_selection)
                 tasks.add_widget(img_spinner)
-                img_spinner.values=['Left', 'Right', 'Top', 'Bottom', 'Center H', 'Center V', 'Copy']
+                img_spinner.values=['Left', 'Right', 'Top', 'Bottom', 'Cent H', 'Cent V', 'Copy']
                 img_spinner = IMGS(text='Size')
                 img_spinner.bind(text = self.align_selection)
                 tasks.add_widget(img_spinner)
                 img_spinner.values=['Max H', 'Max V', 'Copy']
                 #Now load the specific attributes matrix/tree for field 6> activated by a double tap on the field
                 ##self.display_field_attributes(field)
+                #self.ids.fields.select_node(self.nodes[field])
 
     def position_selection(self,*args):
         pos= args[1]
-        conv ={'Left': 'x', 'Bottom': 'y', 'Center H': 'center_x', 'Center V': 'center_y'}
+        conv ={'Left': 'x', 'Bottom': 'y', 'Cent H': 'center_x', 'Cent V': 'center_y'}
         attr = conv.get(pos, pos.lower())
         if self.selection:
             unit = self.selection[0]

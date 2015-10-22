@@ -4,21 +4,27 @@
 #:import split os.path.split
 #:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
 #:import StickyButton utils.stickybutton.StickyButton
-
+#:import FAIcon utils.font_awesome.FAIcon
 #:set LIGHTGREY (.7,.7,.7)
 
-<Icon@ToggleButtonBehavior+BoxLayout>:
+<Icon@ButtonBehavior+BoxLayout>:
     source: ""
     text: ""
     orientation: 'vertical'
     size_hint_y: None
     height: 80
-    Image:
-        source: root.source
+    font_size: 40
+    color: 1,1,1,1
+    icon: ""
+    FAIcon:
+        icon: root.icon
+        color: root.color if root.state == 'normal' else (.7,.7,.7,.7)
+        font_size: root.font_size
         size_hint_y: .9
     Label:
         text: root.text
         size_hint_y: .1
+        font_size: root.font_size /2
 
 <DynamicQuantity@BoxLayout>:
     size_hint_x: None
@@ -49,11 +55,11 @@
 
 
 
-<HiddenRemoveButton@ButtonBehavior+Image>:
-    #source: 'img/Delete_icon.png'
-    text: 'Remove'
+<HiddenRemoveButton@ButtonBehavior+FAIcon>:
     size_hint_x: None
     width: 15
+    font_size: 50
+    color: 0,0,0,1
 
 <RVImage@ToggleButtonBehavior+Image>:
     source: 'img/recto.png' if self.state =='normal' else 'img/verso.png'
@@ -125,63 +131,70 @@
     #height: 30
     width: self.parent.width if self.parent else 100
     on_parent: self.pos = (self.parent.x, self.parent.y+20) if self.parent else (0,0)
-    Label:
-        text: "1"
-        font_size: max(root.width/11, 9)
-        size_hint_x: .15
-        id: qt
-        halign: 'right'
-        valign: 'middle'
-        text_size: self.size
     BoxLayout:
-        size_hint_x: .1
-        orientation: 'vertical'
-        StickyButton:
-            text: "^"
-            background_color: 1,1,1,.5
-            #size_hint: None, None
-            #size: 15,17
-            on_press: qt.text = str(int(qt.text)+1)
-        StickyButton:
-            text: "v"
-            background_color: 1,1,1,.5
-            #size_hint: None, None
-            #size: 15,17
-            on_press: qt.text = str(max(int(qt.text)-1,0))
+        size_hint_x: .2
+        Label:
+            text: "1"
+            font_size: max(root.width/11, 9)
+            size_hint_x: .6
+            id: qt
+            halign: 'right'
+            valign: 'middle'
+            text_size: self.size
+        BoxLayout:
+            size_hint_x: .4
+            orientation: 'vertical'
+            StickyButton:
+                text: "^"
+                background_color: 1,1,1,.5
+                #size_hint: None, None
+                #size: 15,17
+                on_press: qt.text = str(int(qt.text)+1)
+            StickyButton:
+                text: "v"
+                background_color: 1,1,1,.5
+                #size_hint: None, None
+                #size: 15,17
+                on_press: qt.text = str(max(int(qt.text)-1,0))
     RVImage:
         id: dual
-        size_hint: .33, 1
+        size_hint: .4, 1
     Button:
         id: edit_button
-        size_hint: .25 if root.parent and root.parent.name.endswith('.kv') else None , 1
+        size_hint: .4 if root.parent and root.parent.name.endswith('.kv') else None , 1
         width: 0 #will only apply if it is a template otherwise size hint will prevail
         on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
         background_color: 0,0,0,0
-        Image:
-            source: 'img/edit.png'
+        FAIcon:
+            font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
+            color: 0,0,0,1
+            icon: 'edit'
             pos: self.parent.pos
-            size: self.parent.size
-            allow_stretch: True
+            size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
+
     Button:
         id: apply_button
-        size_hint: .25 if root.parent and root.parent.name.endswith('.kv') else None , 1
+        size_hint: .4 if root.parent and root.parent.name.endswith('.kv') else None , 1
         width: 0 #will only apply if it is a template otherwise size hint will prevail
         on_press: root.parent.apply_item(root.parent.name)
         background_color: 0,0,0,0
-        Image:
-            source: 'img/apply.png'
+        FAIcon:
+            font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
+            color: 0,0,0,1
+            icon: 'arrow-circle-o-down'
             pos: self.parent.pos
-            size: self.parent.size
-            allow_stretch: True
+            size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
+
     Button:
-        size_hint: .33 , 1
+        size_hint: .4 , 1
         on_press: root.parent.add_item(qt.text, dual.state)
         background_color: 0,0,0,0
-        Image:
-            source: 'img/additem.png'
+        FAIcon:
+            font_size:  int(float(root.width)/6)
+            color: 0,0,0,1
+            icon: 'plus-circle'
             pos: self.parent.pos
             size: self.parent.size
-            allow_stretch: True
 
 
 <FileViewItem>:
@@ -266,7 +279,6 @@
                 Button:
                     text: "Cancel"
                     on_press: root.dismiss()
-
 <BGDeckMaker>:
     #The Left tab with files/templates & values
     file_chooser: file_chooser
@@ -302,17 +314,17 @@
                             cols: 1
                             spacing: 10
                             Icon:
+                                icon: "file"
                                 text: 'New'
-                                source: 'img/new.png'
                                 on_press: root.empty_stack()
                             Icon:
+                                icon: "print"
                                 text: 'PDF'
-                                source: 'img/print.png'
                                 on_press: root.prepare_print()
                             Icon:
                                 text: 'Export'
-                                source: 'img/export.png'
-                                on_press: root.choose_file_popup("Choose CSV Export file name", root.export_file)
+                                icon: 'sign-out'
+                                on_press: root.write_file_popup("Choose CSV Export file", root.export_file)
                     AccordionItem:
                         title: "Fit Format"
                         GridLayout:
@@ -378,16 +390,22 @@
 
         #FoldedTabbedPanelItem:
         TabbedPanelHeader:
-            background_normal: 'img/folder_off.png'
-            background_down: 'img/folder.png'
             panel: explorer
             content: tab1_content.__self__
-            #text: "Files"
+            FAIcon:
+                pos: self.parent.pos
+                size: self.parent.size
+                color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
+                font_size: 30
+                icon: "book"
         TabbedPanelHeader:
-            #text: 'Format'
-            background_normal: 'img/misc_off.png'
-            background_down: 'img/misc.png'
             content: tab2_content.__self__
+            FAIcon:
+                pos: self.parent.pos
+                size: self.parent.size
+                color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
+                font_size: 30
+                icon: "cog"
     BoxLayout:
         orientation: 'vertical'
         Splitter:

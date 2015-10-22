@@ -17,10 +17,39 @@
 
 <LabelButton@ButtonBehavior+Label>:
 
+<WriteFilePopup@Popup>:
+    cb: None
+    BoxLayout:
+        orientation: 'vertical'
+        FileChooserListView:
+        #:import get_last_dir conf.get_last_dir
+            path: get_last_dir()
+            on_selection: target.text = self.selection[0]
+            id: fselect
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Label:
+                text: "Filename:"
+                size_hint_x: None
+                width: 100
+            TextInput:
+                id: target
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: 'Apply'
+                on_press: root.dismiss(); root.cb(target.text)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
+
 #Main Widget
 <RootWidget>:
+
     orientation: "vertical"
-    wait_mode: False
     BoxLayout:
         pos_hint: {'top':1}
         size_hint_y: None
@@ -39,20 +68,10 @@
             width: 100
             on_text: root.screen_name = self.text
             text: "Deck"
-            values: 'Deck','Browser','Designer', 'Layout', 'Settings','Console','Script',
+            values: 'Deck','Browser','Designer', 'Layout', 'Settings'#,'Console','Script',
         LabelButton:
             id: message
             on_press: app.alert('')# dismiss message
-        Image:
-            size_hint_x: None
-            width: 20
-            source: join(kivy_data_dir, 'images', 'image-loading.gif') if root.wait_mode else "img/blank.png"
-            canvas.before:
-                Color:
-                    rgba: (0.3,0.3,1,.5) if root.wait_mode else (0,0,0,1)
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
     VirtualScreenManagerGrid:
         orientation: 'horizontal'
         spacing: 20

@@ -2,8 +2,10 @@
 #:import CARD conf.card_format
 #:import RuledScatter designer.RuledScatter
 #:import Field fields.BaseField
+#:import FAIcon utils.font_awesome.FAIcon
 
-<FieldTaskButton@ButtonBehavior+HoverBehavior+Image>
+
+<FieldTaskButton@ButtonBehavior+HoverBehavior+FAIcon>
     radius: 40
     size_hint_x: None
     width: 50
@@ -18,6 +20,8 @@
         Line:
             circle: self.center_x, self.center_y, self.radius/2
             width: self.radius/20
+    font_size: 25
+    color: 0,0,0,1
 
 
 <RuledScatter>:
@@ -43,17 +47,22 @@
     Button:
         disabled: not(root.is_selected)
         size_hint: .1,1
-        Image:
+        on_press: root.designer.duplicate_selection()
+        FAIcon:
+            font_size: 20
+            color: 1,1,1,1
+            icon: 'copy'
             pos: self.parent.pos
             size: self.parent.size
-            source: 'img/duplicate.png'
     Button:
         disabled: not(root.is_selected)
         size_hint: .1,1
-        Image:
+        on_press: root.designer.remove_selection()
+        FAIcon:
+            font_size: 30
+            icon: 'remove'
             pos: self.parent.pos
             size: self.parent.size
-            source: 'img/deleteblack.png'
 
 <FieldEntry@ButtonBehavior+HoverBehavior+BoxLayout>:
 #Used in the left scrollview with all potential fields
@@ -123,6 +132,7 @@
         shorten: True
 
 
+
 <ImageSpinnerOption@SpinnerOption>:
     size_hint_x: None
     halign: 'right'
@@ -130,11 +140,11 @@
     text_size: .9*root.width, root.height#root.size
     font_size: '14dp'
     width: 80
-    Image:
-        source: "img/%s.png"%root.text if root.text else ""
+    FAIcon:
+        icon: root.text if root.text else ""
         size: root.size[0]/2,root.size[1]/2
-        #size: root.size
         pos: root.x-root.width/16,root.y+root.height/4
+        font_size: 30
 
 <ImageSpinner@Spinner>:
     option_cls: "ImageSpinnerOption"
@@ -217,23 +227,24 @@
                                         text: root.current_template.template_name
                                         on_text: if root.current_template: root.current_template.template_name = tmplName.text
                                 Icon:
-                                    source: 'img/new.png'
+                                    icon: "file"
                                     on_press: root.new()
                                     text: 'New'
                                 Icon:
                                     text: "Tmpl Preview"
+                                    icon: 'print'
                                     #:import F kivy.factory.Factory
                                     on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
-                                    source: 'img/PrintPreview.png'
                                 Icon:
-                                    source: 'img/fileexport.png'
+                                    icon: 'save'
                                     on_press: root.save()
                                     text: 'Save'
-                                Icon:
-                                    height: 40
-                                    source: 'img/filesaveas2.png'
-                                    on_press: root.save(root.current_template.template_name)
-                                    text: 'Save As'
+#                                Icon:
+#                                    height: 40
+#                                    #source: 'img/filesaveas2.png'
+#                                    icon: 'save'
+#                                    on_press: root.save(root.current_template.template_name)
+#                                    text: 'Save As'
                 TabbedPanelItem:
                     text: 'Library'
                     GridLayout:
