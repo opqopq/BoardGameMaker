@@ -1,18 +1,14 @@
 'Main Entry point for new KIVY bassed BGM'
 
 todos= [
-    "P3: comprendre pourquoi les cm n'en sont point",
     'P3: change virtual screen stack',
-    "P3: bgg browser v2 - file & links",
-   'find a wy to indicate error when loading a non existing file/image, like in image choiceeditor',
-    "create a metaclass for field that will triger the agrfegation of attrs into params. this will make life easier/faster for field creation",
-    "Bug: there is something wrong with the is_context parameter which is applied on all field ????",
+    "P3: browser v2 - file & links",
     "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
     "change stackpart selected to toggle button behavior",
     "hy does text editor appears when export liloops.kv",
     "redo styles in designer switching to a popup with all style params",
 ]
-"""<div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a>, <a href="http://www.flaticon.com/authors/daniel-bruce" title="Daniel Bruce">Daniel Bruce</a>, <a href="http://www.flaticon.com/authors/yannick" title="Yannick">Yannick</a>, <a href="http://www.flaticon.com/authors/icomoon" title="Icomoon">Icomoon</a>, <a href="http://www.flaticon.com/authors/dave-gandy" title="Dave Gandy">Dave Gandy</a>, <a href="http://www.flaticon.com/authors/simpleicon" title="SimpleIcon">SimpleIcon</a>, <a href="http://www.flaticon.com/authors/graphicsbay" title="GraphicsBay">GraphicsBay</a>, <a href="http://www.flaticon.com/authors/alessio-atzeni" title="Alessio Atzeni">Alessio Atzeni</a>, <a href="http://www.flaticon.com/authors/google" title="Google">Google</a>, <a href="http://www.flaticon.com/authors/icon-works" title="Icon Works">Icon Works</a>, <a href="http://www.flaticon.com/authors/egor-rumyantsev" title="Egor Rumyantsev">Egor Rumyantsev</a>, <a href="http://www.flaticon.com/authors/anton-saputro" title="Anton Saputro">Anton Saputro</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>             is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div>"""
+
 for i,todo in enumerate(todos):
     print i, todo
 
@@ -78,8 +74,20 @@ class BGMApp(App):
     title = "Board Game Maker"
 
     def build(self):
+        from conf import CP, gamepath
+        import conf
+        if gamepath is None:
+            conf.gamepath = '.'
+            from kivy.clock import Clock
+            def cb(*args):
+                #self.set_screen('Settings')
+                from kivy.uix.popup import Popup
+                from kivy.uix.label import Label
+                p=Popup(content=Label(text='Press escape then Please choose a valid Gamepath and reload BGM'),title='Choose Gamepath.')
+                p.open()
+            Clock.schedule_once(cb, 0)
+            return conf.CreateConfigPanel()
         root = RootWidget()
-        from conf import CP
         if CP.getboolean('Startup','load_tmpl_lib'):
             root.ids.deck.load_template_lib(force_reload=True, background_mode=True)
         return root

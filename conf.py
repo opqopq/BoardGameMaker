@@ -17,11 +17,10 @@ else:
 CP = ConfigParser(name='BGM')
 CP.read(fname)
 
-gamepath = CP.getdefault('Path', 'gamepath', r'C:\Users\mrs.opoyen\SkyDrive\Games')
-if not isdir(gamepath):
-    gamepath = "../../../../OneDrive/Games"
+gamepath = CP.get('Path', 'gamepath')
 if not isdir(gamepath):
     Logger.warn('No Existing Game Path found')
+    gamepath = None
 else:
     resource_add_path(gamepath)
 
@@ -73,16 +72,6 @@ class PageFormat(EventDispatcher):
 
 page_format = PageFormat()
 
-# This cache will get a copy of last opened dir for each file browser to simplify history
-dir_cache = dict()
-
-
-class BGMCache(Observable):
-    folder = StringProperty('.')
-    cache = DictProperty()
-
-bgmcache = BGMCache()
-
 
 def log(text, stack=None):
     app = App.get_running_app()
@@ -124,7 +113,7 @@ def fill_env(*args):
     ENV['tmpls'] = templateList
     from printer import prepare_pdf
     ENV['prepare_pdf'] = prepare_pdf
-    ENV['stack'] = root.ids['deck'].ids['stack']
+    #ENV['stack'] = root.ids['deck'].ids['stack']
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)

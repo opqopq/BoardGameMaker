@@ -10,14 +10,14 @@ from reportlab.lib.units import cm as r_cm
 from reportlab.lib.utils import ImageReader
 from PIL.Image import frombuffer, FLIP_TOP_BOTTOM
 
-from conf import card_format
+from conf import page_format
 #Page Format - to be stuck into a .ini file
-width = 21.0
-height = 29.7
-left = 0.8
-right = 0.8
-bottom = 1.0
-top = 1.0
+width = page_format.width
+height = page_format.height
+left = page_format.left
+right = page_format.right
+bottom = page_format.bottom
+top = page_format.top
 
 def center(x,y,w,h):
     return x+w/2, y+h/2
@@ -33,7 +33,7 @@ class PDFBook:
 
     def show(self):
         try:
-            from os import startfile
+            from conf import startfile
             startfile(self.dst)
         except ImportError:
             print 'on a mac: no startfile !'
@@ -179,15 +179,3 @@ def prepare_pdf(stack, fitting_size, dst='test.pdf'):
     book = PDFBook(dst)
     book.calculate_size((deck_front, deck_back), fitting_size)
     return (size , book)
-
-#    def process(*args):
-#        book = PDFBook(dst)
-#        res = book.generate_pdf((deck_front,deck_back), fitting_size)
-#        if res:
-#            try:
-#                from os import startfile
-#                startfile(dst)
-#            except ImportError:
-#                print 'on a mac: no startfile !'
-#    from kivy.clock import Clock
-#    Clock.schedule_once(process, .3)

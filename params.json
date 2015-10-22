@@ -6,7 +6,7 @@
     {
         "type": "path",
         "title": "gamepath",
-        "desc": "Path of Game's Library",
+        "desc": "Path of Game and Project's Library. To be set on first usage",
         "section": "Path",
         "key": "gamepath"
     },
