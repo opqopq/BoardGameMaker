@@ -33,10 +33,13 @@
         <section id="main_content">
           <p>License: LGPL
 FontIcon made with Fontello
-Software requirement:
-    * Kivy 1.9 (kivy.org) Kivy 1.9 minimum,
-    * Reportlab (pip installable in kivy environnement)
-    * Pillow (pip installable in kivy environnement)</p>
+Software requirement:</p>
+
+<ul>
+<li>Kivy 1.9 (kivy.org) Kivy 1.9 minimum,</li>
+<li>Reportlab (pip installable in kivy environnement)</li>
+<li>Pillow (pip installable in kivy environnement)</li>
+</ul>
 
 <p>Prior to launch, edit file bgm.ini and change the gamepath folder to an existing folder containings your pictures &amp; projects.
 If you don't, the software will ask you to do so &amp; to restart it.</p>
@@ -45,6 +48,9 @@ If you don't, the software will ask you to do so &amp; to restart it.</p>
 <a id="some-context" class="anchor" href="#some-context" aria-hidden="true"><span class="octicon octicon-link"></span></a>Some Context</h2>
 
 <p>I've been building a card/tiles making software for some time now. Before releasing it, I'd like to see whether there is a need for it and what kind of features it should have.</p>
+
+<p>The Main screen, where pictures can be added, with different quantity &amp; dual printing option to a stack of pictures.
+<img src="https://raw.githubusercontent.com/opqopq/BoardGameMaker/master/img/main_screen.png" alt="Main Screen"></p>
 
 <p>So far, the program I have made (python langage based) have the following features:
 1) create ready to print Card/Tiles sheets, placing images on a sheet in order to ease dual printing of image</p>
@@ -55,6 +61,9 @@ You can simply change their quantity and format them to the same size, creating 
 <p>This is the "raison d'être" of the software. At the time, I wanted to be able to easily print some card proxy for my Collectible Card Game sessions.</p>
 
 <p>This feature is working, through PDF Export (only A4 format for now)</p>
+
+<p>Example of PDF with dual printing ready:
+<img src="https://raw.githubusercontent.com/opqopq/BoardGameMaker/master/img/output_pdf.png" alt="Example Output"></p>
 
 <p>2) Add simple image transformation to your deck
 Software comes with a bunch of template to transform your image before creating printing sheet.
@@ -68,8 +77,10 @@ Some examples of implemented features:</p>
 <li>creating D6, D8 or D12, with custom face</li>
 </ul>
 
-<p>.
-This features workds and a template library is available.</p>
+<p>This features works and a template library is available.</p>
+
+<p>Example of Dice Template :
+<img src="https://raw.githubusercontent.com/opqopq/BoardGameMaker/master/img/dice_template.png" alt="Example of Dice Template"></p>
 
 <p>3) Add some simple script to create &amp; fill your deck
 Think what nandeck would do here. Software can understand script in order to directly add card.
@@ -97,10 +108,15 @@ As a bonus, it means we have a fully scriptable templating language to define te
 <p>This features is in beta state. The templating languge works, and the designer above spits its results as templating language.
 Nevertheless, tons of documentation is missing.</p>
 
+<p>The designer main screen:
+<img src="https://raw.githubusercontent.com/opqopq/BoardGameMaker/master/img/designer_screen.png" alt="designer"></p>
+
 <p>5) Even more power users features</p>
 
+<p>Template languages comes with some additionals features (like style) that I still have to mature. </p>
+
 <h2>
-<a id="template-languages-comes-with-somes-additionals-features-like-style-that-i-still-have-to-mature-i-do-not-know-if-usage-will-be-interesting" class="anchor" href="#template-languages-comes-with-somes-additionals-features-like-style-that-i-still-have-to-mature-i-do-not-know-if-usage-will-be-interesting" aria-hidden="true"><span class="octicon octicon-link"></span></a>Template languages comes with somes additionals features (like style) that I still have to mature. I do not know if usage will be interesting.</h2>
+<a id="i-do-not-know-if-usage-will-be-interesting" class="anchor" href="#i-do-not-know-if-usage-will-be-interesting" aria-hidden="true"><span class="octicon octicon-link"></span></a>I do not know if usage will be interesting.</h2>
 
 <p>This is a lot to read. The program is ready, but in alpha quality.</p>
 
