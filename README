@@ -1,11 +1,12 @@
 License: LGPL
 FontIcon made with Fontello
 Software requirement:
-    * Kivy 1.9 (kivy.org) Kivy 1.9 minimum,
-    * Reportlab (pip installable in kivy environnement)
-    * Pillow (pip installable in kivy environnement)
+- Kivy 1.9 (kivy.org) Kivy 1.9 minimum,
+- Reportlab (pip installable in kivy environnement)
+- Pillow (pip installable in kivy environnement)
 
 Prior to launch, edit file bgm.ini and change the gamepath folder to an existing folder containings your pictures & projects.
+
 If you don't, the software will ask you to do so & to restart it.
 
 Some Context
