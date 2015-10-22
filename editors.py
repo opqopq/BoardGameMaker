@@ -8,7 +8,6 @@ from kivy.properties import *
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from kivy.factory import Factory as F
 
 Builder.load_file('kv/editors.kv')
 

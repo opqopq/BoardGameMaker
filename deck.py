@@ -3,16 +3,13 @@
 import kivy.clock
 kivy.clock.Clock.max_iteration = 20
 from kivy.lang import Builder
-from template import templateList
 # #Now the GUI parts of the template
 from kivy.properties import ObjectProperty,  DictProperty, StringProperty
 from kivy.uix.treeview import TreeView, TreeViewLabel, TreeViewNode
 from kivy.uix.boxlayout import BoxLayout
-from fields import Field
 
 Builder.load_file('kv/deck.kv')
 
-from utils.watched_directory import FSWatcherBehavior
 
 class TreeViewField(TreeViewNode,BoxLayout):
     editor = ObjectProperty(None)
