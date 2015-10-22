@@ -1,4 +1,5 @@
-#:import FAIcon utils.font_awesome.FAIcon
+#:import FontIcon utils.fontello.FontIcon
+
 
 <GamesResults@TreeView>
     on_selected_node: self.browser.game_details(*args)
@@ -40,42 +41,42 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-        FAIcon:
-            icon: 'group'
+        FontIcon:
+            icon: 'users'
             font_size: 48
             color: 0,0,0,1
         Label:
             text: "X-Y"
             id: nb_user
-        FAIcon:
-            icon: 'clock-o'
+        FontIcon:
+            icon: 'clock'
             font_size: 48
             color: 0,0,0,1
         Label:
             text: "XXX mns"
             id: duration
-        FAIcon:
+        FontIcon:
             icon: 'child'
             font_size: 48
             color: 0,0,0,1
         Label:
             text: "XXX years"
             id: minimum_age
-        FAIcon:
+        FontIcon:
             icon: 'camera'
             font_size: 48
             color: 0,0,0,1
         Label:
             text: "-- Pages"
             id: nb_img_page
-        FAIcon:
-            icon: 'file'
+        FontIcon:
+            icon: 'new'
             font_size: 48
             color: 0,0,0,1
         Label:
             text: "-- Pages"
             id: nb_file_page
-        FAIcon:
+        FontIcon:
             icon: 'link'
             font_size: 48
             color: 0,0,0,1

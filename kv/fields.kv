@@ -3,7 +3,7 @@
 ##################################################################
 
 #:import CARD conf.card_format
-
+#:import FontIcon utils.fontello.FontIcon
 
 <.designed>
     designed: True
@@ -51,8 +51,6 @@
             angle: -self.angle
             origin: self.center # if scatter self.width/2, self.height/2
             axis: 0,0,1
-
-
     Label:
         is_context: True
         size_hint_y: None
@@ -69,13 +67,21 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-    Image:
+#    Image:
+#        is_context: True
+#        source: "img/%s.png"%root.Type
+#        size_hint: None, None
+#        size: 24,24
+#        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='TemplateField' else (root.center_x-self.width/2, root.y-self.height/2)
+#        opacity: 1 if root.designed else 0
+    FontIcon:
         is_context: True
-        source: "img/%s.png"%root.Type
+        icon: root.Type
         size_hint: None, None
-        size: 24,24
+        font_size: 24
         pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='TemplateField' else (root.center_x-self.width/2, root.y-self.height/2)
         opacity: 1 if root.designed else 0
+        color: 0,0,0,1
 
 
 <Field>:

@@ -199,35 +199,6 @@ class BGTemplate(Field, RelativeLayout):
                 self.attrs = field.attrs.copy()
         return FromFieldTemplate()
 
-    def export_to_image(self, filename=None, bg_col = (1,1,1,0)):
-        from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
-
-
-        if filename is None:
-            #resorting to default build on id
-            filenmame = 'build/%s.png'%id(self)
-        if self.parent is not None:
-            canvas_parent_index = self.parent.canvas.indexof(self.canvas)
-            self.parent.canvas.remove(self.canvas)
-
-        fbo = Fbo(size=self.size, with_stencilbuffer=True)
-
-        with fbo:
-            ClearColor(*bg_col)
-            ClearBuffers()
-            Scale(1, -1, 1)
-            Translate(-self.x, -self.y - self.height, 0)
-
-        fbo.add(self.canvas)
-        fbo.draw()
-        fbo.texture.save(filename, flipped=False)
-        fbo.remove(self.canvas)
-
-        if self.parent is not None:
-            self.parent.canvas.insert(canvas_parent_index, self.canvas)
-
-        return True
-
     def toImage(self, bg_color=(1,1,1,0), for_print = False):
         #create image widget with texture == to a snapshot of me
         from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
@@ -313,95 +284,6 @@ class BGTemplate(Field, RelativeLayout):
         t,i,d = self.export_field(level, save_cm, relativ, save_relpath)
         #Change the first line
         t[0] =  "%s<%s@BGTemplate>:"%((level-1)*'\t',self.template_name)
-        return t,i,d
-
-    def Oexport_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
-        t,i,d =super(BGTemplate,self).export_field(level, save_cm,relativ,save_relpath)
-        #Add specific template case
-        BL = self.blank()
-        print 'BGT export field', self.vars
-        from fields import BaseField
-        for pname, editor in self.vars.items():
-            print 'vars ', pname
-        for fname in self.ids.keys():
-            print 'ids', fname
-            if not isinstance(self.ids[fname], BaseField):
-                continue
-            _wid = self.ids[fname]
-            if not _wid.editable:
-                continue
-            if _wid.default_attr:
-                print 'current ids default', _wid.default_attr
-                me = getattr(_wid, _wid.default_attr)
-                blank = getattr(BL.ids[fname],_wid.default_attr)
-                if me!= blank:
-                    if t[-1] == '':
-                        t.pop()
-                    print 'match for', fname
-                    print 'export of it', _wid.export_field()
-
-                    attr = fname
-                    tmpls = t
-                    prepend = '\t'*(level)
-                    value = me
-                    from os.path import relpath, isfile
-                    from conf import gamepath
-                    from kivy.properties import ObservableDict, ObservableReferenceList, ObservableList
-                    from fields import compare_to_root
-                    from types import FunctionType
-                    from kivy.metrics import cm
-                    vtype = type(value)
-
-                    if attr == 'name':
-                        tmpls.append('%sid: %s'%(prepend,value))
-                    elif  isinstance(value, basestring):
-                        if isfile(value) and save_relpath:
-                            value = relpath(value, gamepath)
-                        tmpls.append('%s%s: "%s"'%(prepend,attr, value))
-                    elif vtype == type(1.0):
-                        tmpls.append('%s%s: %.2f'%(prepend, attr, value))
-                    elif vtype in  (type({}), ObservableDict):
-                        for _v in value:
-                            try:
-                                _uni = unicode(value[_v], 'latin-1')
-                            except TypeError: #can not coerce float in latin -1
-                                _uni = unicode(value[_v])
-                            if isfile(_uni) and save_relpath:
-                                value[_v] = relpath(value[_v], gamepath)
-                        tmpls.append('%s%s: %s'%(prepend, attr,value))
-                    elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
-                        if attr in ("size","pos"):
-                            if relativ:
-                                tmpls.append('%s%s: %s'%(prepend, attr, compare_to_root(self.template.size,value)))
-                                continue
-                            if save_cm:
-                                tmpls.append('%s%s: '%(prepend,attr)+', '.join(["cm(%.2f)"%(v/cm(1)) for v in value]))
-                                continue
-                        #Looping and removing bracket
-                        sub = []
-                        for item in value:
-                            if isinstance(item, float):
-                                sub.append('%.2f'%item)
-                            elif isinstance(item, basestring):
-                                if isfile(item) and save_relpath:
-                                    item = relpath(item, gamepath)
-                                sub.append('"%s"'%item)
-                            elif isinstance(item, FunctionType): #replace the function by its name without the ""
-                                sub.append('%s'%item.func_name)
-                            else:
-                                sub.append(str(item))
-                        if len(sub) != 1:
-                            tmpls.append('%s%s: '%(prepend, attr) + ', '.join(sub))
-                        else: #only: add a ',' at the end, to have kv understand it is a tuple
-                            tmpls.append('%s%s: '%(prepend, attr) + sub[0] + ',')
-
-                    else:
-                        tmpls.append('%s%s: %s'%(prepend, attr, value))
-
-
-
-
-
         return t,i,d
 
 #Now define the cache foundry for all templates

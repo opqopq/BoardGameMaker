@@ -4,7 +4,7 @@
 #:import split os.path.split
 #:import WatchedFolderTree utils.watched_directory.WatchedFolderTree
 #:import StickyButton utils.stickybutton.StickyButton
-#:import FAIcon utils.font_awesome.FAIcon
+#:import FontIcon utils.fontello.FontIcon
 #:set LIGHTGREY (.7,.7,.7)
 
 <Icon@ButtonBehavior+BoxLayout>:
@@ -16,7 +16,7 @@
     font_size: 40
     color: 1,1,1,1
     icon: ""
-    FAIcon:
+    FontIcon:
         icon: root.icon
         color: root.color if root.state == 'normal' else (.7,.7,.7,.7)
         font_size: root.font_size
@@ -55,11 +55,11 @@
 
 
 
-<HiddenRemoveButton@ButtonBehavior+FAIcon>:
+<HiddenRemoveButton@ButtonBehavior+FontIcon>:
     size_hint_x: None
     width: 15
     font_size: 50
-    color: 0,0,0,1
+    #color: 0,0,0,1
 
 <RVImage@ToggleButtonBehavior+Image>:
     source: 'img/recto.png' if self.state =='normal' else 'img/verso.png'
@@ -70,7 +70,6 @@
 <EditOptionLayout@BoxLayout>:
     size_hint_x: None
     orientation: 'vertical'
-
 
 <StackPart>:
     height: 150
@@ -165,10 +164,10 @@
         width: 0 #will only apply if it is a template otherwise size hint will prevail
         on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
         background_color: 0,0,0,0
-        FAIcon:
+        FontIcon:
             font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
-            color: 0,0,0,1
-            icon: 'edit'
+            #color: 0,0,0,1
+            icon: 'edit-1'
             pos: self.parent.pos
             size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
 
@@ -178,10 +177,10 @@
         width: 0 #will only apply if it is a template otherwise size hint will prevail
         on_press: root.parent.apply_item(root.parent.name)
         background_color: 0,0,0,0
-        FAIcon:
+        FontIcon:
             font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
-            color: 0,0,0,1
-            icon: 'arrow-circle-o-down'
+            #color: 0,0,0,1
+            icon: 'apply'
             pos: self.parent.pos
             size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
 
@@ -189,10 +188,10 @@
         size_hint: .4 , 1
         on_press: root.parent.add_item(qt.text, dual.state)
         background_color: 0,0,0,0
-        FAIcon:
+        FontIcon:
             font_size:  int(float(root.width)/6)
-            color: 0,0,0,1
-            icon: 'plus-circle'
+            #color: 0,0,0,1
+            icon: 'add'
             pos: self.parent.pos
             size: self.parent.size
 
@@ -217,15 +216,47 @@
             pos: self.x-5, self.y-20
     Image:
         id: img
-        allow_stretch: True
+        #allow_stretch: True
         source: root.source
-        size_hint_y: .8
+        size_hint_y: .8 if not root.is_all_folder else None
+        width: 0
     Label:
         size_hint: 1, .15
         font_size:  max(root.width/10, 10)
         text_size: self.size
         halign: "center"
         text:  split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
+
+<-SpecialViewItem>:
+    orientation: 'vertical'
+    group: 'fileitem'
+    size_hint: None, 1
+    width: self.height
+    spacing: 0
+    canvas.before:
+        Color:
+            rgba: (0,0,1,1) if self.state == 'down' else (1,1,1,0)
+        Line:
+            rectangle: self.x-3, self.y-3, self.width+6, self.height+6
+            width: 3
+        Color:
+            rgba: (0,0,1,.31) if self.state == 'down' else (1,1,1,0)
+
+        Rectangle:
+            size: (self.width+10, self.height+30)
+            pos: self.x-5, self.y-20
+    FontIcon:
+        icon: root.source
+        size_hint_y: .8
+        font_size: 164
+        #color: 0,0,0,1
+    Label:
+        size_hint: 1, .15
+        font_size:  max(root.width/10, 10)
+        text_size: self.size
+        halign: "center"
+        text:  split(root.name)[-1] if len(split(root.name)[-1])<15 else split(root.name)[-1][:5]+'[...]'+root.name[-5:]
+
 
 <PictureGrid@GridLayout>:
     rows: 1
@@ -314,16 +345,16 @@
                             cols: 1
                             spacing: 10
                             Icon:
-                                icon: "file"
+                                icon: "new"
                                 text: 'New'
                                 on_press: root.empty_stack()
                             Icon:
-                                icon: "print"
+                                icon: "acrobat"
                                 text: 'PDF'
                                 on_press: root.prepare_print()
                             Icon:
                                 text: 'Export'
-                                icon: 'sign-out'
+                                icon: 'export'
                                 on_press: root.write_file_popup("Choose CSV Export file", root.export_file)
                     AccordionItem:
                         title: "Fit Format"
@@ -392,7 +423,7 @@
         TabbedPanelHeader:
             panel: explorer
             content: tab1_content.__self__
-            FAIcon:
+            FontIcon:
                 pos: self.parent.pos
                 size: self.parent.size
                 color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
@@ -400,12 +431,12 @@
                 icon: "book"
         TabbedPanelHeader:
             content: tab2_content.__self__
-            FAIcon:
+            FontIcon:
                 pos: self.parent.pos
                 size: self.parent.size
                 color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
                 font_size: 30
-                icon: "cog"
+                icon: "settings"
     BoxLayout:
         orientation: 'vertical'
         Splitter:

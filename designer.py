@@ -14,10 +14,9 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from fields import Field, BaseField
 from template import BGTemplate, templateList
-from conf import card_format, gamepath
+from conf import card_format
 from deck import TreeViewField
-from os.path import isfile, split, relpath
-from utils.font_awesome import FAIcon
+from os.path import isfile
 
 
 class RuledScatter(ScatterLayout):
@@ -189,7 +188,6 @@ class BGDesigner(FloatLayout):
             params.root.nodes = self.params_cache[target]
             params._trigger_layout()
             return
-
 
         SKIP_TMPL_POS = target == self.current_template
         SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable', 'printed']
@@ -384,17 +382,20 @@ class BGDesigner(FloatLayout):
             from kivy.uix.label import Label
             #Now for the big show
             text = field.name if field.name else field.Type
+            from utils.fontello import FontIcon
+            icon = FontIcon(icon=text, color=(0,0,0,1), font_size=24, size_hint_x=None, width=40)
+            tasks.add_widget(icon)
             if text.lower().endswith('field'):
-                text= text[:-5]
-            label = Label(text=text, size_hint_x=None, width = 100)
+                text=text[:-5]
+            label = Label(text=text, size_hint_x=None, width=100)
             tasks.add_widget(label)
 
             #Skip this if targetting current template
             if field != self.current_template:
                 ftb = Factory.get('FieldTaskButton')
                 data = [
-                    (self.remove_selection, 'remove'),
-                    (self.duplicate_selection, 'copy'),
+                    (self.remove_selection, 'cancel'),
+                    (self.duplicate_selection, 'duplicate'),
                 ]
                 for cb, img in data:
                     _button = ftb()

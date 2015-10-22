@@ -2,10 +2,10 @@
 #:import CARD conf.card_format
 #:import RuledScatter designer.RuledScatter
 #:import Field fields.BaseField
-#:import FAIcon utils.font_awesome.FAIcon
+#:import FontIcon utils.fontello.FontIcon
 
 
-<FieldTaskButton@ButtonBehavior+HoverBehavior+FAIcon>
+<FieldTaskButton@ButtonBehavior+HoverBehavior+FontIcon>
     radius: 40
     size_hint_x: None
     width: 50
@@ -23,7 +23,6 @@
     font_size: 25
     color: 0,0,0,1
 
-
 <RuledScatter>:
     canvas.before:
         Color:
@@ -38,9 +37,13 @@
     height: 30
     orientation: 'horizontal'
 #:import isfile os.path.isfile
-    Image:
-        source: "img/%s.png"%root.target.Type if root.target and isfile("img/%s.png"%root.target.Type) else "img/misc.png"
+    FontIcon:
+        icon: root.target.Type if root.target else "settings"
         size_hint: .25,1
+    #Image:
+    #    source: "img/%s.png"%root.target.Type if root.target and isfile("img/%s.png"%root.target.Type) else "img/misc.png"
+    #    size_hint: .25,1
+
     Label:
         text: (root.target.name or root.target.Type[:-5] if root.target and isinstance(root.target, Field)  else (root.target.Type if root.target and isinstance(root.target, Field) else ""))
         size_hint: .5,1
@@ -48,19 +51,19 @@
         disabled: not(root.is_selected)
         size_hint: .1,1
         on_press: root.designer.duplicate_selection()
-        FAIcon:
+        FontIcon:
             font_size: 20
             color: 1,1,1,1
-            icon: 'copy'
+            icon: 'duplicate'
             pos: self.parent.pos
             size: self.parent.size
     Button:
         disabled: not(root.is_selected)
         size_hint: .1,1
         on_press: root.designer.remove_selection()
-        FAIcon:
+        FontIcon:
             font_size: 30
-            icon: 'remove'
+            icon: 'cancel'
             pos: self.parent.pos
             size: self.parent.size
 
@@ -79,9 +82,13 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    Image:
-        source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
+    FontIcon:
+        icon: root.text if root.text else "settings"
         size_hint: .25,1
+        font_size: 40
+    #Image:
+    #    source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
+    #    size_hint: .25,1
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
         size_hint: .75,1
@@ -101,9 +108,13 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    Image:
-        source: "img/TemplateField.png"
+    #Image:
+    #    source: "img/TemplateField.png"
+    #    size_hint: .25,1
+    FontIcon:
+        icon: "TemplateField"
         size_hint: .25,1
+        font_size: 40
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
         size_hint: .75,1
@@ -123,9 +134,14 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    Image:
-        source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
+    FontIcon:
+        icon: root.text if root.text else "settings"
         size_hint: .25,1
+        font_size: 40
+
+    #Image:
+    #    source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
+    #    size_hint: .25,1
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
         size_hint: .75,1
@@ -140,7 +156,7 @@
     text_size: .9*root.width, root.height#root.size
     font_size: '14dp'
     width: 80
-    FAIcon:
+    FontIcon:
         icon: root.text if root.text else ""
         size: root.size[0]/2,root.size[1]/2
         pos: root.x-root.width/16,root.y+root.height/4
@@ -227,7 +243,7 @@
                                         text: root.current_template.template_name
                                         on_text: if root.current_template: root.current_template.template_name = tmplName.text
                                 Icon:
-                                    icon: "file"
+                                    icon: "new"
                                     on_press: root.new()
                                     text: 'New'
                                 Icon:

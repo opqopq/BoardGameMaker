@@ -2,14 +2,19 @@
 #:import VirtualScreenManagerGrid utils.virtual_screen.VirtualScreenManagerGrid
 #:import kivy_data_dir kivy.kivy_data_dir
 #:import join os.path.join
-
+#:import FontIcon utils.fontello.FontIcon
 #:import BGGDeck sgm.BGDeckMaker
 
 <ImageButton@ButtonBehavior+BoxLayout>:
     source: None
     text: ""
-    Image:
-        source: root.source
+#    Image:
+#        source: root.source
+#        size_hint_x: .2
+    FontIcon:
+        icon: root.source if root.source else 'settings'
+        color: 1,1,1,1
+        font_size: 30
         size_hint_x: .2
     Label:
         text: root.text
@@ -60,7 +65,8 @@
             size_hint_x: None
             width: 200
             on_press: content.activated = not(content.activated)
-            source: 'img/%s.png'%content.current_screen.name
+            #source: 'img/%s.png'%content.current_screen.name
+            source: content.current_screen.name
             text: 'Board Game Maker: '
         Spinner:
             id: screen_spinner

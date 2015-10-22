@@ -183,6 +183,10 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             #App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
 
+class SpecialViewItem(FileViewItem):
+    "FileView for Folder & CSV file. Usable for script ? "
+    pass
+
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
     row = NumericProperty(0)
@@ -242,7 +246,7 @@ class StackPart(ButtonBehavior, BoxLayout):
             W = 100
             if self.template:#it is a template: add edit button
                 W = 90
-                be = Factory.get('HiddenRemoveButton')(icon='pencil')
+                be = Factory.get('HiddenRemoveButton')(icon='edit')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
@@ -471,7 +475,7 @@ class BGDeckMaker(BoxLayout):
         progress.max = C
         progress.value = 1
         #pg = Factory.get('PictureGrid')()
-        pictures.add_widget(FileViewItem(source='img/AllFolder2.png', is_all_folder = folder, name="Add %d Imgs"%C))
+        pictures.add_widget(SpecialViewItem(source='folder-add', is_all_folder=folder, name="Add %d Imgs"%C))
         docs = sorted([x.lower() for x in os.listdir(folder) if x.endswith(FILE_FILTER)], reverse=True)
         #ensure the stop button is reachable
         self.ids['stop_action'].width = 80
@@ -483,11 +487,14 @@ class BGDeckMaker(BoxLayout):
                     source = 'img/card_template.png'
                     _f = os.path.join(folder, _f)
                 elif _f.endswith('.csv'):
-                    source = 'img/csv.png'
+                    source = 'csv'
                     _f = os.path.join(folder, _f)
                 else:
                     source  = os.path.join(folder,_f)
-                img = FileViewItem(source=source, name=_f)
+                if _f.endswith('.csv'):
+                    img = SpecialViewItem(source= source, name=_f)
+                else:
+                    img = FileViewItem(source=source, name=_f)
                 pictures.add_widget(img)
                 progress.value += 1
                 if _f.endswith('.kv'):
