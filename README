@@ -1,3 +1,9 @@
+License: LGPL
+FontIcon made with Fontello
+Software requirement: Kivy 1.9 (kivy.org) Kivy 1.9
+
+Prior to launch, edit file bgm.ini and change the gamepath folder to an existing folder containings your pictures & projects
+
 I've been building a card/tiles making software for some time now. Before releasing it, I'd like to see whether there is a need for it and what kind of features it should have.
 
 So far, the program I have made (python langage based) have the following features:
@@ -19,7 +25,7 @@ Some examples of implemented features:
 - transforming an image to an origami-dice shaped one
 - creating D6, D8 or D12, with custom face
 
-
+.
 This features workds and a template library is available.
 
 3) Add some simple script to create & fill your deck
@@ -53,4 +59,4 @@ Template languages comes with somes additionals features (like style) that I sti
 
 This is a lot to read. The program is ready, but in alpha quality.
 
-Feedback are happily welcome ! 
+Feedback are happily welcome !
