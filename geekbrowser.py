@@ -145,7 +145,8 @@ class BGGeekBrowser(BoxLayout):
         #wait = Image(center=(info.x + info.parent.center_x, info.y), source='img/image-loading.gif')
         #info.add_widget(wait)
         #info.wait = wait
-        r=UrlRequest(bgg_complete_url%(gameID,quote(IS.title.lower().replace(' ','-'))), on_success=self.get_more_info, on_error=self.cancel_more_info, on_failure=self.cancel_more_info, use_proxy=USE_PROXY, timeout=7)
+        _title = quote(IS.title.lower().replace(' ','-').encode('cp1252'))
+        r=UrlRequest(bgg_complete_url%(gameID,_title), on_success=self.get_more_info, on_error=self.cancel_more_info, on_failure=self.cancel_more_info, use_proxy=USE_PROXY, timeout=7)
 
     def get_more_info(self,req,result):
         bs = BS(result)
@@ -353,10 +354,12 @@ class BGGeekBrowser(BoxLayout):
         for url, desc in self.files:
             files.append(flines%(url, url.split('/')[-1], desc))
         elts['Files'] = "\n".join(files)
+        elts['Files'] = elts['Files'].encode('cp1252','ignore')
         links = []
         for url, desc in self.links:
             links.append(flines%(url, url.split('/')[-1], desc))
         elts['Links'] = "\n".join(links)
+        elts['Links'] = elts['Links'].encode('cp1252', 'ignore')
         sub = tmpl%elts
         file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
         from conf import start_file

@@ -81,7 +81,7 @@ FONTELLO = {
     'icon-EffectField': u'\ue84b',
     'icon-stumbleupon': u'\ue84c',
     'icon-layout-1': u'\ue84d',
-    'icon-BorderField': u'\ue84e',
+    'icon-BorderField-old': u'\ue84e',
     'icon-Deck': u'\ue84f',
     'icon-resize-vertical-1': u'\ue850',
     'icon-resize-horizontal-1': u'\ue851',
@@ -92,6 +92,13 @@ FONTELLO = {
     'icon-share': u'\ue856',
     'icon-script': u'\ue857',
     'icon-Designer': u'\ue858',
+    'icon-cw': u'\ue859',
+    'icon-ccw': u'\ue85a',
+    'icon-BorderField':  u'\ue85b',
+    'icon-terminal': u'\ue85c',
+    'icon-saveas': u'\ue85d',
+    'icon-saveas2': u'\ue85e',
+    'icon-library': u'\ue85f',
 }
 from kivy.uix.label import Label
 from kivy.properties import StringProperty

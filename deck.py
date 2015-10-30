@@ -47,6 +47,7 @@ class TreeViewField(TreeViewNode,BoxLayout):
             if self.name in self.editor.target.code_behind:
                 bl.add_widget(t)
                 b.state = 'down'
+                self.editor.target.code_behind[self.name] = t.children[-1].text
             else:
                 bl.add_widget(e)
 

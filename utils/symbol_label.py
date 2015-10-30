@@ -7,7 +7,7 @@ from kivy.parser import parse_color
 from kivy.logger import Logger
 import re
 from copy import copy
-from kivy.properties import DictProperty
+from kivy.properties import StringProperty
 from math import ceil
 
 class SymbolCoreLabel(MarkupLabel):
@@ -241,8 +241,8 @@ class SymbolCoreLabel(MarkupLabel):
 
 
 class SymbolLabel(Label):
-    start_symbol='[s]'
-    end_symbol='[/s]'
+    start_symbol= StringProperty('[s]')
+    end_symbol= StringProperty('[/s]')
 
     def __init__(self,**kwargs):
         Label.__init__(self,**kwargs)

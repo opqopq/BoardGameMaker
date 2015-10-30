@@ -933,7 +933,7 @@ class FieldEditor(ChoiceEditor):
     "List all widgets fields from my parents"
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.spinner import Spinner
-        from fields import Field
+        from fields import BaseField
         fields = {x.name or x.Type: x for x in self.target.parent.children if isinstance(x, BaseField)}
         text = ""
         val = getattr(self.target,keyname)

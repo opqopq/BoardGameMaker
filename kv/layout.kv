@@ -1,6 +1,7 @@
 #:import LayoutPlaceHolder layout.LayoutPlaceHolder
 #:import LayoutEditor layout.LayoutEditor
 #:import CARD conf.card_format
+#:import FontIcon utils.fontello.FontIcon
 
 <SelectableScreenshoot@ToggleButtonBehavior+Image>:
     size_hint:(None, None)
@@ -78,15 +79,6 @@
     #:import CARD conf.card_format
     size: CARD.width, CARD.height
 
-    Label:
-        id: details
-        text: "#%d\n\n%.2f cm x %.2f cm\n\nX: %.2fcm \n Right: %.2fcm \nY: %.2fcm \n Top: %.2fcm\n"%(root.index,root.scale *root.width/cm(1), root.scale*root.height/cm(1), root.x/cm(1), root.right/cm(1) ,root.y/cm(1), root.top/cm(1))
-        halign: "center"
-        size_hint: None, None
-        width: root.width
-        font_size: 24
-        y: 100
-
 <BGLayoutMaker>:
     Accordion:
         size_hint_x: None
@@ -100,20 +92,8 @@
                 row_default_height: 30
                 cols: 1
                 Button:
-                    text: 'Reset View'
-                    on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  250,120
-                Button:
                     text: 'Add PlaceHolder'
                     on_press:  root.add_ph()
-                Button:
-                    text: 'Rotate PH '
-                    on_press:  root.rotate_ph()
-                Button:
-                    text: 'Edit PH'
-                    on_press:  root.edit_ph()
-                Button:
-                    text: 'Remove PH'
-                    on_press:  root.remove_ph()
                 Button:
                     text: 'Export'
                     on_press:  root.export_phs()
@@ -123,6 +103,12 @@
                 size_hint_x: .3
                 row_default_height: 30
                 cols: 1
+                Button:
+                    text: 'Reset View'
+                    on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  250,120
+                Button:
+                    text: 'Rotate View'
+                    on_press: view.children[0].rotation-=90
                 Button:
                     text: 'Add Page'
                     on_press:  root.add_page()
@@ -171,6 +157,7 @@
         text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*page.scale, 29.7*page.scale)
         size: root.width-400,30
         x: 200
+        y: 5
         size_hint: None, None
         halign: 'center'
         text_size: self.size
@@ -196,6 +183,7 @@
         width: 200
         size_hint_x: None
         pos_hint: {'right':1}
+        disabled: True if root.selected_ph is None else False
         canvas.before:
             Color:
                 rgb: .7,.7,.7
@@ -209,9 +197,85 @@
                 Rectangle:
                     size: self.size
                     pos: self.pos
-            text: "Current PH"
+            text: "Current PH: #" + (str(root.selected_ph.index) if root.selected_ph else '-')
+            size_hint_y: None
+            height: 30
+        BoxLayout:
             size_hint_y: None
             height: 50
+            canvas.before:
+                Color:
+                    rgb: 0,0,1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            Button:
+                on_press: root.rotate_ph()
+                FontIcon:
+                    icon: 'ccw'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press: root.rotate_ph(-90)
+                FontIcon:
+                    icon: 'cw'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press: root.duplicate_ph()
+                FontIcon:
+                    icon: 'duplicate'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press:  root.remove_ph()
+                FontIcon:
+                    icon: 'cancel'
+                    pos: self.parent.pos
+                    size: self.parent.size
+
+        GridLayout:
+            cols: 2
+            row_default_height: 30
+            row_force_default: True
+            Label:
+                text: "Width:"
+                size_hint_y: None
+                height: 30
+            TextInput:
+                id: ph_w
+                text: "%.2f cm"%(root.selected_ph.scale *root.selected_ph.width/cm(1)) if root.selected_ph else ""
+            Label:
+                text: "Height:"
+                size_hint_y: None
+                height: 30
+            TextInput:
+                id: ph_h
+                text: "%.2f cm"%(root.selected_ph.scale*root.selected_ph.height/cm(1)) if root.selected_ph else ""
+            Label:
+                text: "X:"
+                size_hint_y: None
+                height: 30
+            TextInput:
+                id: ph_x
+                text: "%.2fcm"%(root.selected_ph.x/cm(1)) if root.selected_ph else ""
+            Label:
+                text: "Y:"
+                size_hint_y: None
+                height: 30
+            TextInput:
+                id: ph_y
+                text: "%.2fcm"%(root.selected_ph.y/cm(1)) if root.selected_ph else ""
+            Label:
+                text: "Angle:"
+                size_hint_y: None
+                height: 30
+            TextInput:
+                id: ph_angle
+                text: '%s'%root.selected_ph.angle if root.selected_ph else ""
+
+             #\n\nX: / Right: %.2fcm \nY:  / Top: %.2fcm\n", , , root.selected_ph.right/cm(1) ,, root.selected_ph.top/cm(1)) if root.selected_ph else ""
+
         Label:
             text: "#%d\n\n%.2f cm x %.2f cm\n\nX: %.2fcm / Right: %.2fcm \nY: %.2fcm / Top: %.2fcm\n"%(root.selected_ph.index,root.selected_ph.scale *root.selected_ph.width/cm(1), root.selected_ph.scale*root.selected_ph.height/cm(1), root.selected_ph.x/cm(1), root.selected_ph.right/cm(1) ,root.selected_ph.y/cm(1), root.selected_ph.top/cm(1)) if root.selected_ph else ""
             multiline: True

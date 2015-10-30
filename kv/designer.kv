@@ -227,21 +227,23 @@
                                 #size_hint_y: None
                                 cols: 1
                                 spacing: 10
-                                BoxLayout:
-                                    orientation: "horizontal"
-                                    size_hint_y: None
-                                    height: 30
-                                    id: bl_name
-                                    Label:
-                                        text: "Name: "
-                                        size_hint_x: None
-                                        width: 50
-                                    TextInput:
-                                        id: tmplName
-                                        size_hint_x: None
-                                        width: bl_name.width-50-10
-                                        text: root.current_template.template_name
-                                        on_text: if root.current_template: root.current_template.template_name = tmplName.text
+#                                BoxLayout:
+#                                    orientation: "horizontal"
+#                                    size_hint_y: None
+#                                    height: 30
+#                                    id: bl_name
+#                                    Label:
+#                                        text: "Name: "
+#                                        size_hint_x: None
+#                                        width: 50
+#                                    TextInput:
+#                                        id: tmplName
+#                                        size_hint_x: None
+#                                        width: bl_name.width-50-10
+#                                        text: root.current_template.template_name
+#                                        on_text: if root.current_template: root.current_template.template_name = tmplName.text
+#                                    Button:
+#                                        text: '...'
                                 Icon:
                                     icon: "new"
                                     on_press: root.new()
@@ -255,12 +257,14 @@
                                     icon: 'save'
                                     on_press: root.save()
                                     text: 'Save'
+                                Icon:
+                                    icon: 'saveas'
+                                    on_press: root.save(root.current_template.template_name)
+                                    text: 'Save As'
 #                                Icon:
-#                                    height: 40
-#                                    #source: 'img/filesaveas2.png'
-#                                    icon: 'save'
-#                                    on_press: root.save(root.current_template.template_name)
-#                                    text: 'Save As'
+#                                    icon: 'library'
+#                                    on_press: root.save_in_library()
+#                                    text: 'Save in Library'
                 TabbedPanelItem:
                     text: 'Library'
                     GridLayout:

@@ -14,23 +14,22 @@ class LayoutEditor(Popup):
     target = ObjectProperty()
     layout_maker = ObjectProperty()
 
-class OLayoutPlaceHolder(Scatter):
-    index = NumericProperty()
-    selected = BooleanProperty()
-
-    def on_touch_down(self, touch):
-        self.selected = self.collide_point(*touch.pos)
-        if self.selected:
-            self.parent.parent.parent.selected_ph = self
-        if touch.is_double_tap:
-            self.parent.parent.parent.edit_ph()
-        return Scatter.on_touch_down(self,touch)
-
-
 from template import BGTemplate
 class LayoutPlaceHolder(BGTemplate):
     index = NumericProperty()
     scale = 1
+    layout_maker = ObjectProperty()
+
+    def on_selected(self, instance, selected):
+        BGTemplate.on_selected(self, instance, selected)
+
+        if selected:
+            if self.layout_maker.selected_ph and self.layout_maker.selected_ph is not self:
+                self.layout_maker.selected_ph.selected=False
+            self.layout_maker.selected_ph = self
+
+        else:
+            self.layout_maker.selected_ph = None
 
 class BGLayoutMaker(FloatLayout):
     selected_ph = ObjectProperty(rebind=True, allownone = True)
@@ -65,9 +64,21 @@ class BGLayoutMaker(FloatLayout):
         page.index+=1
         ph = LayoutPlaceHolder(index=page.index, size= (CARD.width, CARD.height))
         ph.designed = True #trigger on designed
+        ph.layout_maker = self
         page.add_widget(ph)
         self.selected_ph = ph
+        ph.selected=True
         return ph
+
+    def duplicate_ph(self):
+        oph = self.selected_ph
+        ph = self.add_ph()
+        ph.size= oph.size
+        ph.angle = oph.angle
+        ph.selected = False
+        for c in oph.children:
+            print 'to dup', c
+        ph.selected = True
 
     def remove_ph(self):
         if self.selected_ph:

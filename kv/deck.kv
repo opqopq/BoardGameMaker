@@ -1,30 +1,3 @@
 <TreeViewField>:
     size_hint_y: None
     height: 35
-
-<IntNode@TreeViewNode+BoxLayout>:
-    size_hint_y: None
-    height: 30
-    text: "Qt:"
-    callback: None
-    orientation: 'horizontal'
-    Label:
-        text: root.text
-        size_hint_x: .3
-    TextInput:
-        id: value
-        on_text: root.callback(self.text) if root.callback else None
-
-<BoolNode@TreeViewNode+BoxLayout>:
-    size_hint_y: None
-    height: 30
-    text: "Dual"
-    callback: None
-    pack: root
-    orientation: 'horizontal'
-    Label:
-        text: root.text
-        size_hint_x: .3
-    Switch:
-        id: value
-        on_active: root.callback(self.active, root) if root.callback else None

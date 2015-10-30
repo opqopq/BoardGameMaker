@@ -24,12 +24,19 @@
 
 <WriteFilePopup@Popup>:
     cb: None
+    default_name: 'export.csv'
     BoxLayout:
         orientation: 'vertical'
         FileChooserListView:
         #:import get_last_dir conf.get_last_dir
+        #:import GAMEPATH conf.gamepath
+            dirselect: True
+            rootpath: GAMEPATH
             path: get_last_dir()
-            on_selection: target.text = self.selection[0]
+            #:import split os.path.split
+            #:import join os.path.join
+            #:import isfile os.path.isfile
+            on_selection: target.text = self.selection[0] if isfile(self.selection[0]) else join(self.selection[0],split(target.text)[-1])
             id: fselect
         BoxLayout:
             size_hint_y: None
@@ -40,6 +47,7 @@
                 width: 100
             TextInput:
                 id: target
+                text: root.default_name
         BoxLayout:
             size_hint_y: None
             height: 30
@@ -74,7 +82,7 @@
             width: 100
             on_text: root.screen_name = self.text
             text: "Deck"
-            values: 'Deck','Designer', 'Layout', 'Settings'#,'Console','Script','Browser'
+            values: 'Deck','Designer', 'Layout', 'Settings', 'Browser'#,'Console','Script','Browser'
         LabelButton:
             id: message
             on_press: app.alert('')# dismiss message

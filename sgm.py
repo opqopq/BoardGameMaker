@@ -30,12 +30,21 @@ class FolderTreeView(TreeView):
         from os.path import join, isdir
         from os import listdir
         self.clear_widgets()
+        self.root.nodes = list()
+
         for f in listdir(folder):
             if not isdir(join(folder,f)) and not f.endswith(tuple(self.filters)): continue
             n = self.add_node(TreeViewLabel(text=f))
             n.is_leaf = False
             n.is_loaded = False
             n.path = join(folder, f)
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos) and touch.is_double_tap and getattr(touch, 'button', -1) == "left":
+            node = self.get_node_at_pos(touch.pos)
+            if node == self.root:
+                self.load_folder(self.folder)
+        return TreeView.on_touch_down(self, touch)
 
     def callback(self, instance, node):
         from os import listdir
@@ -48,6 +57,7 @@ class FolderTreeView(TreeView):
                 n.is_leaf = False
                 n.is_loaded = False
                 n.path = join(node.path, f)
+
 
     load_func = callback
 
@@ -388,7 +398,7 @@ class BGDeckMaker(BoxLayout):
     def empty_stack(self):
         self.ids['stack'].clear_widgets()
 
-    def prepare_print(self):
+    def prepare_print(self, dst):
         from printer import prepare_pdf
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
@@ -411,7 +421,7 @@ class BGDeckMaker(BoxLayout):
         #Now add the advancement gauge
         progress = self.ids['load_progress']
         progress.value = 0
-        size, book = prepare_pdf(self.ids['stack'], FFORMAT)
+        size, book = prepare_pdf(self.ids['stack'], FFORMAT, dst=dst)
         progress.max = size
         from kivy.clock import Clock
         step_counter = range(size)
@@ -543,10 +553,11 @@ class BGDeckMaker(BoxLayout):
         p.on_dismiss = inner
         p.open()
 
-    def write_file_popup(self,title,cb):
+    def write_file_popup(self,title,cb, default='export.pdf'):
         p = Factory.get('WriteFilePopup')()
         p.title = title
         p.cb = cb
+        p.default_name = default
         p.open()
 
     def load_file(self, filepath='mycsvfile.csv'):

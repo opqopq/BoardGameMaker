@@ -248,7 +248,7 @@
     FontIcon:
         icon: root.source
         size_hint_y: .8
-        font_size: 164
+        font_size: max(148, root.width/2)
         #color: 0,0,0,1
     Label:
         size_hint: 1, .15
@@ -351,11 +351,11 @@
                             Icon:
                                 icon: "acrobat"
                                 text: 'PDF'
-                                on_press: root.prepare_print()
+                                on_press: root.write_file_popup("Choose PDF Export file", root.prepare_print, 'mydeck.pdf')
                             Icon:
                                 text: 'Export'
                                 icon: 'export'
-                                on_press: root.write_file_popup("Choose CSV Export file", root.export_file)
+                                on_press: root.write_file_popup("Choose CSV Export file", root.export_file, 'mydeck.csv')
                     AccordionItem:
                         title: "Fit Format"
                         GridLayout:

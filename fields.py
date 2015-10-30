@@ -413,7 +413,7 @@ class Field( BaseField, RelativeLayout):
                 #Define if resized is on
                 touch.ud['do_resize'] = False
                 #Display params if duoble tap
-                if touch.is_double_tap:
+                if touch.is_double_tap and self.designer:
                     self.designer.display_field_attributes(self)
                 return True
             else:
@@ -1025,7 +1025,7 @@ class BezierField(ShapeField):
     points = ListProperty()
 
 class LinkedField(Field):
-    "Abstrat class usedd to point out field that have children"
+    "Abstrat class used to point out field that have children"
 
 class CopyField(LinkedField):
     target = ObjectProperty()
