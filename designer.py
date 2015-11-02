@@ -470,6 +470,14 @@ class BGDesigner(FloatLayout):
 
             del self.selection[0]
 
+    def write_file_popup(self,title,cb, default='TMPL.kv'):
+        from kivy.factory import Factory
+        p = Factory.get('WriteFilePopup')()
+        p.title = title
+        p.cb = cb
+        p.default_name = default
+        p.open()
+
 from kivy.uix.treeview import TreeView
 class FieldTreeView(TreeView):
     def on_selected_node(self, instance, selected_node):

@@ -91,7 +91,8 @@ class PDFBook:
             #src = ImageReader(pim.transpose(FLIP_TOP_BOTTOM))
         else:
             src = item.source
-
+            from conf import find_path
+            src = find_path(src)
         if face == 'F':
             X,Y = col * self.x+ left, height-(1+row)*self.y - top
         else:

@@ -563,6 +563,7 @@ class BGDeckMaker(BoxLayout):
     def load_file(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
+        from conf import find_path
         with open(filepath, 'rb') as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024), delimiters=";,")
             csvfile.seek(0)
@@ -590,7 +591,7 @@ class BGDeckMaker(BoxLayout):
                 if 'template' in obj and obj['template']:
                     box.template = obj['template']
                 if 'source' in obj and obj['source']:
-                    box.source = obj['source']
+                    box.source = find_path(obj['source'])
                 values = dict()
                 for attr in remaining_header:
                     v = obj.get(attr, '')

@@ -413,7 +413,7 @@ class Field( BaseField, RelativeLayout):
                 #Define if resized is on
                 touch.ud['do_resize'] = False
                 #Display params if duoble tap
-                if touch.is_double_tap and self.designer:
+                if touch.is_double_tap and hasattr(self,'designer'):
                     self.designer.display_field_attributes(self)
                 return True
             else:
@@ -1026,63 +1026,63 @@ class BezierField(ShapeField):
 
 class LinkedField(Field):
     "Abstrat class used to point out field that have children"
-
-class CopyField(LinkedField):
-    target = ObjectProperty()
-    skip_list = ListProperty(['name'])
-    default_attr = 'target'
-    attrs = {'target': FieldEditor}
-    # No type: will be overidden by target
-    not_exported = ['target', 'skip_list']
-
-    def callback_setter(self, src, dst, attr):
-        def inner(instance, value):
-            #print 'forwarding %s (%s) from %s to %s / %s' % (attr,value, src, instance, dst)
-            setattr(dst, attr, value)
-        return inner
-
-    def on_target(self, instance, target):
-        blank = target.__class__()
-        self.add_widget(blank)
-        # First, bind all params from target to blank
-        for attr in target.params:
-            if not attr in target.properties():
-                continue
-            kw = {attr: self.callback_setter(attr=attr, src=target, dst= blank)}
-            try:
-                target.unbind(**kw)
-            except KeyError: # binding does not exists
-                pass
-            if attr in self.skip_list:
-                continue
-            # Copy value
-            try:
-                setattr(blank, attr, getattr(target, attr))
-            except Exception, E:
-                import traceback
-                print 'Error while duplicating ', blank, attr, getattr(target,attr), ' Exception raised:',E
-                traceback.print_exc()
-            target.bind(**kw)
-        # Then bind all params from ME to blank
-        for attr in self.params:
-            if attr in ('target', 'parent', 'skip_list', 'default_attr', 'attrs'):
-                continue
-            if attr not in target.properties():
-                continue
-            kw = {attr: self.callback_setter(attr=attr, src=self, dst=blank)}
-            try:
-                self.unbind(**kw)
-            except KeyError:  # binding does not exists
-                pass
-            # Copy value
-            try:
-                setattr(blank, attr, getattr(self, attr))
-            except Exception, E:
-                import traceback
-                print 'Error while conveying', blank, attr, getattr(self,attr), ' Exception raised:',E
-                from conf import log
-                log(E, traceback.format_exc())
-            self.bind(**kw)
+#
+# class CopyField(LinkedField):
+#     target = ObjectProperty()
+#     skip_list = ListProperty(['name'])
+#     default_attr = 'target'
+#     attrs = {'target': FieldEditor}
+#     # No type: will be overidden by target
+#     not_exported = ['target', 'skip_list']
+#
+#     def callback_setter(self, src, dst, attr):
+#         def inner(instance, value):
+#             #print 'forwarding %s (%s) from %s to %s / %s' % (attr,value, src, instance, dst)
+#             setattr(dst, attr, value)
+#         return inner
+#
+#     def on_target(self, instance, target):
+#         blank = target.__class__()
+#         self.add_widget(blank)
+#         # First, bind all params from target to blank
+#         for attr in target.params:
+#             if not attr in target.properties():
+#                 continue
+#             kw = {attr: self.callback_setter(attr=attr, src=target, dst= blank)}
+#             try:
+#                 target.unbind(**kw)
+#             except KeyError: # binding does not exists
+#                 pass
+#             if attr in self.skip_list:
+#                 continue
+#             # Copy value
+#             try:
+#                 setattr(blank, attr, getattr(target, attr))
+#             except Exception, E:
+#                 import traceback
+#                 print 'Error while duplicating ', blank, attr, getattr(target,attr), ' Exception raised:',E
+#                 traceback.print_exc()
+#             target.bind(**kw)
+#         # Then bind all params from ME to blank
+#         for attr in self.params:
+#             if attr in ('target', 'parent', 'skip_list', 'default_attr', 'attrs'):
+#                 continue
+#             if attr not in target.properties():
+#                 continue
+#             kw = {attr: self.callback_setter(attr=attr, src=self, dst=blank)}
+#             try:
+#                 self.unbind(**kw)
+#             except KeyError:  # binding does not exists
+#                 pass
+#             # Copy value
+#             try:
+#                 setattr(blank, attr, getattr(self, attr))
+#             except Exception, E:
+#                 import traceback
+#                 print 'Error while conveying', blank, attr, getattr(self,attr), ' Exception raised:',E
+#                 from conf import log
+#                 log(E, traceback.format_exc())
+#             self.bind(**kw)
 
 class MaskField(LinkedField):
     # Take a single field and apply a mask based on the source of the mesh

@@ -259,7 +259,7 @@
                                     text: 'Save'
                                 Icon:
                                     icon: 'saveas'
-                                    on_press: root.save(root.current_template.template_name)
+                                    on_press: root.write_file_popup("Template File Save", root.save,root.current_template.template_name)
                                     text: 'Save As'
 #                                Icon:
 #                                    icon: 'library'

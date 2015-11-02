@@ -71,14 +71,16 @@ class BGLayoutMaker(FloatLayout):
         return ph
 
     def duplicate_ph(self):
+        from fields import BaseField
+        from kivy.uix.image import Image
         oph = self.selected_ph
-        ph = self.add_ph()
-        ph.size= oph.size
-        ph.angle = oph.angle
-        ph.selected = False
-        for c in oph.children:
-            print 'to dup', c
-        ph.selected = True
+        s,a = oph.size, oph.angle
+        if hasattr(oph, '_object'):
+            ph = self.add_img_ph(oph._object)
+        else:
+            ph = self.add_ph()
+        ph.size= s
+        ph.angle = a
 
     def remove_ph(self):
         if self.selected_ph:
@@ -96,11 +98,25 @@ class BGLayoutMaker(FloatLayout):
             img = Image(size=object.texture.size)
             img.texture = object.texture
         ph.size = img.size
+        ph._object = object
         ph.add_widget(img)
+        return ph
 
     def rotate_ph(self, angle=90):
         if self.selected_ph:
             self.selected_ph.angle += angle
+            self.selected_ph.angle%=360
+
+    def move_ph(self,direction):
+        if self.selected_ph:
+            if direction =='left':
+                self.selected_ph.x=0
+            elif direction =='down':
+                self.selected_ph.y = 0
+            elif direction =='right':
+                self.selected_ph.right = self.pages[self.page_index].right * self.pages[self.page_index].scale
+            elif direction =='up':
+                self.selected_ph.top = self.pages[self.page_index].top * self.pages[self.page_index].scale
 
     def update_selected_ph(self,w, h, x, y, rotation):
         print "called with w:%s; h:%s; x:%s; y:%s; rotation:%s"%(w,h,x,y,rotation)

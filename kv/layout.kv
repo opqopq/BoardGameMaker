@@ -4,8 +4,8 @@
 #:import FontIcon utils.fontello.FontIcon
 
 <SelectableScreenshoot@ToggleButtonBehavior+Image>:
-    size_hint:(None, None)
-    size: (200,200)
+    size_hint_y: None
+    height: 200
     group: 'screenshot'
     pos_hint:{'center_x':.5}
     canvas.before:
@@ -80,91 +80,96 @@
     size: CARD.width, CARD.height
 
 <BGLayoutMaker>:
-    Accordion:
+    Splitter:
+        sizable_from: 'right'
+        id: main_split
         size_hint_x: None
         width: 200
-        orientation: 'vertical'
-        AccordionItem:
-            title: "PlaceHolder"
-            collapse: False
-            GridLayout:
-                size_hint_x: .3
-                row_default_height: 30
-                cols: 1
-                Button:
-                    text: 'Add PlaceHolder'
-                    on_press:  root.add_ph()
-                Button:
-                    text: 'Export'
-                    on_press:  root.export_phs()
-        AccordionItem:
-            title: "Pages"
-            GridLayout:
-                size_hint_x: .3
-                row_default_height: 30
-                cols: 1
-                Button:
-                    text: 'Reset View'
-                    on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  250,120
-                Button:
-                    text: 'Rotate View'
-                    on_press: view.children[0].rotation-=90
-                Button:
-                    text: 'Add Page'
-                    on_press:  root.add_page()
-                Button:
-                    text: 'Remove Page'
-                    on_press:  root.remove_page()
-                Button:
-                    text: 'Add Mirror Page'
-                    on_press:  root.add_mirror_page()
-                Button:
-                    text: 'Clear Current Page'
-                    on_press:  root.clear_page()
-                Spinner:
-                    text: 'A4'
-                    values: ['A4','Letter']
-                BoxLayout:
-                    Label:
-                        text: "Width:"
-                    TextInput:
-                        id: page_width
-                        #:import PAGE conf.page_format
-                        text: "%.2d"%(PAGE.width/cm(1))
-                    Label:
-                        text: "cm"
-                BoxLayout:
-                    Label:
-                        text: "Height:"
-                    TextInput:
-                        id: page_height
-                        #:import PAGE conf.page_format
-                        text: "%.2d"%(PAGE.height/cm(1))
-                    Label:
-                        text: "cm"
-
-        AccordionItem:
-            title: "Images"
-            ScrollView:
+        Accordion:
+            #size_hint_x: None
+            #width: 200
+            orientation: 'vertical'
+            AccordionItem:
+                title: "PlaceHolder"
+                collapse: False
                 GridLayout:
-                    size_hint_y: None
-                    on_minimum_height: self.height = self.minimum_height
+                    size_hint_x: .3
+                    row_default_height: 30
                     cols: 1
-                    id: pictures
-                    spacing: 10
+                    Button:
+                        text: 'Add PlaceHolder'
+                        on_press:  root.add_ph()
+                    Button:
+                        text: 'Export'
+                        on_press:  root.export_phs()
+            AccordionItem:
+                title: "Pages"
+                GridLayout:
+                    size_hint_x: .3
+                    row_default_height: 30
+                    cols: 1
+                    Button:
+                        text: 'Reset View'
+                        on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  250,120
+                    Button:
+                        text: 'Rotate View'
+                        on_press: view.children[0].rotation-=90
+                    Button:
+                        text: 'Add Page'
+                        on_press:  root.add_page()
+                    Button:
+                        text: 'Remove Page'
+                        on_press:  root.remove_page()
+                    Button:
+                        text: 'Add Mirror Page'
+                        on_press:  root.add_mirror_page()
+                    Button:
+                        text: 'Clear Current Page'
+                        on_press:  root.clear_page()
+                    Spinner:
+                        text: 'A4'
+                        values: ['A4','Letter']
+                    BoxLayout:
+                        Label:
+                            text: "Width:"
+                        TextInput:
+                            id: page_width
+                            #:import PAGE conf.page_format
+                            text: "%.2d"%(PAGE.width/cm(1))
+                        Label:
+                            text: "cm"
+                    BoxLayout:
+                        Label:
+                            text: "Height:"
+                        TextInput:
+                            id: page_height
+                            #:import PAGE conf.page_format
+                            text: "%.2d"%(PAGE.height/cm(1))
+                        Label:
+                            text: "cm"
+
+            AccordionItem:
+                title: "Images"
+                ScrollView:
+                    GridLayout:
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
+                        cols: 1
+                        id: pictures
+                        spacing: 10
 
     Label:
         text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*page.scale, 29.7*page.scale)
-        size: root.width-400,30
-        x: 200
+        size: root.width-200-main_split.width,30
+        x: main_split.right
         y: 5
         size_hint: None, None
         halign: 'center'
         text_size: self.size
     Spinner:
         id: page_index
-        pos: 200, 30
-        size: root.width-400, 30
+        pos: main_split.right, 30
+        size: root.width-200 - main_split.width, 30
         size_hint: None, None
         text: "Page 1"
         values: ['Page %d'%(i+1) for i in range(len(root.pages))]
@@ -173,7 +178,7 @@
         size_hint: None, None
         width: root.width-200
         id: view
-        x: 200
+        x: main_split.right
         y: 60
         height: root.height - 100
         Page:
@@ -233,54 +238,91 @@
                     icon: 'cancel'
                     pos: self.parent.pos
                     size: self.parent.size
-
+        BoxLayout:
+            size_hint_y: None
+            height: 50
+            canvas.before:
+                Color:
+                    rgb: 0,0,1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            Button:
+                on_press: root.move_ph('up')
+                FontIcon:
+                    icon: 'up'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press: root.move_ph('down')
+                FontIcon:
+                    icon: 'down'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press: root.move_ph('left')
+                FontIcon:
+                    icon: 'left'
+                    pos: self.parent.pos
+                    size: self.parent.size
+            Button:
+                on_press:  root.move_ph('right')
+                FontIcon:
+                    icon: 'right'
+                    pos: self.parent.pos
+                    size: self.parent.size
+        BoxLayout:
+            size_hint_y: None
+            height: 50
+            canvas.before:
+                Color:
+                    rgb: 0,0,1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            Label:
+                text: "Angle:"
+            Slider:
+                min: 0
+                max: 360
+                value: root.selected_ph.angle if root.selected_ph else 0
+                on_value: if root.selected_ph: root.selected_ph.angle = args[1]
         GridLayout:
             cols: 2
             row_default_height: 30
             row_force_default: True
             Label:
-                text: "Width:"
+                text: "Width:(cm)"
                 size_hint_y: None
                 height: 30
             TextInput:
                 id: ph_w
-                text: "%.2f cm"%(root.selected_ph.scale *root.selected_ph.width/cm(1)) if root.selected_ph else ""
+                text: "%.2f"%(root.selected_ph.scale *root.selected_ph.width/cm(1)) if root.selected_ph else ""
             Label:
-                text: "Height:"
+                text: "Height:(cm)"
                 size_hint_y: None
                 height: 30
             TextInput:
                 id: ph_h
-                text: "%.2f cm"%(root.selected_ph.scale*root.selected_ph.height/cm(1)) if root.selected_ph else ""
+                text: "%.2f"%(root.selected_ph.scale*root.selected_ph.height/cm(1)) if root.selected_ph else ""
             Label:
-                text: "X:"
+                text: "X:(cm)"
                 size_hint_y: None
                 height: 30
             TextInput:
                 id: ph_x
-                text: "%.2fcm"%(root.selected_ph.x/cm(1)) if root.selected_ph else ""
+                text: "%.2f"%(root.selected_ph.x/cm(1)) if root.selected_ph else ""
             Label:
-                text: "Y:"
+                text: "Y:(cm)"
                 size_hint_y: None
                 height: 30
             TextInput:
                 id: ph_y
-                text: "%.2fcm"%(root.selected_ph.y/cm(1)) if root.selected_ph else ""
+                text: "%.2f"%(root.selected_ph.y/cm(1)) if root.selected_ph else ""
             Label:
                 text: "Angle:"
                 size_hint_y: None
                 height: 30
             TextInput:
                 id: ph_angle
-                text: '%s'%root.selected_ph.angle if root.selected_ph else ""
-
-             #\n\nX: / Right: %.2fcm \nY:  / Top: %.2fcm\n", , , root.selected_ph.right/cm(1) ,, root.selected_ph.top/cm(1)) if root.selected_ph else ""
-
-        Label:
-            text: "#%d\n\n%.2f cm x %.2f cm\n\nX: %.2fcm / Right: %.2fcm \nY: %.2fcm / Top: %.2fcm\n"%(root.selected_ph.index,root.selected_ph.scale *root.selected_ph.width/cm(1), root.selected_ph.scale*root.selected_ph.height/cm(1), root.selected_ph.x/cm(1), root.selected_ph.right/cm(1) ,root.selected_ph.y/cm(1), root.selected_ph.top/cm(1)) if root.selected_ph else ""
-            multiline: True
-            size: 200,300
-            size_hint: None, None
-            text_size: self.size
-            halign: 'center'
-            valign: 'middle'
+                text: '%.2d'%root.selected_ph.angle if root.selected_ph else ""
