@@ -140,10 +140,10 @@ class SplitMaker(Script):
     def execute(self):
         from conf import ENV, fill_env
         fill_env()
-        from template import BGTemplate, templateList
+        from template import BGTemplate
         from fields import SubImageField
-        from models import ImgPack
-        #sub_tmpl = templateList.register(BGTemplate.FromField(SubImageField()))
+        from sgm import StackPart
+        from kivy.app import App
         sub_tmpl_text='''
 <SplitTMPL@BGTemplate>
 #:import CARD conf.card_format
@@ -152,14 +152,19 @@ class SplitMaker(Script):
         size: root.size
         id: default'''
         sub_tmpl = BGTemplate.FromText(sub_tmpl_text)
-        templateList.register(sub_tmpl)
-        print sub_tmpl.__class__
         try:
-            img_path = ENV['file_selector'].selection[0]
+            current_part = App.get_running_app().root.ids['deck'].ids['stack'].last_selected
         except Exception, E:
             from conf import alert
-            alert('Select an image first')
+            alert('Select a Stack Item first')
             return
+
+        #Get Image of stack part
+        if getattr(self, tmplWidget):
+            cim = self.tmplWidget.toImage()
+            cim.texture.flip_vertical()
+
+        print 'use texture region'
 
         W_ratio = 1.0/self.num_col
         H_ratio = 1.0/self.num_row
@@ -167,7 +172,10 @@ class SplitMaker(Script):
             for j in range(self.num_row):
                 values = dict()
                 values['default.dimension'] = [img_path,i*W_ratio,j*H_ratio, W_ratio, H_ratio]
-                pack = ImgPack(sub_tmpl, ENV['Qt'], ENV['Dual'], values)
+                pack = StackPart()
+                pack.qt = current_part.qt
+                pack.dual = current_part.dual
+
                 ENV['stack'].append(pack)
 
 class MirrorBackground(Script):
@@ -189,7 +197,6 @@ class MirrorBackground(Script):
                 continue
             pack = p.Copy()
             pack.dual = not p.dual
-
             if self.grey_mode:
                 GS = BGTemplate.FromFile('@Templates/GreyScale.kv')[0]
                 if not pack.template:

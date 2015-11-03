@@ -19,6 +19,8 @@ right = page_format.right/cm(1)
 bottom = page_format.bottom/cm(1)
 top = page_format.top/cm(1)
 
+print 'width', width
+print 'left', left
 def center(x,y,w,h):
     return x+w/2, y+h/2
 
@@ -33,8 +35,8 @@ class PDFBook:
 
     def show(self):
         try:
-            from conf import startfile
-            startfile(self.dst)
+            from conf import start_file
+            start_file(self.dst)
         except ImportError:
             print 'on a mac: no startfile !'
 
@@ -61,7 +63,7 @@ class PDFBook:
             'pageface': face
         }
         #print 'step on', i, row, col, face, item, self.current_face, self.current_page_num
-        face_index = 0 if self.current_face=='F' else 1
+        face_index = 0 if self.current_face == 'F' else 1
         if self.current_face != face:
             self.current_face = face
             self.current_page_num[1-face_index] = i
@@ -94,9 +96,9 @@ class PDFBook:
             from conf import find_path
             src = find_path(src)
         if face == 'F':
-            X,Y = col * self.x+ left, height-(1+row)*self.y - top
+            X, Y = col * self.x + left, height-(1+row)*self.y - top
         else:
-            X,Y = width -(1+col)*self.x-right, height-(1+row)*self.y - top
+            X, Y = width - (1+col)*self.x - left, height-(1+row)*self.y - top
         self.pdf.drawImage(src, X*r_cm, Y*r_cm, self.x*r_cm, self.y*r_cm)
         #add line after image: they ll be above
         self.AddLines(X,Y,self.x,self.y)

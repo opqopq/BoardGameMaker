@@ -96,9 +96,10 @@ FONTELLO = {
     'icon-ccw': u'\ue85a',
     'icon-BorderField':  u'\ue85b',
     'icon-terminal': u'\ue85c',
-    'icon-saveas': u'\ue85d',
+    'icon-saveas3': u'\ue85d',
     'icon-saveas2': u'\ue85e',
     'icon-library': u'\ue85f',
+    'icon-saveas': u'\ue860',
 }
 from kivy.uix.label import Label
 from kivy.properties import StringProperty
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     from kivy.uix.stacklayout import StackLayout
     s = StackLayout()
     for index,icon in enumerate(FONTELLO):
-        i = FontIcon(icon = icon, color=(1,0,0,1),width=40, size_hint=(None, .15), font_size=index+10)
+        i = FontIcon(icon = icon, color=(1,0,0,1),width=40, size_hint=(None, .15), font_size=15)
         print icon
         s.add_widget(i)
     runTouchApp(s)

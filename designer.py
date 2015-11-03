@@ -154,16 +154,17 @@ class BGDesigner(FloatLayout):
         parent.add_widget(target)
 
     def insert_field(self, target, parent = None, is_root=False):
-        #Make Them designer still
-        if not is_root:
-            target.designed = True
-        target.designer = self
-        target.template = self.current_template
+        #First add it so that poshint/size hint are respected
         #why index as a second element: to ensure the order is not reversed
         if parent is None:
             self.ids.content.add_widget(target, len(self.ids.content.content.children))
         else:
             parent.add_widget(target)
+        #Make Them designer still
+        if not is_root:
+            target.designed = True
+        target.designer = self
+        target.template = self.current_template
         child = self.ids.fields.add_node(TreeFieldEntry(target=target, designer = self), parent)
         self.nodes[target] = child
         #Way to come back
@@ -241,6 +242,7 @@ class BGDesigner(FloatLayout):
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
+        print 'LOAD DESIGNE'*10, templateName
         #First clean a little
         self.clear()
         if '@' in templateName:
@@ -250,10 +252,11 @@ class BGDesigner(FloatLayout):
         else:
             template = templateList[templateName]
         self.tmplPath = templateName
-        #Create a c# opy
+        #Create a copy
         self.current_template = template
         ##self.insert_field(template, is_root=True)
 
+        print 'loading template', self.current_template.template_name
         #Have to do that, as chilndre is in the wrong way  !
         ordered_child = [c for c in template.children if isinstance(c, BaseField)]
         ordered_child.sort(key=lambda x:x.z, reverse=True)
@@ -329,9 +332,11 @@ class BGDesigner(FloatLayout):
         print 'export to kv', imports
         for node in self.ids.fields.root.nodes:
             field = node.target
+            print field, field.pos
             if field == self.current_template: #skip export of the root template: done above
                 continue
             t, i, d = field.export_field(level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
+            print field, t
             tmpls.extend(t)
             imports.extend(i)
             directives.extend(d)

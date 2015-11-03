@@ -349,17 +349,29 @@ class BGGeekBrowser(BoxLayout):
         for img, href in self.images:
             imgs.append(line % ({'img':img, 'href':href.replace('_mt', '')}))
         elts['Images'] = "\n".join(imgs)
+        try:
+            sub = tmpl%elts
+        except UnicodeDecodeError:
+            elts['Images'] = ''
         files = []
         flines = '<tr> <td><a href="%s">%s</a></td><td>%s</td>'
         for url, desc in self.files:
             files.append(flines%(url, url.split('/')[-1], desc))
         elts['Files'] = "\n".join(files)
         elts['Files'] = elts['Files'].encode('cp1252','ignore')
+        try:
+            sub = tmpl%elts
+        except UnicodeDecodeError:
+            elts['Files'] = ''
         links = []
         for url, desc in self.links:
             links.append(flines%(url, url.split('/')[-1], desc))
         elts['Links'] = "\n".join(links)
         elts['Links'] = elts['Links'].encode('cp1252', 'ignore')
+        try:
+            sub = tmpl%elts
+        except UnicodeDecodeError:
+            elts['Links'] = ""
         sub = tmpl%elts
         file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
         from conf import start_file

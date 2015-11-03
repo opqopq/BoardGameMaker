@@ -20,11 +20,11 @@
         icon: root.icon
         color: root.color if root.state == 'normal' else (.7,.7,.7,.7)
         font_size: root.font_size
-        size_hint_y: .9
+        size_hint_y: .6
     Label:
         text: root.text
-        size_hint_y: .1
-        font_size: root.font_size /2
+        size_hint_y: .4
+        font_size: int(root.font_size /2)
 
 <DynamicQuantity@BoxLayout>:
     size_hint_x: None
@@ -53,12 +53,10 @@
             #size: 15,17
             on_press: qt.text = str(max(int(qt.text)-1,0))
 
-
-
 <HiddenRemoveButton@ButtonBehavior+FontIcon>:
     size_hint_x: None
     width: 15
-    font_size: 50
+    font_size: 40
     #color: 0,0,0,1
 
 <RVImage@ToggleButtonBehavior+Image>:
@@ -313,130 +311,142 @@
 <BGDeckMaker>:
     #The Left tab with files/templates & values
     file_chooser: file_chooser
-    TabbedPanel:
-        folded: False
-        do_default_tab: False
-        tab_pos: 'top_left'
-        size_hint_x: None
-        width: 240 if not self.folded else 40
-        id: explorer
-        FloatLayout:
-            ScrollView:
-                id: tab1_content
-                #FileChooserListView:
-                FolderTreeView:
-                    root_options: {'text': 'Game Library'}
-                    size_hint_y: None
-                    on_minimum_height: self.height = self.minimum_height
-                    id: file_chooser
-                    rootpath: GAMEPATH
-                    filters: ['.jpg','.jpeg', '.png','.gif', '.kv']
-                    on_selected_node: root.load_folder(args[1].path if hasattr(args[1],'path') else "")
-            GridLayout:
-                id: tab2_content
-                cols: 1
-                Accordion:
-                    orientation: 'vertical'
-                    min_size: 10
-                    AccordionItem:
-                        collapse: False
-                        title: "File"
-                        GridLayout:
-                            cols: 1
-                            spacing: 10
-                            Icon:
-                                icon: "new"
-                                text: 'New'
-                                on_press: root.empty_stack()
-                            Icon:
-                                icon: "acrobat"
-                                text: 'PDF'
-                                on_press: root.write_file_popup("Choose PDF Export file", root.prepare_print, 'mydeck.pdf')
-                            Icon:
-                                text: 'Export'
-                                icon: 'export'
-                                on_press: root.write_file_popup("Choose CSV Export file", root.export_file, 'mydeck.csv')
-                    AccordionItem:
-                        title: "Fit Format"
-                        GridLayout:
-                            cols: 2
-                            row_force_default: True
-                            row_default_height: 30
-                            Label:
-                                text: 'Current'
-                            Label:
-                                text: "Fit Format"
-                            Label:
-                                text: "Card Width:"
-                            TextInput:
-                                id: cw
-                                text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
-                                on_text: CARD.updateW(self.text, unit.text)
-                            Label:
-                                text: "Card Height:"
-                            TextInput:
-                                id: ch
-                                text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
-                                on_text: CARD.updateH(self.text, unit.text)
-                            Label:
-                                text: "Unit:"
-                            Spinner:
-                                id: unit
-                                values: ['cm','px']
-                                text: 'cm'
-                            Label:
-                                text: "Keep Ratio:"
-                            CheckBox:
-                                ratio: 1
-                                active: True
-                                id: keep_ratio
-                                on_active: CARD.keep_ratio = self.active
-                            Label:
-                                text: "Force Fit Format:"
-                            CheckBox:
-                                ratio: 1
-                                active: False
-                                id: force_format
-                    AccordionItem:
-                        title: 'Templates'
-                        GridLayout:
-                            cols:1
-                            Button:
-                                text: 'Templates Library'
-                                on_press: root.load_template_lib()
-                            Button:
-                                text: 'Re Load Templates Library'
-                                on_press: root.load_template_lib(force_reload = True)
+    Splitter:
+        size_hint: .4,1
+        sizable_from: 'right'
+        max_size: 0.6*root.width
 
-                    AccordionItem:
-                        title: "Scripts"
-                        GridLayout:
-                            cols: 1
-                            #WatchedFolderTree:
-                            #    root_options: {'text': 'Script Folders'}
-                            #Splitter:
-                            #    sizable_from: 'top'
-                            ScriptTree:
-                                root_options: {'text': 'Script Library'}
+        TabbedPanel:
+            folded: False
+            do_default_tab: False
+            tab_pos: 'top_left'
+            #size_hint_x: None
+            #width: 240
+            id: explorer
+            FloatLayout:
+                ScrollView:
+                    id: tab1_content
+                    #FileChooserListView:
+                    FolderTreeView:
+                        root_options: {'text': 'Game Library'}
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
+                        id: file_chooser
+                        rootpath: GAMEPATH
+                        filters: ['.jpg','.jpeg', '.png','.gif', '.kv']
+                        on_selected_node: root.load_folder(args[1].path if hasattr(args[1],'path') else "")
+                GridLayout:
+                    id: tab2_content
+                    cols: 1
+                    Accordion:
+                        orientation: 'vertical'
+                        min_size: 10
+                        AccordionItem:
+                            collapse: False
+                            title: "File"
+                            ScrollView:
+                                GridLayout:
+                                    size_hint_y: None
+                                    on_minimum_height: self.height = self.minimum_height
+                                    cols: 1
+                                    spacing: 10
+                                    Icon:
+                                        icon: "new"
+                                        text: 'New'
+                                        on_press: root.empty_stack()
+                                    Icon:
+                                        icon: "acrobat"
+                                        text: 'PDF'
+                                        on_press: root.write_file_popup("Choose PDF Export file", root.prepare_print, 'mydeck.pdf')
+                                    Icon:
+                                        text: 'Export'
+                                        icon: 'export'
+                                        on_press: root.write_file_popup("Choose CSV Export file", root.export_file, 'mydeck.csv')
+                                    Icon:
+                                        text: 'Empty Img Cache'
+                                        icon: 'ccw'
+                                        on_press: from kivy.cache import Cache; Cache.remove('kv.image'); Cache.remove('kv.texture')
+                        AccordionItem:
+                            title: "Fit Format"
+                            GridLayout:
+                                cols: 2
+                                row_force_default: True
+                                row_default_height: 30
+                                Label:
+                                    text: 'Current'
+                                Label:
+                                    text: "Fit Format"
+                                Label:
+                                    text: "Card Width:"
+                                TextInput:
+                                    id: cw
+                                    text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                                    on_text: CARD.updateW(self.text, unit.text)
+                                Label:
+                                    text: "Card Height:"
+                                TextInput:
+                                    id: ch
+                                    text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                                    on_text: CARD.updateH(self.text, unit.text)
+                                Label:
+                                    text: "Unit:"
+                                Spinner:
+                                    id: unit
+                                    values: ['cm','px']
+                                    text: 'cm'
+                                Label:
+                                    text: "Keep Ratio:"
+                                CheckBox:
+                                    ratio: 1
+                                    active: True
+                                    id: keep_ratio
+                                    on_active: CARD.keep_ratio = self.active
+                                Label:
+                                    text: "Force Fit Format:"
+                                CheckBox:
+                                    ratio: 1
+                                    active: False
+                                    id: force_format
+                        AccordionItem:
+                            title: 'Templates'
+                            GridLayout:
+                                cols:1
+                                Button:
+                                    text: 'Templates Library'
+                                    on_press: root.load_template_lib()
+                                Button:
+                                    text: 'Re Load Templates Library'
+                                    on_press: root.load_template_lib(force_reload = True)
 
-        #FoldedTabbedPanelItem:
-        TabbedPanelHeader:
-            panel: explorer
-            content: tab1_content.__self__
-            FontIcon:
-                pos: self.parent.pos
-                size: self.parent.size
-                color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
-                font_size: 30
-                icon: "book"
-        TabbedPanelHeader:
-            content: tab2_content.__self__
-            FontIcon:
-                pos: self.parent.pos
-                size: self.parent.size
-                color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
-                font_size: 30
-                icon: "settings"
+                        AccordionItem:
+                            title: "Scripts"
+                            GridLayout:
+                                cols: 1
+                                #WatchedFolderTree:
+                                #    root_options: {'text': 'Script Folders'}
+                                #Splitter:
+                                #    sizable_from: 'top'
+                                ScriptTree:
+                                    root_options: {'text': 'Script Library'}
+
+            #FoldedTabbedPanelItem:
+            TabbedPanelHeader:
+                panel: explorer
+                content: tab1_content.__self__
+                FontIcon:
+                    pos: self.parent.pos
+                    size: self.parent.size
+                    color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
+                    font_size: 30
+                    icon: "book"
+            TabbedPanelHeader:
+                content: tab2_content.__self__
+                FontIcon:
+                    pos: self.parent.pos
+                    size: self.parent.size
+                    color: (1,1,1,1) if self.parent.state != 'normal' else (1,1,1,.2)
+                    font_size: 30
+                    icon: "settings"
     BoxLayout:
         orientation: 'vertical'
         Splitter:

@@ -105,6 +105,7 @@ class AdvancedTextEditor(TextEditor):
             setattr(self.target,keyname, args[0].text)
             t.stored_value = args[0].text
             ti.text = args[0].text
+            print 'setting text', '\n' in args[0].text
 
         #Create callback for button that would start a modal
         def button_callback():
@@ -112,9 +113,44 @@ class AdvancedTextEditor(TextEditor):
             cp_width = min(Window.size)
             size = Vector(Window.size)*.9
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-            filters = getattr(self.target, '%s_filters'%keyname, [])
-            #filters= ['*.jpg', '*.png','*.jpeg','*.gif']
+            print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
             popup = TextEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = str(getattr(self.target,keyname)), multiline = True)
+            popup.open()
+
+        b.on_press = button_callback
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
+class RichTextEditor(TextEditor):
+    def getWidgets(self, name, keyname, **kwargs):
+        from kivy.uix.boxlayout import BoxLayout
+        from kivy.uix.button import Button
+
+        ti = TextEditor.getWidgets(self, name, keyname, **kwargs)
+        ti.size_hint_x = .8
+
+        b = Button(text='...')
+
+        t = BoxLayout(orientation='horizontal')
+        t.add_widget(ti)
+        t.add_widget(b)
+
+        def cbtxt(*args):
+            setattr(self.target,keyname, args[0].text)
+            t.stored_value = args[0].text
+            ti.text = args[0].text
+            print 'setting text', '\n' in args[0].text
+
+        #Create callback for button that would start a modal
+        def button_callback():
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)*.9
+            cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
+            print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
+            popup = RichTextEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = str(getattr(self.target,keyname)), multiline = True)
             popup.open()
 
         b.on_press = button_callback
@@ -962,6 +998,9 @@ class TextEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
     text = StringProperty()
+
+class RichTextEditorPopup(TextEditorPopup):
+    pass
 
 class CodeEditorPopup(Popup):
     name = StringProperty()

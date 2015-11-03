@@ -131,20 +131,22 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             if self.is_all_folder:
                 #print self, self.source, self.name, self.is_all_folder
                 #It is a folder, add all the imge from folder
-                for fiv in self.parent.children:
-                    if fiv.is_all_folder: continue
-                    if fiv.name.endswith('.csv'): continue
+                for name in [x for x in os.listdir(self.is_all_folder) if x.endswith(FILE_FILTER)]:
+                ##for fiv in self.parent.children:
+                    ##if fiv.is_all_folder: continue
+                    if name.endswith('.csv'): continue
                     box = StackPart()
-                    box.name = fiv.name
-                    box.source = os.path.join(self.is_all_folder, fiv.name)
-                    box.qt =qt
+                    #box.name = fiv.name
+                    box.name = name
+                    box.source = os.path.join(self.is_all_folder, name)
+                    box.qt = qt
                     box.verso = verso
-                    if fiv.name.endswith('.kv'):
+                    if name.endswith('.kv'):
                         if self.is_all_folder.startswith(gamepath):
                             fold = relpath(self.is_all_folder, gamepath)
                         else:
                             fold = self.is_all_folder
-                        box.template = "@%s"%os.path.join(fold, fiv.name)
+                        box.template = "@%s"%os.path.join(fold, name)
                         box.realise()
                     stack.add_widget(box)
                     from kivy.base import EventLoop
@@ -247,14 +249,15 @@ class StackPart(ButtonBehavior, BoxLayout):
             self.realise(True)
         if self.selected:
             from kivy.uix.boxlayout import BoxLayout
-            BOX = BoxLayout(orientation='vertical', size_hint=(None, None))
+
+            BOX = BoxLayout(size_hint=(None, None), orientation = 'vertical', spacing=10)
             #Add Remove Button
             b = Factory.get('HiddenRemoveButton')(icon='trash')
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
             #self.add_widget(b)
             from kivy.animation import Animation
             W = 100
-            if self.template:#it is a template: add edit button
+            if self.template:#it is a template: add edit & export buttons
                 W = 90
                 be = Factory.get('HiddenRemoveButton')(icon='edit')
                 def inner(*args):
@@ -287,8 +290,13 @@ class StackPart(ButtonBehavior, BoxLayout):
                 be.bind(on_press = inner)
                 #self.add_widget(be)
                 BOX.add_widget(be)
+                #Img Export button
+                bx = Factory.get('HiddenRemoveButton')(icon='export')
+                bx.bind(on_press=lambda x: self.img_export())
+                BOX.add_widget(bx)
                 anim = Animation(width=W, duration=.1)
                 anim.start(be)
+                anim.start(bx)
             BOX.add_widget(b)
             self.add_widget(BOX)
             anim = Animation(width=W, duration=.1)
@@ -304,6 +312,28 @@ class StackPart(ButtonBehavior, BoxLayout):
             setattr(blank, attr, getattr(self,attr))
         blank.ids['img'].texture = self.ids['img'].texture
         return blank
+
+    def img_export(self, dst='export.png'):
+        item = self
+        from PIL.Image import frombuffer
+        if item.tmplWidget:#it has been modified
+            tmplWidget = item.tmplWidget
+        else:
+            from template import BGTemplate
+            tmplWidget = BGTemplate.FromFile(item.template)
+            if tmplWidget:
+                #only taking the last one
+                tmplWidget = tmplWidget[-1]
+            else:
+                raise NameError('No such template: '+ item.template)
+            print 'here to be added: adding on realizer, exporting & then removing. more tricky'
+            if item.values:
+                tmplWidget.apply_values(item.values)
+        cim = tmplWidget.toImage(for_print=True)
+        pim = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
+        pim.save('export.png')
+        from conf import start_file
+        start_file('export.png')
 
 class TemplateEditTree(TreeView):
     "Use in Template Edit Popup to display all possible fields"
@@ -421,6 +451,11 @@ class BGDeckMaker(BoxLayout):
         #Now add the advancement gauge
         progress = self.ids['load_progress']
         progress.value = 0
+        #ensure the stop button is reachable
+        self.ids['stop_action'].width = 80
+        self.ids['stop_action'].text = 'Stop'
+        self.cancel_action = False
+
         size, book = prepare_pdf(self.ids['stack'], FFORMAT, dst=dst)
         progress.max = size
         from kivy.clock import Clock
@@ -430,12 +465,18 @@ class BGDeckMaker(BoxLayout):
             step_counter.pop()
             progress.value +=1
             book.generation_step()
-            if not step_counter:
+            print step_counter, (not step_counter), self.cancel_action
+            if (not step_counter) or self.cancel_action:
+                self.cancel_action = True
                 Clock.unschedule(inner)
+                self.ids['stop_action'].width = 0
+                self.ids['stop_action'].text = ''
+                progress.value = 0
                 book.save()
                 book.show()
                 from conf import alert
                 alert('PDF Export completed')
+                return False
 
         Clock.schedule_interval(inner,.1)
         return True
@@ -475,7 +516,6 @@ class BGDeckMaker(BoxLayout):
         Clock.schedule_interval(inner, .1)
 
     def load_folder(self, folder):
-        self.cancel_action = False
         if not folder:
             return
         progress = self.ids['load_progress']
@@ -490,6 +530,7 @@ class BGDeckMaker(BoxLayout):
         #ensure the stop button is reachable
         self.ids['stop_action'].width = 80
         self.ids['stop_action'].text = 'Stop'
+        self.cancel_action = False
         def inner(*args):
             if docs:
                 _f = docs.pop()
@@ -603,12 +644,28 @@ class BGDeckMaker(BoxLayout):
                 stack.add_widget(box)
                 boxes.append(box)
             boxes.reverse()
+
+            progress = self.ids['load_progress']
+            progress.value = 0
+            progress.max = len(boxes)
+            #ensure the stop button is reachable
+            self.ids['stop_action'].width = 80
+            self.ids['stop_action'].text = 'Stop'
+            self.cancel_action = False
+
             def inner(*args):
+                progress.value +=1
                 b= boxes.pop()
                 b.realise(withValue=True)
-                if not boxes:
+                if self.cancel_action or not boxes:
+                    self.cancel_action = True
                     Clock.unschedule(inner)
+                    self.ids['stop_action'].width = 0
+                    self.ids['stop_action'].text = ''
+                    progress.value = 0
                     print 'Import/Inner is over'
+                    return False
+
             Clock.schedule_interval(inner, .1)
 
     def export_file(self, filepath='mycsvfile.csv'):
@@ -648,7 +705,6 @@ class BGDeckMaker(BoxLayout):
             for c in cards:
                 if c['values']:
                     my_dict.update(**c['values'])
-
             with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
                 fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
                 w = csv.DictWriter(f, fields_order)

@@ -363,6 +363,55 @@
                 text: "Cancel"
                 on_press: root.dismiss()
 
+<-RichTextEditorPopup@TextEditorPopup>
+    #size_hint: None, None
+    title: 'Rich Text Edition for %s'%self.name
+    GridLayout:
+        cols: 1
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            canvas.before:
+                Color:
+                    rgb: 0,0,0
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            Button:
+                text: "Italic"
+                on_press: tpicker.insert_text('[i] [/i]')
+            Button:
+                text: 'Bold'
+                on_press: tpicker.insert_text('[b] [/b]')
+            Button:
+                text: 'Font'
+                on_press: tpicker.insert_text('[font=] [/font]')
+            Button:
+                text: "Size"
+                on_press: tpicker.insert_text('[size=] [/size]')
+            Button:
+                text: 'color'
+                on_press: tpicker.insert_text('[color=#] [/color]')
+            Button:
+                text: 'sub'
+                on_press: tpicker.insert_text('[sub] [/sub]')
+            Button:
+                text: 'sup'
+                on_press: tpicker.insert_text('[sup] [/sup]')
+        CodeInput:
+            id: tpicker
+            text: unicode(root.text,'latin-1')
+        BoxLayout:
+            size_hint: 1, None
+            height: 30
+            orientation: "horizontal"
+            Button:
+                text: "Apply"
+                on_press: root.dismiss(); root.cb(tpicker)
+            Button:
+                text: "Cancel"
+                on_press: root.dismiss()
+
 <CodeEditorPopup@Popup>
     size_hint: None, None
     title: 'Code Edition for %s'%self.name

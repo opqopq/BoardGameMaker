@@ -32,6 +32,14 @@
 	ImageField:
 		allow_stretch: True
 		keep_ratio: False
+		id: Right
+		pos: root.card_depth+root.card_width, 3*root.card_depth/2
+		size:  root.card_depth, root.card_height
+		source: Left.source
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
 		pos: root.card_depth, 3*root.card_depth/2
 		size: root.card_width,root.card_height
 		id: Back
@@ -46,10 +54,11 @@
 	ImageField:
 		allow_stretch: True
 		keep_ratio: False
-		#id: Right
-		pos: root.card_depth+root.card_width, 3*root.card_depth/2
-		size:  root.card_depth, root.card_height
-		source: Left.source
+		pos: root.card_depth, root.card_depth/2
+		size: root.card_width, root.card_depth
+		id: Bottom
+		source: Top.source
+
 
 	ImageField:
 		allow_stretch: True
@@ -58,13 +67,6 @@
 		pos: 2*root.card_depth + root.card_width, 3*root.card_depth/2
 		size: root.card_width, root.card_height
 
-	ImageField:
-		allow_stretch: True
-		keep_ratio: False
-		pos: root.card_depth, root.card_depth/2
-		size: root.card_width, root.card_depth
-		#id: Bottom
-		source: Top.source
 
 	RectangleField:
 		pos: 2*root.card_depth+2*root.card_width,3*root.card_depth/2

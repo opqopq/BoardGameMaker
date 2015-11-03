@@ -47,7 +47,7 @@
                 width: 100
             TextInput:
                 id: target
-                text: root.default_name
+                text: join(fselect.path,root.default_name)
         BoxLayout:
             size_hint_y: None
             height: 30

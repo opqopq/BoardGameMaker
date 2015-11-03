@@ -7,8 +7,7 @@ todos= [
     "change stackpart selected to toggle button behavior",
     "hy does text editor appears when export liloops.kv",
     "redo styles in designer switching to a popup with all style params",
-    "when loading a deck, ensure taht kv file need not to be reloaded at each line",
-    "add progress bar on import, otherwise risk of changing"
+    "when loading a deck, ensure taht kv file need not to be reloaded at each line: bummer: it does",
 ]
 
 for i,todo in enumerate(todos):

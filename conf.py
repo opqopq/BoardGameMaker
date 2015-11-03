@@ -128,7 +128,6 @@ def CreateConfigPanel():
 #Path Handling functions
 
 from os.path import normpath, join, split, sep
-from kivy.resources import resource_add_path, resource_find
 
 def path_reader(path):
     #normalize any path to be read according to the current OS

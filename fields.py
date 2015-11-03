@@ -42,13 +42,30 @@ def compare_to_root(rootsize,fieldsize):
     rounded_y = round(yratio,2)
     if rounded_y == 1:
         str_y = 'root.height'
+    elif rounded_y == 0:
+        str_y = '0'
     else:
         str_y = '%.2f * root.height' % rounded_y
-    if rounded_x== 1:
+    if rounded_x == 1:
         str_x = 'root.width'
+    elif rounded_x == 0:
+        str_x = '0'
     else:
         str_x = '%.2f * root.width' % rounded_x
     return "%s, %s" % (str_x, str_y)
+
+def get_hint(rootsize, fieldsize, is_pos=False):
+    "Take 2 size or pos tuple and return a tuple made of size_hint of pos_hint"
+    xa, ya = rootsize
+    xb, yb = fieldsize
+    assert xa and ya
+    xratio = float(xb)/float(xa)
+    yratio = float(yb)/float(ya)
+    rounded_x = round(xratio,2)
+    rounded_y = round(yratio,2)
+    if is_pos:
+        return {'x': rounded_x, 'y': rounded_y}
+    return rounded_x, rounded_y
 
 class BaseField(HoverBehavior, FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
@@ -74,7 +91,10 @@ class BaseField(HoverBehavior, FocusBehavior):
     not_exported = ['template', "directives", "code_behind", 'sel_radius', 'cls',
                     'focus','focused', 'width','height','parent','designed','children',
                     'selected','right','border_point','hovered', 'top','center','center_x','center_y','x','y',
-                    'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y']
+                    'texture', 'texture_size', 'Type', 'size_hint_x','size_hint_y',
+                    #Stuff from contextnehavior
+                    '_requested_keyboard','keyboard','_keyboard',
+                    ]
 
     #This one are used for easier display of the template as a widget
     #In KV File, just add some entry into vars (attrName, Editor) to have the desired entry in Deck Widget Tree
@@ -161,7 +181,12 @@ class BaseField(HoverBehavior, FocusBehavior):
         if designed:
             drule = [x for x in Builder.rules if x[0].key == 'designed'][0][1]
             Builder._apply_rule(self, drule, drule)
-
+            #Change relative pos-hint /size hint for
+            if self.pos_hint:
+                self.pos = self.pos_hint['x']*self.parent.width, self.pos_hint['y'] * self.parent.height
+                self.pos_hint = {}
+                self.size =  self.size_hint[0]*self.parent.width, self.size_hint[1]*self.parent.height
+                self.size_hint = None, None
     def prepare_export(self):
         "Use to create a subclassable list of not exported field"
         self.black_list = set()
@@ -197,7 +222,6 @@ class BaseField(HoverBehavior, FocusBehavior):
         res = self.getDelta(blank)
         if restrict:#remove duplicate entr like pos/x/y or size/width/height
             res.difference_update(self.black_list)
-        print 'Changes from', self, ': ', res
         return res
 
     def getDelta(self, other):
@@ -247,7 +271,6 @@ class BaseField(HoverBehavior, FocusBehavior):
         box = box_klass()
         if len(self.params)==1:
             fname = self.params.keys()[0]
-            print 'adding single box for',name
             box.orientation="horizontal"
             box.size_hint = 1,None
             box.height = 30
@@ -262,7 +285,6 @@ class BaseField(HoverBehavior, FocusBehavior):
 
             box.add_widget(Label(text="--%s--"%name,size_hint=(1,None), height=20))
             for fname in self.params:
-                print '\tadding box for',fname , ' of', name
                 b = box_klass(orientation='horizontal', size_hint=(1,None), height=30)
                 if add_label:
                     b.add_widget(Label(text=name, size_hint=(None,None), height=30))
@@ -305,10 +327,17 @@ class BaseField(HoverBehavior, FocusBehavior):
                 imports.append(field.src.split('@')[-1])
         if field.directives:
             directives.extend(field.directives)
-        for attr in field.getChangedAttributes(restrict=True):
+        changes_attrs = field.getChangedAttributes(True)
+        if 'size_hint' in changes_attrs:
+            if 'size' in changes_attrs:
+                changes_attrs.remove("size")
+        if 'pos_hint' in changes_attrs:
+            if 'pos' in changes_attrs:
+                changes_attrs.remove('pos')
+        for attr in changes_attrs:
             #Check if code behind:
             if attr in field.code_behind:
-                #print 'Attr %s has been changed and should be written down. One could write the code behind:'%attr, field.code_behind[attr]
+                print 'Attr %s has been changed and should be written down. One could write the code behind:'%attr, field.code_behind[attr]
                 tmpls.append('%s%s: %s'%(prepend, attr, field.code_behind[attr]))
                 continue
             #convert name to ID
@@ -326,7 +355,7 @@ class BaseField(HoverBehavior, FocusBehavior):
             elif vtype in  (type({}), ObservableDict):
                 for _v in value:
                     try:
-                        _uni = unicode(value[_v], 'latin-1')
+                        _uni = uniécode(value[_v], 'latin-1')
                     except TypeError: #can not coerce float in latin -1
                         _uni = unicode(value[_v])
                     if isfile(_uni) and save_relpath:
@@ -335,7 +364,7 @@ class BaseField(HoverBehavior, FocusBehavior):
             elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
                 if attr in ("size","pos"):
                     if relativ:
-                        tmpls.append('%s%s: %s'%(prepend, attr, compare_to_root(self.template.size,value)))
+                        tmpls.append('%s%s: %s'%(prepend, "%s_hint"%attr, get_hint(self.template.size,value, attr=='pos')))
                         continue
                     if save_cm:
                         tmpls.append('%s%s: '%(prepend,attr)+', '.join(["cm(%.2f)"%(v/cm(1)) for v in value]))
@@ -602,11 +631,11 @@ class TextField(Label, FloatField):
     halign_values = ['left','center','right','justify']
     valign_values = ['bottom','middle','top']
     attrs = OrderedDict([
-        ('text', AdvancedTextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
+        ('text', RichTextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
         ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('color', ColorEditor),
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
-        ('font', FontChoiceEditor) ,
+        ('font', FontChoiceEditor) , ('markup', BooleanEditor),
         ('padding_x', IntEditor), ('padding_y', IntEditor)
     ])
     # ('font_size', IntEditor), ('font_name', FontChoiceEditor), ('bold', BooleanEditor),  ('italic', BooleanEditor)])
@@ -649,7 +678,7 @@ class TextField(Label, FloatField):
         self._single_line_text = self.text.replace('\n', '')
         if self.multiline:
             from textwrap import wrap
-            self.text = '\n'.join(wrap(self.text))
+            #self.text = '\n'.join(wrap(self.text))
         else:
             self.text = self._single_line_text
         if self.autofit:
