@@ -1,13 +1,29 @@
 #:import LayoutPlaceHolder layout.LayoutPlaceHolder
-#:import LayoutEditor layout.LayoutEditor
 #:import CARD conf.card_format
 #:import FontIcon utils.fontello.FontIcon
+#:import TemplateEditTree sgm.TemplateEditTree
+
+<SelectableAction@ToggleButtonBehavior+FontIcon>:
+    group: 'screenshot'
+    size_hint: None, None
+    size: 200,200
+    canvas.before:
+        Color:
+            rgb: (0,0,0) if self.state=='normal' else (.7,.7,.7)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    on_press: if args[0].last_touch.is_double_tap: self.lph.add_all_imgs()
+    icon: 'apply'
+    font_size: 80
 
 <SelectableScreenshoot@ToggleButtonBehavior+Image>:
-    size_hint_y: None
-    height: 200
+    #size_hint_y: None
+    #height: 200
     group: 'screenshot'
-    pos_hint:{'center_x':.5}
+    #pos_hint:{'center_x':.5}
+    size_hint: None, None
+    size: 200,200
     canvas.before:
         Color:
             rgb: (0,0,0) if self.state=='normal' else (.7,.7,.7)
@@ -16,313 +32,678 @@
             size: self.size
     on_press: if args[0].last_touch.is_double_tap: self.lph.add_img_ph(self)
 
-<Page@ScatterLayout>:
+#:import page_format conf.page_format
+<Page@Scatter>:
     id: page
     index: 0
     scale: .35
     do_rotation: False
-    pos: 250,120
+    pos: (self.parent.parent.ids['main_split'].width + 50) if self.parent else 250, 80
     size_hint: None, None
     canvas.before:
         Color:
-            rgb: 1,1,1
+            rgb: 1,0,0
         Rectangle:
             size: self.size
-    size: cm(21), cm(29.7)
-
-<LayoutEditor>
-    size_hint: None, None
-    size: 400,250
-    GridLayout:
-        cols:2
-        row_force_default: True
-        row_default_height: 30
-        Label:
-            text:"Width(cm):"
-        TextInput:
-            id: phw
-            text: "%.2f"%(root.target.scale *root.target.width/cm(1))
-            #on_text: root.update_selected_ph()
-        Label:
-            text:"Height(cm):"
-        TextInput:
-            id: phh
-            text: "%.2f"%(root.target.scale *root.target.height/cm(1))
-            #on_text: root.update_selected_ph()
-        Label:
-            text:"X(cm):"
-        TextInput:
-            id: phx
-            text: "%.2f"%(root.target.scale *root.target.x/cm(1))
-            #on_text: root.update_selected_ph()
-        Label:
-            text:"Y(cm):"
-        TextInput:
-            id: phy
-            text: "%.2f"%(root.target.scale *root.target.y/cm(1))
-            #on_text: root.update_selected_ph()
-        Label:
-            text:"Rotation(°):"
-        TextInput:
-            id: phr
-            text: "%d"%(root.target.rotation)
-            #on_text: root.update_selected_ph()
-        Button:
-            text: "Apply"
-            on_press: root.dismiss(); root.layout_maker.update_selected_ph(phw.text, phh.text, phx.text, phy.text, phr.text)
-        Button:
-            text: "Cancel"
-            on_press: root.dismiss()
+        Color:
+            rgb: 1,1,1
+        Rectangle:
+            size: self.width-page_format.left-page_format.right, self.height-page_format.top-page_format.bottom
+            pos: page_format.left, page_format.bottom
+    size: page_format.width, page_format.height
 
 <LayoutPlaceHolder>:
-    bg_color: (0,0,1,.8) if self.selected else (0,0,1,.3)
+    stack: None
+    text: '#%s'%self.index if self.layout_maker and self.layout_maker.display_index else ""
+
     #:import CARD conf.card_format
     size: CARD.width, CARD.height
+    pos: page_format.left, page_format.bottom
+    #:import ImageField fields.ImageField
+    bg_color: (0,0,1,.7) if self.selected else ((0,0,1,.3) if self.stack is None else (0,0,0,0))
+    ImageField:
+        size: root.size
+        pos: root.pos
+        id: img
+        keep_ratio: False
+        allow_stretch: True
+        angle: root.angle
 
 <BGLayoutMaker>:
+    #:import BGTemplate template.BGTemplate
+    on_selected_ph: if self.selected_ph and isinstance(self.selected_ph.children[0], BGTemplate): tmpltree.load_tmpl(self.selected_ph.children[0])
     Splitter:
         sizable_from: 'right'
         id: main_split
         size_hint_x: None
         width: 200
+        max_size: root.width
+        min_size: 200
+        strip_size: '4pt'
+        on_width: view.children[0].x = args[1] + 50
         Accordion:
             #size_hint_x: None
             #width: 200
             orientation: 'vertical'
             AccordionItem:
-                title: "PlaceHolder"
+                title: "Images"
                 collapse: False
+                ScrollView:
+                    StackLayout:
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
+                        #cols: 1
+                        orientation: 'lr-tb'
+                        id: pictures
+                        spacing: 10
+            AccordionItem:
+                title: "PlaceHolder"
                 GridLayout:
-                    size_hint_x: .3
-                    row_default_height: 30
+                    #size_hint_x: .3
+                    #row_default_height: 30
+                    #row_force_default: True
                     cols: 1
-                    Button:
+                    Icon:
                         text: 'Add PlaceHolder'
-                        on_press:  root.add_ph()
-                    Button:
-                        text: 'Export'
-                        on_press:  root.export_phs()
+                        icon: 'add'
+                        on_press: root.add_ph()
+                    Icon:
+                        text: 'Fill Page'
+                        icon: 'apply'
+                        on_press: root.auto_fill_page()
+                    Icon:
+                        text: 'Fill Book'
+                        icon: 'EffectField'
+                        on_press: root.magic_fill()
             AccordionItem:
                 title: "Pages"
-                GridLayout:
-                    size_hint_x: .3
-                    row_default_height: 30
-                    cols: 1
-                    Button:
-                        text: 'Reset View'
-                        on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  250,120
-                    Button:
-                        text: 'Rotate View'
-                        on_press: view.children[0].rotation-=90
-                    Button:
-                        text: 'Add Page'
-                        on_press:  root.add_page()
-                    Button:
-                        text: 'Remove Page'
-                        on_press:  root.remove_page()
-                    Button:
-                        text: 'Add Mirror Page'
-                        on_press:  root.add_mirror_page()
-                    Button:
-                        text: 'Clear Current Page'
-                        on_press:  root.clear_page()
-                    Spinner:
-                        text: 'A4'
-                        values: ['A4','Letter']
-                    BoxLayout:
-                        Label:
-                            text: "Width:"
-                        TextInput:
-                            id: page_width
-                            #:import PAGE conf.page_format
-                            text: "%.2d"%(PAGE.width/cm(1))
-                        Label:
-                            text: "cm"
-                    BoxLayout:
-                        Label:
-                            text: "Height:"
-                        TextInput:
-                            id: page_height
-                            #:import PAGE conf.page_format
-                            text: "%.2d"%(PAGE.height/cm(1))
-                        Label:
-                            text: "cm"
-
-            AccordionItem:
-                title: "Images"
                 ScrollView:
                     GridLayout:
                         size_hint_y: None
                         on_minimum_height: self.height = self.minimum_height
                         cols: 1
-                        id: pictures
-                        spacing: 10
+                        Icon:
+                            text: 'Rotate View'
+                            on_press: view.children[0].rotation-=90
+                            icon: 'cw'
+                        Icon:
+                            text: 'Add Page'
+                            icon: 'add'
+                            on_press:  root.add_page()
+                        Icon:
+                            text: 'Remove Page'
+                            on_press:  root.remove_page()
+                            icon: 'cancel'
+                        Icon:
+                            text: 'Add Mirror Page'
+                            on_press:  root.add_mirror_page()
+                            icon: 'Copy'
+                        Icon:
+                            text: 'Clear Current Page'
+                            on_press:  root.clear_page()
+                            icon: 'new'
+                        Label:
+                            text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*view.children[0].scale, 29.7*view.children[0].scale) if view.children else ""
+                            #size: root.width-ph_details.width-main_split.width,30
+                            halign: 'center'
+                            text_size: self.size
+            AccordionItem:
+                title: 'Book'
+                ScrollView:
+                    GridLayout:
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
+                        cols: 1
+                        Icon:
+                            text: 'Reset View'
+                            icon: 'TransfoField'
+                            on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  main_split.right+50 ,80
+                        Icon:
+                            text: 'Toggle #Index'
+                            icon: 'contrast'
+                            on_press: root.display_index = not(root.display_index)
+                        Icon:
+                            text: 'Export Layout'
+                            icon: 'export'
+                            on_press: root.export_phs()
+                        Icon:
+                            text: 'Empty Book'
+                            icon: 'trash'
+                            on_press: root.new_book()
+                        Icon:
+                            text: 'Refresh Images'
+                            icon: 'cw'
+                            on_press: root.update_images()
 
-    Label:
-        text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*page.scale, 29.7*page.scale)
-        size: root.width-200-main_split.width,30
-        x: main_split.right
-        y: 5
-        size_hint: None, None
-        halign: 'center'
-        text_size: self.size
     Spinner:
         id: page_index
-        pos: main_split.right, 30
-        size: root.width-200 - main_split.width, 30
+        pos: main_split.right, 0
+        size: root.width-ph_details.width- main_split.width - 40, 40
         size_hint: None, None
         text: "Page 1"
         values: ['Page %d'%(i+1) for i in range(len(root.pages))]
         on_text: root.set_page(args[1])
+    Button:
+        text: "<"
+        on_press: page_index.text = 'Page %d'%(root.page_index if root.page_index else len(root.pages))
+        x: page_index.right
+        size_hint: None, None
+        size: 20,40
+    Button:
+        text: ">"
+        x: page_index.right+20
+        size_hint: None, None
+        size: 20,40
+        on_press: page_index.text =  'Page %d'%((root.page_index+2)%len(root.pages))
+    ProgressBar:
+        id: progress
+        pos: page_index.right+40, 0
+        size: 160, 40
+        size_hint: None, None
     StencilView:
         size_hint: None, None
         width: root.width-200
         id: view
         x: main_split.right
-        y: 60
-        height: root.height - 100
-        Page:
-            id: page
-    BoxLayout:
-        orientation: 'vertical'
-        width: 200
-        size_hint_x: None
-        pos_hint: {'right':1}
-        disabled: True if root.selected_ph is None else False
-        canvas.before:
+        y: 45
+        height: root.height - 50
+        canvas.after:
             Color:
                 rgb: .7,.7,.7
-            Rectangle:
-                size: self.size
-                pos: self.pos
-        Label:
-            canvas.before:
-                Color:
-                    rgb: .3,.3,.3
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            text: "Current PH: #" + (str(root.selected_ph.index) if root.selected_ph else '-')
-            size_hint_y: None
-            height: 30
-        BoxLayout:
-            size_hint_y: None
-            height: 50
-            canvas.before:
-                Color:
-                    rgb: 0,0,1
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            Button:
-                on_press: root.rotate_ph()
-                FontIcon:
-                    icon: 'ccw'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press: root.rotate_ph(-90)
-                FontIcon:
-                    icon: 'cw'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press: root.duplicate_ph()
-                FontIcon:
-                    icon: 'duplicate'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press:  root.remove_ph()
-                FontIcon:
-                    icon: 'cancel'
-                    pos: self.parent.pos
-                    size: self.parent.size
-        BoxLayout:
-            size_hint_y: None
-            height: 50
-            canvas.before:
-                Color:
-                    rgb: 0,0,1
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            Button:
-                on_press: root.move_ph('up')
-                FontIcon:
-                    icon: 'up'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press: root.move_ph('down')
-                FontIcon:
-                    icon: 'down'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press: root.move_ph('left')
-                FontIcon:
-                    icon: 'left'
-                    pos: self.parent.pos
-                    size: self.parent.size
-            Button:
-                on_press:  root.move_ph('right')
-                FontIcon:
-                    icon: 'right'
-                    pos: self.parent.pos
-                    size: self.parent.size
-        BoxLayout:
-            size_hint_y: None
-            height: 50
-            canvas.before:
-                Color:
-                    rgb: 0,0,1
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            Label:
-                text: "Angle:"
-            Slider:
-                min: 0
-                max: 360
-                value: root.selected_ph.angle if root.selected_ph else 0
-                on_value: if root.selected_ph: root.selected_ph.angle = args[1]
-        GridLayout:
-            cols: 2
-            row_default_height: 30
-            row_force_default: True
-            Label:
-                text: "Width:(cm)"
-                size_hint_y: None
-                height: 30
-            TextInput:
-                id: ph_w
-                text: "%.2f"%(root.selected_ph.scale *root.selected_ph.width/cm(1)) if root.selected_ph else ""
-            Label:
-                text: "Height:(cm)"
-                size_hint_y: None
-                height: 30
-            TextInput:
-                id: ph_h
-                text: "%.2f"%(root.selected_ph.scale*root.selected_ph.height/cm(1)) if root.selected_ph else ""
-            Label:
-                text: "X:(cm)"
-                size_hint_y: None
-                height: 30
-            TextInput:
-                id: ph_x
-                text: "%.2f"%(root.selected_ph.x/cm(1)) if root.selected_ph else ""
-            Label:
-                text: "Y:(cm)"
-                size_hint_y: None
-                height: 30
-            TextInput:
-                id: ph_y
-                text: "%.2f"%(root.selected_ph.y/cm(1)) if root.selected_ph else ""
-            Label:
-                text: "Angle:"
-                size_hint_y: None
-                height: 30
-            TextInput:
-                id: ph_angle
-                text: '%.2d'%root.selected_ph.angle if root.selected_ph else ""
+            Line:
+                rectangle: self.x, self.y, self.width, self.height
+                width: 3
+    Accordion:
+        width: 160
+        size_hint: None, None
+        right: root.right-3
+        height: root.height- 55
+        id: ph_details
+        y: 48
+        orientation: 'vertical'
+        AccordionItem:
+            title: ("Current PH: #" + str(root.selected_ph.index)) if root.selected_ph else 'No Selection'
+            collapse: False
+            GridLayout:
+                cols: 1
+                disabled: True if root.selected_ph is None else False
+                canvas.before:
+                    Color:
+                        rgb: .7,.7,.7
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                Button:
+                    text: 'Apply'
+                    on_press: root.apply_ph_dim()
+                    size_hint_y: None
+                    height: 30
+                GridLayout:
+                    cols: 2
+                    row_default_height: 30
+                    row_force_default: True
+                    Label:
+                        text: "Width:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        id: ph_w
+                        text: "%.2f"%(root.selected_ph.width/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "Height:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        id: ph_h
+                        text: "%.2f"%(root.selected_ph.height/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "X:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        id: ph_x
+                        text: "%.2f"%(root.selected_ph.x/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "Y:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        id: ph_y
+                        text: "%.2f"%(root.selected_ph.y/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "Right:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        text: "%.2f"%(root.selected_ph.right/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "Top:(cm)"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        text: "%.2f"%(root.selected_ph.top/cm(1)) if root.selected_ph else "0"
+                    Label:
+                        text: "Angle:"
+                        size_hint_y: None
+                        height: 30
+                    TextInput:
+                        id: ph_angle
+                        text: '%.2d'%root.selected_ph.angle if root.selected_ph else "0"
+        AccordionItem:
+            title: 'Values'
+            ScrollView:
+                TemplateEditTree:
+                    disabled: not(root.selected_ph)
+                    on_minimum_height: self.height = self.minimum_height
+                    size_hint_y: None
+                    id: tmpltree
+                    target: root.selected_ph if root.selected_ph else False
+                    on_disabled: if self.disabled: self.clear_widgets(); self.root.nodes = list()
+        AccordionItem:
+            title: 'Operation'
+            GridLayout:
+                cols: 1
+                disabled: True if root.selected_ph is None else False
+                canvas.before:
+                    Color:
+                        rgb: .7,.7,.7
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Button:
+                        on_press: root.duplicate_ph()
+                        FontIcon:
+                            icon: 'duplicate'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press: root.resize_ph()
+                        FontIcon:
+                            icon: 'resize-full'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press:  root.remove_ph()
+                        FontIcon:
+                            icon: 'cancel'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                Label:
+                    canvas.before:
+                        Color:
+                            rgb: .7,.7,.7
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    text: "Move"
+                    size_hint_y: None
+                    height: 30
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Button:
+                        on_press: root.move_ph('up')
+                        FontIcon:
+                            icon: 'up'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press: root.move_ph('down')
+                        FontIcon:
+                            icon: 'down'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Button:
+                        on_press: root.move_ph('left')
+                        FontIcon:
+                            icon: 'left'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press:  root.move_ph('right')
+                        FontIcon:
+                            icon: 'right'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                Label:
+                    canvas.before:
+                        Color:
+                            rgb: .7,.7,.7
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    text: "Align"
+                    size_hint_y: None
+                    height: 30
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Button:
+                        on_press: root.align_ph('x')
+                        FontIcon:
+                            icon: 'resize-horizontal'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press:  root.align_ph('y')
+                        FontIcon:
+                            icon: 'resize-vertical'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                Label:
+                    canvas.before:
+                        Color:
+                            rgb: .7,.7,.7
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    text: "Rotate"
+                    size_hint_y: None
+                    height: 30
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Button:
+                        on_press: root.rotate_ph()
+                        FontIcon:
+                            icon: 'ccw'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                    Button:
+                        on_press: root.rotate_ph(-90)
+                        FontIcon:
+                            icon: 'cw'
+                            pos: self.parent.pos
+                            size: self.parent.size
+                BoxLayout:
+                    size_hint_y: None
+                    height: 40
+                    canvas.before:
+                        Color:
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Label:
+                        text: "Angle:"
+                    Slider:
+                        min: 0
+                        max: 360
+                        value: root.selected_ph.angle if root.selected_ph else 0
+                        #:import BGTemplate template.BGTemplate
+                        on_value: if root.selected_ph: root.selected_ph.angle = args[1]; #root.selected_ph.children[0].angle = args[1]
+        AccordionItem:
+            title: 'Groups (%d selections)'%(len(root.selections))
+            ScrollView:
+                GridLayout:
+                    size_hint_y: None
+                    cols: 1
+                    on_minimum_height: self.height = self.minimum_height
+                    orientation: 'vertical'
+                    canvas.before:
+                        Color:
+                            rgb: .7,.7,.7
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Align (%d items)"%len(root.selections)
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.align_group('top')
+                            FontIcon:
+                                icon: 'up-big'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.align_group('y')
+                            FontIcon:
+                                icon: 'down-big'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.align_group('x')
+                            FontIcon:
+                                icon: 'left-big'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.align_group('right')
+                            FontIcon:
+                                icon: 'right-big'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.align_group('center_x')
+                            FontIcon:
+                                icon: 'resize-horizontal-1'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.align_group('center_y')
+                            FontIcon:
+                                icon: 'resize-vertical-1'
+                                pos: self.parent.pos
+                                size: self.parent.size
+
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Resize (%d items)"%len(root.selections)
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.resize_group('height')
+                            FontIcon:
+                                icon: 'resize-vertical'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.align_group('width')
+                            FontIcon:
+                                icon: 'resize-horizontal'
+                                pos: self.parent.pos
+                                size: self.parent.size
+
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Distribute (%d items)"%len(root.selections)
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.distribute_group('y')
+                            FontIcon:
+                                icon: 'resize-vertical'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.distribute_group('x')
+                            FontIcon:
+                                icon: 'resize-horizontal'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Stick (%d items)"%len(root.selections)
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        disabled: len(root.selections) != 2
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.stick_group('y')
+                            FontIcon:
+                                icon: 'resize-vertical'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.stick_group('x')
+                            FontIcon:
+                                icon: 'resize-horizontal'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Selection"
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.group_selection()
+                            FontIcon:
+                                icon: 'ok'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                        Button:
+                            on_press: root.group_selection(False)
+                            FontIcon:
+                                icon: 'cancel'
+                                pos: self.parent.pos
+                                size: self.parent.size
+                    Label:
+                        canvas.before:
+                            Color:
+                                rgb: .7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        text: "Packing (%d items)"%len(root.selections)
+                        size_hint_y: None
+                        height: 30
+                    BoxLayout:
+                        size_hint_y: None
+                        height: 30
+                        canvas.before:
+                            Color:
+                                rgb: 0,0,1
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Button:
+                            on_press: root.bin_pack()
+                            FontIcon:
+                                icon: 'Layout'
+                                pos: self.parent.pos
+                                size: self.parent.size

@@ -129,6 +129,7 @@ class BGDesigner(FloatLayout):
                     _name = ''
                 tmplname = '%s@%s'%(_name, s[0])
                 from template import BGTemplate
+                print '[Designer]Add Template within template'
                 tmpl = BGTemplate.FromFile(tmplname).pop()
                 childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
@@ -242,12 +243,12 @@ class BGDesigner(FloatLayout):
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
-        print 'LOAD DESIGNE'*10, templateName
         #First clean a little
         self.clear()
         if '@' in templateName:
             #load from file:
             from template import BGTemplate
+            print '[Designer] Load Template'
             template = BGTemplate.FromFile(templateName)[-1]
         else:
             template = templateList[templateName]
@@ -327,6 +328,7 @@ class BGDesigner(FloatLayout):
         #Will be used to find a interresting base for relpath
         print 'at this stage, i should insert a check for name vs libraty & templates'
         if not self.current_template.template_name:
+            print 'Current template as no name: reverting to default'
             self.current_template.template_name = "TMPL"
         tmpls, imports, directives = self.current_template.export_to_kv(level=1,save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
         print 'export to kv', imports

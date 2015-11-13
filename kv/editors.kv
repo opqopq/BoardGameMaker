@@ -1,5 +1,5 @@
 #:import resplit re.split
-#:import FileChooserThumbView kivy.garden.filechooserthumbview
+#:import FileChooserThumbView utils.filechooserthumbview
 #:import get_last_dir conf.get_last_dir
 #:import set_last_dir conf.set_last_dir
 
@@ -504,8 +504,8 @@
         do_default_tab: False
         TabbedPanelItem:
             text: "Source"
-            FileChooserListView:
-            #FileChooserThumbView:
+            #FileChooserListView:
+            FileChooserThumbView:
                 id: fpicker
                 #:import split os.path.split
                 ##path: split(root.dimension[0])[0] if root.dimension[0] else "."

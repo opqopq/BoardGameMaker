@@ -123,7 +123,7 @@
             state: root.verso
             on_state: root.verso = self.state ;  app.compute_stats(None)
 
-<FileItemOption@BoxLayout>
+<FileItemOption@BoxLayout>:
     size_hint_y:  .05
     #height: 30
     width: self.parent.width if self.parent else 100
@@ -157,32 +157,6 @@
         id: dual
         size_hint: .4, 1
     Button:
-        id: edit_button
-        size_hint: .4 if root.parent and root.parent.name.endswith('.kv') else None , 1
-        width: 0 #will only apply if it is a template otherwise size hint will prevail
-        on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
-        background_color: 0,0,0,0
-        FontIcon:
-            font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
-            #color: 0,0,0,1
-            icon: 'edit-1'
-            pos: self.parent.pos
-            size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
-
-    Button:
-        id: apply_button
-        size_hint: .4 if root.parent and root.parent.name.endswith('.kv') else None , 1
-        width: 0 #will only apply if it is a template otherwise size hint will prevail
-        on_press: root.parent.apply_item(root.parent.name)
-        background_color: 0,0,0,0
-        FontIcon:
-            font_size:  int(float(root.width)/6) if root.parent and root.parent.name.endswith('.kv') else 0
-            #color: 0,0,0,1
-            icon: 'apply'
-            pos: self.parent.pos
-            size: self.parent.size if root.parent and root.parent.name.endswith('.kv') else (0,0)
-
-    Button:
         size_hint: .4 , 1
         on_press: root.parent.add_item(qt.text, dual.state)
         background_color: 0,0,0,0
@@ -193,6 +167,19 @@
             pos: self.parent.pos
             size: self.parent.size
 
+<FileItemOptionKV@FileItemOption>:
+    Button:
+        id: edit_button
+        size_hint: .4 , 1
+        width: 0 #will only apply if it is a template otherwise size hint will prevail
+        on_press: app.set_screen('Designer'); app.root.ids['designer'].load("@%s"%root.parent.name)
+        background_color: 0,0,0,0
+        FontIcon:
+            font_size:  int(float(root.width)/6)
+            #color: 0,0,0,1
+            icon: 'edit-1'
+            pos: self.parent.pos
+            size: self.parent.size
 
 <FileViewItem>:
     orientation: 'vertical'
@@ -246,7 +233,7 @@
     FontIcon:
         icon: root.source
         size_hint_y: .8
-        font_size: max(148, root.width/2)
+        font_size: max(60, root.width/2)
         #color: 0,0,0,1
     Label:
         size_hint: 1, .15
@@ -262,6 +249,45 @@
     spacing: 10
     size_hint: None, 1
     on_minimum_width: self.width = self.minimum_width
+
+<SizeEditPopup@Popup>:
+    name: ""
+    title: "Edit Size for %s"%split(self.name)[-1]
+    target: None
+    cb: None
+    size_hint: .3, None
+    height: 150
+    pos_hint: {'center_x': .5, 'center_y': .5}
+    GridLayout:
+        cols: 3
+        Label:
+            text: "Width:"
+        TextInput:
+            id: width
+        Spinner:
+            values: ['px','cm']
+            id: w_metric
+            text: "px"
+            on_text: width.text = str((float(width.text) * cm(1)) if args[1]=='px' else (float(width.text)/cm(1)))
+        Label:
+            text: "Height:"
+        TextInput:
+            id: height
+        Spinner:
+            values: ['px','cm']
+            id: h_metric
+            on_text: height.text = str((float(height.text) * cm(1)) if args[1]=='px' else (float(height.text)/cm(1)))
+            text: "px"
+        Button:
+            text: "Apply"
+            on_press: root.cb(); root.dismiss()
+        Button:
+            text: "Reset"
+            on_press: h_metric.text="px"; w_metric.text="px"; width.text=str(self.target.width); height.text = str(self.target.height)
+        Button:
+            text: "Cancel"
+            on_press: root.dismiss()
+
 
 <TemplateEditTree>:
     hide_root: True
@@ -315,7 +341,6 @@
         size_hint: .4,1
         sizable_from: 'right'
         max_size: 0.6*root.width
-
         TabbedPanel:
             folded: False
             do_default_tab: False
@@ -381,13 +406,17 @@
                                 TextInput:
                                     id: cw
                                     text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
-                                    on_text: CARD.updateW(self.text, unit.text)
+                                    #on_text_validate: CARD.updateW(self.text, unit.text)
+                                    on_focus: if not self.focus: CARD.updateW(self.text, unit.text)
+                                    multiline: False
                                 Label:
                                     text: "Card Height:"
                                 TextInput:
                                     id: ch
                                     text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
-                                    on_text: CARD.updateH(self.text, unit.text)
+                                    #on_text_validate: CARD.updateH(self.text, unit.text)
+                                    on_focus: if not self.focus: CARD.updateH(self.text, unit.text)
+                                    multiline: False
                                 Label:
                                     text: "Unit:"
                                 Spinner:
@@ -402,11 +431,14 @@
                                     id: keep_ratio
                                     on_active: CARD.keep_ratio = self.active
                                 Label:
-                                    text: "Force Fit Format:"
+                                    text: "Force Format:"
                                 CheckBox:
                                     ratio: 1
-                                    active: False
+                                    #:import FFF conf.FORCE_FIT_FORMAT
+                                    active: FFF
                                     id: force_format
+                                    #:import SFFF conf.set_force_fit_format
+                                    on_active: SFFF(args[1])
                         AccordionItem:
                             title: 'Templates'
                             GridLayout:
@@ -417,18 +449,13 @@
                                 Button:
                                     text: 'Re Load Templates Library'
                                     on_press: root.load_template_lib(force_reload = True)
-
                         AccordionItem:
                             title: "Scripts"
-                            GridLayout:
-                                cols: 1
-                                #WatchedFolderTree:
-                                #    root_options: {'text': 'Script Folders'}
-                                #Splitter:
-                                #    sizable_from: 'top'
+                            ScrollView:
                                 ScriptTree:
                                     root_options: {'text': 'Script Library'}
-
+                                    size_hint_y: None
+                                    on_minimum_height: self.height = self.minimum_height
             #FoldedTabbedPanelItem:
             TabbedPanelHeader:
                 panel: explorer
@@ -497,3 +524,6 @@
             size_hint_y: None
             height: 30
             font_size: 20
+            text_size: self.size
+            valign: 'middle'
+            halign: 'center'

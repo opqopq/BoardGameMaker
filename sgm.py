@@ -1,6 +1,6 @@
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.uix.behaviors import ButtonBehavior, ToggleButtonBehavior
+from kivy.uix.behaviors import ButtonBehavior, ToggleButtonBehavior, FocusBehavior
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.slider import Slider
 from kivy.uix.popup import Popup
@@ -70,7 +70,10 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
     def on_state(self, target, state):
         self.realise()
         if state == 'down':
-            f = Factory.get('FileItemOption')()
+            if self.name.lower().endswith('.kv'):
+                f = Factory.get('FileItemOptionKV')()
+            else:
+                f = Factory.get('FileItemOption')()
             f.is_all_folder = self.is_all_folder
             self.add_widget(f)
             from kivy.animation import Animation
@@ -82,7 +85,10 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
 
     def on_press(self):
         if self.last_touch.is_double_tap:#directly add it to the pool
-            self.add_item("1", 'normal')
+            if self.name.endswith('.bgp'):
+                self.extract_package()
+            else:
+                self.add_item("1", 'normal')
 
     def apply_item(self,name):
         from os.path import relpath
@@ -153,6 +159,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                     EventLoop.idle()
             elif self.name.endswith('.csv'):
                 App.get_running_app().root.ids.deck.load_file(self.name)
+            elif self.name.endswith('.bgp'):
+                self.extract_package()
             else:
                 box = StackPart()
                 box.name = self.name
@@ -177,6 +185,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
         try:
+            print '[SGM] Realise FileItemView: ',
             tmpl = BGTemplate.FromFile(self.name)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.name
@@ -195,9 +204,46 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             #App.get_running_app().root.ids['realizer'].remove_widget(tmpl)
         Clock.schedule_once(inner, -1)
 
+    def extract_package(self):
+        from zipfile import ZipFile
+        import os
+        import tempfile
+        zip_name = self.name
+        zip_path = os.path.abspath(zip_name)
+        temp_dir = tempfile.mkdtemp(prefix='BGM_%s'%os.path.split(self.name)[-1])
+        print 'unzipping package into ', temp_dir
+        from kivy.resources import resource_add_path
+        resource_add_path(temp_dir)
+
+        with ZipFile(zip_path, 'r') as zip_file:
+            # Build a list of only the members below ROOT_PATH
+            members = zip_file.namelist()
+            # Extract only those members to the temp directory
+            zip_file.extractall(temp_dir, members)
+
+        from kivy.app import App
+        dm = App.get_running_app().root.ids.deck
+
+        pyfs = [m for m in members if m.endswith('.py')]
+        kvfs = [m for m in members if m.endswith('.kv')]
+        csvfs = [m for m in members if m.endswith('.csv')]
+        #First python
+        for m in pyfs:
+            execfile(m)
+        #then template
+        for m in kvfs:
+            from template import BGTemplate, templateList
+            print '[SGM] Extract Package: loading time: ',
+            t = BGTemplate.FromFile(os.path.join(temp_dir,m))
+            templateList.register_file(os.path.join(temp_dir,m))
+        #then deck
+        for m in csvfs:
+            dm.load_file(os.path.join(temp_dir,m))
+        from conf import start_file
+        start_file(temp_dir)
+
 class SpecialViewItem(FileViewItem):
     "FileView for Folder & CSV file. Usable for script ? "
-    pass
 
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
@@ -207,15 +253,22 @@ class StackPart(ButtonBehavior, BoxLayout):
     name = StringProperty()
     values = DictProperty()
     source = StringProperty()
+    image = ObjectProperty(False)
+    layout = ObjectProperty(None)
+
 
     def realise(self,withValue = False):
         #Force the creation of an image from self.template, thourhg real display
+        #Skipt of computed image exists
+        if self.image:
+            return
         from kivy.clock import Clock
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
         if not self.template:
             return
         try:
+            print '[SGM]Realize StackPart:',
             tmpl = BGTemplate.FromFile(self.template)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.template
@@ -226,11 +279,13 @@ class StackPart(ButtonBehavior, BoxLayout):
 
         if withValue:
             tmpl.apply_values(self.values)
+
+        self.tmplWidget = tmpl
+
         def inner(*args):
             #Here is hould loop on the template to apply them on values
             from kivy.base import EventLoop
             EventLoop.idle()
-            self.tmplWidget = tmpl
             cim = tmpl.toImage()
             cim.texture.flip_vertical()
             self.ids['img'].texture = cim.texture
@@ -256,10 +311,9 @@ class StackPart(ButtonBehavior, BoxLayout):
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
             #self.add_widget(b)
             from kivy.animation import Animation
-            W = 100
+            W = 90
+            be = Factory.get('HiddenRemoveButton')(icon='edit')
             if self.template:#it is a template: add edit & export buttons
-                W = 90
-                be = Factory.get('HiddenRemoveButton')(icon='edit')
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
                     p.name = self.template
@@ -287,16 +341,35 @@ class StackPart(ButtonBehavior, BoxLayout):
                         prev.x = 5
 
                     Clock.schedule_once(_inner, 0)
-                be.bind(on_press = inner)
-                #self.add_widget(be)
-                BOX.add_widget(be)
-                #Img Export button
-                bx = Factory.get('HiddenRemoveButton')(icon='export')
-                bx.bind(on_press=lambda x: self.img_export())
-                BOX.add_widget(bx)
-                anim = Animation(width=W, duration=.1)
-                anim.start(be)
-                anim.start(bx)
+            else: #edit button for pure image
+                def inner(*args):
+                    p = Factory.get('SizeEditPopup')()
+                    p.name = self.source
+                    _img = self.toPILImage()
+                    p.ids.width.text = str(_img.size[0])
+                    p.ids.height.text = str(_img.size[1])
+                    p.open()
+                    def _inner(*args):
+                        w,h = float(p.ids.width.text), float(p.ids.height.text)
+                        if p.ids.w_metric.text == "cm":
+                            from kivy.metrics import cm
+                            w *= cm(1)
+                        if p.ids.h_metric.text == "cm":
+                            from kivy.metrics import cm
+                            h *= cm(1)
+                        self.setImageSize((w, h))
+                    p.cb = _inner
+            be.bind(on_press = inner)
+            #self.add_widget(be)
+            BOX.add_widget(be)
+            anim = Animation(width=W, duration=.1)
+            anim.start(be)
+            #Img Export button
+            bx = Factory.get('HiddenRemoveButton')(icon='export')
+            bx.bind(on_press=lambda x: self.img_export())
+            BOX.add_widget(bx)
+            anim = Animation(width=W, duration=.1)
+            anim.start(bx)
             BOX.add_widget(b)
             self.add_widget(BOX)
             anim = Animation(width=W, duration=.1)
@@ -306,47 +379,95 @@ class StackPart(ButtonBehavior, BoxLayout):
             #if self.template:
             #    self.remove_widget(self.children[0])
 
+        self.focus = self.selected
+
     def Copy(self):
-        blank = self.__class__()
-        for attr in ['template','name','values', "qt","verso"]:
+        blank = StackPart()
+        for attr in ['template','name','values', "qt","verso", 'source', 'image']:
             setattr(blank, attr, getattr(self,attr))
         blank.ids['img'].texture = self.ids['img'].texture
         return blank
 
     def img_export(self, dst='export.png'):
-        item = self
-        from PIL.Image import frombuffer
-        if item.tmplWidget:#it has been modified
-            tmplWidget = item.tmplWidget
-        else:
-            from template import BGTemplate
-            tmplWidget = BGTemplate.FromFile(item.template)
-            if tmplWidget:
-                #only taking the last one
-                tmplWidget = tmplWidget[-1]
-            else:
-                raise NameError('No such template: '+ item.template)
-            print 'here to be added: adding on realizer, exporting & then removing. more tricky'
-            if item.values:
-                tmplWidget.apply_values(item.values)
-        cim = tmplWidget.toImage(for_print=True)
-        pim = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
-        pim.save('export.png')
+        pim = self.toPILImage()
+        pim.save(dst)
         from conf import start_file
-        start_file('export.png')
+        start_file(dst)
+
+    def setImageSize(self, size):
+        size = [int(x) for x in list(size)]
+        img = self.toPILImage()
+        self.setImage(img.resize(size))
+
+    def toPILImage(self):
+        item = self
+        if item.image:
+            return item.image
+        elif item.template:
+            from PIL.Image import frombuffer
+            if item.tmplWidget:#it has been modified
+                tmplWidget = item.tmplWidget
+            else:
+                from template import BGTemplate
+                print '[SGM] toPILIMage: ',
+                tmplWidget = BGTemplate.FromFile(item.template)
+                if tmplWidget:
+                    #only taking the last one
+                    tmplWidget = tmplWidget[-1]
+                else:
+                    raise NameError('No such template: '+ item.template)
+                print 'here to be added: adding on realizer, exporting & then removing. more tricky'
+                if item.values:
+                    tmplWidget.apply_values(item.values)
+            cim = tmplWidget.toImage(for_print=True)
+            pim = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
+        else:
+            from PIL import Image
+            pim = Image.open(self.source)
+        return pim
+
+    def setImage(self, pilimage):
+        from PIL.Image import FLIP_TOP_BOTTOM
+        from kivy.graphics.texture import Texture
+        #Standard mode: flip the
+        flip = pilimage.transpose(FLIP_TOP_BOTTOM)
+        from img_xfos import img_modes
+        ktext = Texture.create(size=flip.size)
+        ktext.blit_buffer(flip.tobytes(), colorfmt=img_modes[flip.mode])
+        self.ids['img'].texture = ktext
+        self.image = pilimage
+
+    def getSize(self):
+        self.realise()
+        from conf import FORCE_FIT_FORMAT, card_format
+        if self.image:#stack part with computed image
+            return self.image.size
+        elif self.tmplWidget:
+            return self.tmplWidget.size
+        elif self.template:
+            self.realise()
+            return self.tmplWidget.size
+        elif FORCE_FIT_FORMAT:
+            return card_format.size
+        else:
+            return self.ids.img.texture.size
 
 class TemplateEditTree(TreeView):
     "Use in Template Edit Popup to display all possible fields"
-    tmplPath = StringProperty()
+    tmplPath = StringProperty(allownone=True)
     current_selection = ObjectProperty()
     values = DictProperty() #values from template, if any
+    tmplDict = DictProperty()#link a tmplWidget to a node
 
     def update_tmpl(self,tmpl):
-        self.target.clear_widgets()
-        self.target.add_widget(tmpl)
+        if self.target:
+            self.target.clear_widgets()
+            self.target.add_widget(tmpl)
+            tmpl.pos = self.target.pos
         self.current_selection = (tmpl, self.selected_node)
 
     def on_tmplPath(self, instance, value):
+        if not value: return
         from template import BGTemplate
         #tmplPath is in the form [NAME][@PATH]. If path provided, load all tmpl from there. Without it, take name from library
         name, path = self.tmplPath.split('@')
@@ -356,30 +477,36 @@ class TemplateEditTree(TreeView):
             from template import templateList
             tmpls = [templateList[name]]
         else:
+            print "[SGM] OnTmplPath change:" ,
             tmpls = BGTemplate.FromFile(path)
         for tmpl in tmpls:
             tmpl.apply_values(self.values)
-            #Now add on load
-            node = self.add_node(TreeViewLabel(text=tmpl.template_name, color_selected=(.6,.6,.6,.8)))
-            node.is_leaf = False #add the thingy
-            #point to the template
-            node.template = tmpl
-            #Deal with Template Properties:
-            for pname, editor in tmpl.vars.items():
-                self.add_node(TreeViewField(name=pname, editor=editor(tmpl)), node)
-            #Deal with KV style elemebts
-            for fname in tmpl.ids.keys():
-                if not isinstance(tmpl.ids[fname], BaseField):
-                    continue
-                _wid = tmpl.ids[fname]
-                if not _wid.editable:
-                    continue
-                if _wid.default_attr:
-                    w = _wid.params[_wid.default_attr](_wid)
-                    if w is not None:#None when not editable
-                        self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
-            self.toggle_node(node)
+            node =self.load_tmpl(tmpl)
             self.select_node(node) # will issue a template update
+
+    def load_tmpl(self,tmpl):
+        #Now add on load
+        node = self.add_node(TreeViewLabel(text=tmpl.template_name, color_selected=(.6,.6,.6,.8)))
+        node.is_leaf = False #add the thingy
+        #point to the template
+        node.template = tmpl
+        self.tmplDict[tmpl] = node
+        #Deal with Template Properties:
+        for pname, editor in sorted(tmpl.vars.items()):
+            self.add_node(TreeViewField(name=pname, editor=editor(tmpl)), node)
+        #Deal with KV style elemebts
+        for fname in sorted(tmpl.ids.keys()):
+            if not isinstance(tmpl.ids[fname], BaseField):
+                continue
+            _wid = tmpl.ids[fname]
+            if not _wid.editable:
+                continue
+            if _wid.default_attr:
+                w = _wid.params[_wid.default_attr](_wid)
+                if w is not None:#None when not editable
+                    self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
+        self.toggle_node(node)
+        return node
 
 class TemplateEditPopup(Popup):
 
@@ -391,7 +518,6 @@ class TemplateEditPopup(Popup):
         tmpl, node = tree.current_selection
         #Here is hould loop on the template to apply them on values
         values = tree.values
-        print 'ols vlu', values
         if node:#do that only if a template has been selected. otherwise skip it
             for child_node in node.nodes:
                 for child in child_node.walk(restrict=True):
@@ -401,10 +527,9 @@ class TemplateEditPopup(Popup):
                         if child.target_attr in tmpl.vars: #just a tmpl variable
                             values[key] = sv
                         else:
-                             values["%s.%s"%(child.target_attr, key)] = sv
-                        print child, key, sv
-
-        print 'values is ', values
+                             #values["%s.%s"%(child.target_attr, key)] = sv
+                        #by definitoin, key is default_attr
+                            values[child.target_attr] = sv
         self.stackpart.values = values
         self.stackpart.tmplWidget = tmpl
         oldname = self.stackpart.template
@@ -419,19 +544,31 @@ class TemplateEditPopup(Popup):
         cim =  tmpl.toImage()
         cim.texture.flip_vertical()
         self.stackpart.ids['img'].texture = cim.texture
+        self.stackpart.image = False
 
 class BGDeckMaker(BoxLayout):
-    cancel_action = BooleanProperty(False)
+    cancel_actio = BooleanProperty(False)
 
     tmplsLib = ObjectProperty()
 
     def empty_stack(self):
         self.ids['stack'].clear_widgets()
+        self.ids.stack.last_selected = False
+        self.record_last_file("")
 
     def prepare_print(self, dst):
+        from conf import CP, alert
+        if CP.getboolean('Print','AUTOCSV'):
+            alert('Auto saving CSV deck')
+            self.export_file(dst.replace('.pdf','.csv'))
         from printer import prepare_pdf
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
+        USE_LAYOUT = True
+        for cs in self.ids.stack.children:
+            if not cs.layout:
+                USE_LAYOUT = False
+                break
         #Do that only if fit format is not forced
         if not self.ids['force_format'].active:
             sizes = set()
@@ -445,7 +582,8 @@ class BGDeckMaker(BoxLayout):
                         sizes.add(tuple(cs.tmplWidget.size))
                     else:
                         from template import BGTemplate
-                        sizes.add(BGTemplate.FromFile(cs.template).size)
+                        print '[SGM] Prepareprint without tmplWidget:' ,
+                        sizes.add(tuple(BGTemplate.FromFile(cs.template)[-1].size))
             if len(sizes) == 1:
                 FFORMAT = sizes.pop()
         #Now add the advancement gauge
@@ -456,7 +594,7 @@ class BGDeckMaker(BoxLayout):
         self.ids['stop_action'].text = 'Stop'
         self.cancel_action = False
 
-        size, book = prepare_pdf(self.ids['stack'], FFORMAT, dst=dst)
+        size, book = prepare_pdf(stack=self.ids['stack'], fitting_size=FFORMAT, dst=dst, console_mode= False, use_layout=USE_LAYOUT)
         progress.max = size
         from kivy.clock import Clock
         step_counter = range(size)
@@ -465,9 +603,8 @@ class BGDeckMaker(BoxLayout):
             step_counter.pop()
             progress.value +=1
             book.generation_step()
-            print step_counter, (not step_counter), self.cancel_action
             if (not step_counter) or self.cancel_action:
-                self.cancel_action = True
+                self.cancel_action = False
                 Clock.unschedule(inner)
                 self.ids['stop_action'].width = 0
                 self.ids['stop_action'].text = ''
@@ -480,8 +617,6 @@ class BGDeckMaker(BoxLayout):
 
         Clock.schedule_interval(inner,.1)
         return True
-
-        Clock.schedule_interval(inner,.1)
 
     def load_template_lib(self, force_reload = False, background_mode = False):
         #Same as load_folder('/Templates') but with delay to avoid clash
@@ -525,7 +660,7 @@ class BGDeckMaker(BoxLayout):
         progress.max = C
         progress.value = 1
         #pg = Factory.get('PictureGrid')()
-        pictures.add_widget(SpecialViewItem(source='folder-add', is_all_folder=folder, name="Add %d Imgs"%C))
+        pictures.add_widget(SpecialViewItem(source='folder-add', is_all_folder=folder, name="Add %d Items"%C))
         docs = sorted([x.lower() for x in os.listdir(folder) if x.endswith(FILE_FILTER)], reverse=True)
         #ensure the stop button is reachable
         self.ids['stop_action'].width = 80
@@ -537,13 +672,14 @@ class BGDeckMaker(BoxLayout):
                 if _f.endswith('.kv'): #it is a template:
                     source = 'img/card_template.png'
                     _f = os.path.join(folder, _f)
-                elif _f.endswith('.csv'):
-                    source = 'csv'
+                elif _f.endswith('.csv') or _f.endswith('.bgp'):
                     _f = os.path.join(folder, _f)
                 else:
-                    source  = os.path.join(folder,_f)
+                    source = os.path.join(folder,_f)
                 if _f.endswith('.csv'):
-                    img = SpecialViewItem(source= source, name=_f)
+                    img = SpecialViewItem(source= 'csv', name=_f)
+                elif _f.endswith('.bgp'):
+                    img = SpecialViewItem(source = 'cubes', name = _f)
                 else:
                     img = FileViewItem(source=source, name=_f)
                 pictures.add_widget(img)
@@ -551,29 +687,13 @@ class BGDeckMaker(BoxLayout):
                 if _f.endswith('.kv'):
                     img.realise()
             if self.cancel_action or not docs:
-                self.cancel_action = True
+                self.cancel_action = False
                 Clock.unschedule(inner)
                 self.ids['stop_action'].width = 0
                 self.ids['stop_action'].text = ''
                 progress.value = 0
                 return False
         Clock.schedule_interval(inner,.025)
-
-    def load_file_json(self, filepath='deck.json'):
-        import json
-        od = json.load(file(filepath,'rb'))
-        cards = od['cards']
-        stack = self.ids['stack']
-        for obj in cards:
-            qt = int(obj['qt'])
-            verso = 'down' if obj['dual'] else 'normal'
-            box = StackPart()
-            box.source = obj['source']
-            box.qt = qt
-            box.verso = verso
-            box.template = obj['template']
-            box.values = obj['values']
-            stack.add_widget(box)
 
     def choose_file_popup(self,title, cb):
         from kivy.uix.popup import Popup
@@ -601,17 +721,29 @@ class BGDeckMaker(BoxLayout):
         p.default_name = default
         p.open()
 
+    def record_last_file(self,filepath):
+        #set path as last_opoend_file
+        from conf import CP, gamepath
+        from os.path import relpath
+        if filepath.startswith(gamepath):
+            fpath = relpath(filepath,gamepath)
+        else:
+            fpath = filepath
+        CP.set('Path','last_file',fpath)
+        CP.write()
+
     def load_file(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
         from conf import find_path
+        self.record_last_file(filepath)
         with open(filepath, 'rb') as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024), delimiters=";,")
             csvfile.seek(0)
             reader = csv.DictReader(csvfile, dialect=dialect)
             header = reader.fieldnames
             stack = self.ids['stack']
-            remaining_header = set(header) - set(['qt', 'source', 'template', 'dual'])
+            remaining_header = set(header) - {'qt', 'source', 'template', 'dual', 'layout'}
             boxes = list()
             for index, obj in enumerate(reader):
                 #print index, obj
@@ -633,6 +765,8 @@ class BGDeckMaker(BoxLayout):
                     box.template = obj['template']
                 if 'source' in obj and obj['source']:
                     box.source = find_path(obj['source'])
+                if 'layout' in obj and obj['layout']:
+                    box.layout = obj['layout']
                 values = dict()
                 for attr in remaining_header:
                     v = obj.get(attr, '')
@@ -658,12 +792,14 @@ class BGDeckMaker(BoxLayout):
                 b= boxes.pop()
                 b.realise(withValue=True)
                 if self.cancel_action or not boxes:
-                    self.cancel_action = True
+                    self.cancel_action = False
                     Clock.unschedule(inner)
                     self.ids['stop_action'].width = 0
                     self.ids['stop_action'].text = ''
                     progress.value = 0
-                    print 'Import/Inner is over'
+                    from conf import alert
+                    from os.path import split
+                    alert('Import %s over'%split(filepath)[-1])
                     return False
 
             Clock.schedule_interval(inner, .1)
@@ -672,12 +808,14 @@ class BGDeckMaker(BoxLayout):
         from collections import OrderedDict
         from conf import gamepath
         from os.path import relpath, isfile
+        self.record_last_file(filepath)
         import json
         od = OrderedDict()
         cards = list()
+        HAS_LAYOUT = False
         for item in reversed(self.ids['stack'].children):
             if not isinstance(item, Factory.get('StackPart')): continue
-            d=dict()
+            d = dict()
             d['qt'] = item.qt
             if item.source:
                 if isfile(item.source): #it is a full path. convert it
@@ -691,11 +829,13 @@ class BGDeckMaker(BoxLayout):
                 d['source'] = ""
             if item.template:
                 d['template'] = item.template
-            d['dual'] = not(item.verso=='normal')
+            d['dual'] = not(item.verso == 'normal')
             d['values'] = item.values
+            if item.layout:
+                HAS_LAYOUT = True
+                d['layout'] = item.layout
             cards.append(d)
         od['cards'] = cards
-        print 'skipping export to json'
         #json.dump(od, file(filepath,'wb'), indent = 4)
         #Now also CSV export
         import csv
@@ -707,14 +847,20 @@ class BGDeckMaker(BoxLayout):
                     my_dict.update(**c['values'])
             with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
                 fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
+                if HAS_LAYOUT:
+                    fields_order = ['qt','dual','source', 'layout', 'template'] + my_dict.keys()[:]
                 w = csv.DictWriter(f, fields_order)
                 w.writeheader()
                 for c in cards:
-                    for k in my_dict: my_dict[k]=None
+                    for k in my_dict:
+                        my_dict[k]=None
                     my_dict.update(c)
                     del my_dict['values']
                     my_dict.update(**c['values'])
                     w.writerow(my_dict)
+        from conf import alert
+        from os.path import split
+        alert('Exporting %s over'%split(filepath)[-1])
 
     def compute_stats(self,grid):
         if grid is None:
@@ -734,6 +880,20 @@ class BGDeckMaker(BoxLayout):
         num_part = len([_c for _c in grid.children if isinstance(_c, StackPart)])
         label = "Stack made of %s parts / %s Cards: %s Front - %s Back"%(num_part,qt,qt_front,qt_back)
         self.ids['stats'].text = label
+
+    def linearize(self):
+        #transform all stack with qt>1 to as many stack with qt 1
+        cs = self.ids.stack.children[:]
+        cs.reverse()
+        dst = list()
+        for c in cs:
+            for _ in range(c.qt):
+                d = c.Copy()
+                d.qt = 1
+                dst.append(d)
+        self.ids.stack.clear_widgets()
+        for d in dst:
+            self.ids.stack.add_widget(d)
 
 class SGMApp(App):
     def compute_stats(self,grid): return self.root.compute_stats(grid)

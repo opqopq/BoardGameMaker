@@ -7,7 +7,6 @@ from kivy.factory import Factory
 from kivy.properties import ObservableDict, ObservableList, ObservableReferenceList
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.texture import Texture
-from PIL import Image as PILImage
 from kivy.uix.behaviors import FocusBehavior
 from utils.hoverable import HoverBehavior
 from kivy.graphics import Color, Rectangle, Canvas
@@ -183,10 +182,16 @@ class BaseField(HoverBehavior, FocusBehavior):
             Builder._apply_rule(self, drule, drule)
             #Change relative pos-hint /size hint for
             if self.pos_hint:
+                if not 'x' in self.pos_hint:
+                    self.pos_hint['x'] = 0
+                if not 'y' in self.pos_hint:
+                    self.pos_hint['y'] = 0
                 self.pos = self.pos_hint['x']*self.parent.width, self.pos_hint['y'] * self.parent.height
                 self.pos_hint = {}
+            if self.size_hint != [None, None]:
                 self.size =  self.size_hint[0]*self.parent.width, self.size_hint[1]*self.parent.height
                 self.size_hint = None, None
+
     def prepare_export(self):
         "Use to create a subclassable list of not exported field"
         self.black_list = set()
@@ -298,13 +303,18 @@ class BaseField(HoverBehavior, FocusBehavior):
     def on_z(self, instance, value):
         #Resort all dad'children
         if self.parent:
+            dad = self.parent
             cs = self.parent.children[:]
             cs.sort(key=lambda x: x.z, reverse=True)
-            self.parent.children= cs
-            #Also reorder canvas
+            self.parent.clear_widgets()
             for c in cs:
-                self.parent.canvas.remove(c.canvas)
-                self.parent.canvas.insert(0,c.canvas)
+                dad.add_widget(c)
+
+            ##self.parent.children= cs
+            ###Also reorder canvas
+            ##for c in cs:
+            ##    self.parent.canvas.remove(c.canvas)
+            ##    self.parent.canvas.insert(0,c.canvas)
 
     def export_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
         from types import FunctionType
@@ -355,7 +365,7 @@ class BaseField(HoverBehavior, FocusBehavior):
             elif vtype in  (type({}), ObservableDict):
                 for _v in value:
                     try:
-                        _uni = uniécode(value[_v], 'latin-1')
+                        _uni = unicode(value[_v], 'latin-1')
                     except TypeError: #can not coerce float in latin -1
                         _uni = unicode(value[_v])
                     if isfile(_uni) and save_relpath:
@@ -531,7 +541,7 @@ class FloatField(BaseField, FloatLayout):
                         deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
                         deltapos =  deltapos.rotate(self.angle)
                         VECTOR = deltapos + self.center
-                    if origin.distance(VECTOR) <5:
+                    if origin.distance(VECTOR) < 5:
                         touch.ud['do_resize'] = True
                         touch.grab(self)
                         #Calculate the mode of resizing
@@ -551,7 +561,7 @@ class FloatField(BaseField, FloatLayout):
                 #Define if resized is on
                 touch.ud['do_resize'] = False
                 #Display params if duoble tap
-                if touch.is_double_tap:
+                if touch.is_double_tap and hasattr(self, 'designer'):
                     self.designer.display_field_attributes(self)
                 return True
             else:
@@ -573,7 +583,7 @@ class FloatField(BaseField, FloatLayout):
         return super(FloatField, self).on_touch_up(touch)
 
     def on_touch_move(self, touch):
-        if self.designed and touch.grab_current==self:
+        if self.designed and touch.grab_current == self:
             if touch.ud['do_resize']: #Resize
                 LEFT = touch.ud['LEFT']
                 DOWN = touch.ud['DOWN']
@@ -675,6 +685,7 @@ class TextField(Label, FloatField):
                 self.max_lines = 1
 
     def on_text(self, base, *args):
+        #Force label create
         self._single_line_text = self.text.replace('\n', '')
         if self.multiline:
             from textwrap import wrap
@@ -891,7 +902,7 @@ class TransfoField(Field):#, Image):
                 for xindex, xfo in enumerate(self.xfos):
                     self.Image = xfo(self.Image)
                 #Standard mode: flip the
-                flip = self.Image.transpose(PILImage.FLIP_TOP_BOTTOM)
+                flip = self.Image.transpose(FLIP_TOP_BOTTOM)
                 from img_xfos import img_modes
                 ktext = Texture.create( size = flip.size)
                 ktext.blit_buffer(flip.tobytes(), colorfmt = img_modes[flip.mode])

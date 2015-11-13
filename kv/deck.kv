@@ -1,3 +1,17 @@
-<TreeViewField>:
+#:import FontIcon utils.fontello.FontIcon
+
+<ScriptNode>:
     size_hint_y: None
     height: 35
+    BoxLayout:
+        Label:
+            shorten: True
+            text: root.text
+        Button:
+            size_hint_x: None
+            width: 45
+            on_press: root.script.execute()
+            FontIcon:
+                pos: self.parent.pos
+                size: self.parent.size
+                icon: 'script'

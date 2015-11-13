@@ -1038,6 +1038,7 @@ class TemplateFileEditorPopup(Popup):
         if sels:
             src = sels[0]
             if src.endswith('.kv'):
+                print '[Editor] Template Editor popup creation'
                 tmpls = BGTemplate.FromFile(src)
                 for tmpl in tmpls:
                     spinner.values.append(tmpl.template_name)

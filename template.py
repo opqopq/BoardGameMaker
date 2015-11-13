@@ -44,7 +44,11 @@ class BGTemplate(Field, RelativeLayout):
     @classmethod
     def FromFile(cls, filename):
         print 'From File with', filename
+        from os.path import split
+        from kivy.resources import resource_add_path
+        resource_add_path(split(filename)[0])
         name, filename = find_template_path(filename)
+        #Add filename dir to ressources folder to facilitate relativ import
         #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
         # Remove any former trace of the file
@@ -201,7 +205,7 @@ class BGTemplate(Field, RelativeLayout):
 
     def toImage(self, bg_color=(1,1,1,0), for_print = False):
         #create image widget with texture == to a snapshot of me
-        from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
+        from kivy.graphics import Translate, Fbo, ClearColor, ClearBuffers, Scale
         from kivy.core.image import Image as CoreImage
 
         if self.parent is not None:
@@ -241,9 +245,12 @@ class BGTemplate(Field, RelativeLayout):
                 children.opacity = opacity
         if self.parent is not None:
             self.parent.canvas.insert(canvas_parent_index, self.canvas)
-
-
         return cim
+
+    def toPILImage(self):
+        from PIL.Image import frombuffer
+        cim = self.toImage()
+        return frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA', 0, 1)
 
     def blank(self):
         t = self.__class__()
@@ -253,13 +260,13 @@ class BGTemplate(Field, RelativeLayout):
         return t
 
     def apply_values(self, values):
-        print 'appy_values', self, values
+        #print 'appy_values', self, values
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:
                 for cname in self.ids.keys():
                     if cname == k and getattr(self.ids[cname],'default_attr'):
-                        print 'resorting to default attr', self.ids[cname], k, getattr(self.ids[cname],'default_attr'), v
+                        #print 'resorting to default attr', self.ids[cname], k, getattr(self.ids[cname],'default_attr'), v
                         setattr(self.ids[cname], getattr(self.ids[cname],'default_attr'), v)
                         break
                 else:
@@ -296,7 +303,6 @@ class TemplateList(EventDispatcher):
     def copy(self):
         return self.templates.copy()
 
-
     def __setitem__(self, key, value):
         #print 'registering template',key
         self.templates[key] = value
@@ -306,6 +312,7 @@ class TemplateList(EventDispatcher):
         res = self.templates[name]
         if isinstance(res, basestring):
             #print 'reloading', res
+            print '[TemplateList] GetItem: ',
             return BGTemplate.FromFile(res)[-1]
         return res
 
@@ -313,6 +320,7 @@ class TemplateList(EventDispatcher):
         self[tmpl.template_name] = tmpl
 
     def register_file(self, filename):
+        print "[Templatelist] RegisterFile: " ,
         for tmpl in BGTemplate.FromFile(filename):
             self[tmpl.template_name] = tmpl
             tmpl.src = filename
@@ -378,16 +386,21 @@ if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):
 
 def find_template_path(filename):
     from os.path import abspath, isfile, join
-    from conf import gamepath
+    from conf import gamepath, find_path
     if "@" in filename: #Only using subone
         name, filename = filename.split('@')
     else:
         name = ""
-    if not isfile(filename):
+    r = find_path(filename)
+    from kivy.resources import resource_paths, resource_find
+    #for p in resource_paths: print p, isfile(join(p,filename))
+    if not r or not isfile(r):
         #try with gamepath ?
         if isfile(join(gamepath,path_reader(filename))):
-            filename = join(gamepath, path_reader(filename))
+            r = join(gamepath, path_reader(filename))
     #Here, we convert to abspath / normpath, as filename is used to index rules by kivy. avoid reimporting rules
-    filepath = abspath(path_reader(filename))
-    filename = filepath
-    return name, filename
+    if r:
+        filepath = abspath(path_reader(r))
+    else:
+        filepath = filename
+    return name, filepath

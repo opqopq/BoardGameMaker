@@ -7,35 +7,31 @@ from kivy.factory import Factory
 from kivy._event import EventDispatcher
 from kivy.properties import *
 from editors import *
-
-from conf import ENV
-
-BANNER = """#Local Script Editor
-#Available Globals are:
-#   env: Main Window
-#   stack: Current Stack
-#   layout: Current Layout
-#   tmpl_tree: Main Window Tree of Loaded template
-#   file_selector: MainWindow File Selector
-#   tmpls: Dict of registered template
-#   ImgPack: ImagePack Class, for creating dynamic ones
-#   os, os.path
-#   alert & log: debug
-#   DEFAULT_TEMPLATE: empty template
-#   prepare_pdf(stack, dst='test.pdf') : export stack to pdf dst
-
-"""
-
+from sgm import StackPart
+from conf import ENV, alert
 from collections import OrderedDict
 from kivy.lang import Observable
 from fields import Field
 
+BANNER = """#Available Globals are:
+# root: Root Window
+# stack: Current Stack
+# StackPart: item of stack
+# os, os.path
+# alert & log: debug
+# prepare_pdf()->test.pdf"""
+
+
 class Script(Field):
     name = 'SCRIPT'
-
     def __init__(self):
         Field.__init__(self)
         scriptList.register(self)
+        from kivy.app import App
+        def inner(*args):
+            self.stack = App.get_running_app().root.ids['deck'].ids['stack']
+        from kivy.clock import Clock
+        Clock.schedule_once(inner,1)
 
     def execute(self):
         pass
@@ -53,41 +49,35 @@ class FileScript(Script):
 
 class BGScriptEditor(BoxLayout):
     modified = BooleanProperty(False)
-    script_name = StringProperty('Untitled')
     env = ObjectProperty()
-
-class REPL(CodeInput):
-    "Single black line for sending status (like code exec properly)"
     locals = DictProperty()
-    env = ObjectProperty()
+
+    def exec_code(self, code):
+        from kivy.factory import Factory
+        rl = Factory.get('Repl_line')()
+        try:
+            exec code in self.locals
+        except Exception,e:
+            rl.mode = 'Err'
+            rl.text = str(e)
+        else:
+            rl.mode = 'Out'
+            rl.text = 'Execution done'
+        self.ids.historic.add_widget(rl)
 
     def on_env(self,*args):
         "Populate self.locals with important variable"
-        env = self.env.__self__
-        stack = env.ids.deck.stack
-        #if 'layout' in env.ids:
-        #    layout = env.ids.layout.ids.page
-        tmpl_tree = env.ids.deck.ids.tmpl_tree
-        file_selector = env.ids.deck.ids.file_chooser
-        from template import templateList as tmpls
-        from models import ImgPack
+        root = self.env.__self__
+        stack = root.ids.deck.ids.stack
+        #Filling the env
         import os, os.path
         from conf import alert, log
+        from printer import prepare_pdf
+        from conf import start_file
         self.load_locals(locals())
 
     def load_locals(self, locals):
         self.locals.update(locals)
-
-    def exec_code(self, code):
-        try:
-            exec code in self.locals
-        except Exception,e:
-            self.text+=str(e)
-        else:
-            self.text="Code executed without error"
-
-
-Factory.register('REPL',REPL)
 
 Builder.load_file('kv/scripts.kv')
 
@@ -132,84 +122,106 @@ class Idle(Script):
 class SplitMaker(Script):
     name = "SplitMaker"
     help = "Split selected image into X*Y sub images"
-    num_col = NumericProperty(3)
-    num_row = NumericProperty(3)
+    col = NumericProperty(3)
+    row = NumericProperty(3)
 
-    vars = {'num_col' : AdvancedIntEditor,'num_row':AdvancedIntEditor}
+    vars = {'col': AdvancedIntEditor, 'row':AdvancedIntEditor}
 
     def execute(self):
-        from conf import ENV, fill_env
-        fill_env()
-        from template import BGTemplate
-        from fields import SubImageField
-        from sgm import StackPart
-        from kivy.app import App
-        sub_tmpl_text='''
-<SplitTMPL@BGTemplate>
-#:import CARD conf.card_format
-    size: CARD.size
-    SubImageField:
-        size: root.size
-        id: default'''
-        sub_tmpl = BGTemplate.FromText(sub_tmpl_text)
+        if self.row == 0:
+            self.row = 1
+        if self.col == 0:
+            self.col = 1
+        stack = self.stack
         try:
-            current_part = App.get_running_app().root.ids['deck'].ids['stack'].last_selected
+            current_part = stack.last_selected
+            if not current_part:
+                raise ValueError()
         except Exception, E:
             from conf import alert
             alert('Select a Stack Item first')
             return
 
-        #Get Image of stack part
-        if getattr(self, tmplWidget):
-            cim = self.tmplWidget.toImage()
-            cim.texture.flip_vertical()
-
-        print 'use texture region'
-
-        W_ratio = 1.0/self.num_col
-        H_ratio = 1.0/self.num_row
-        for i in range(self.num_col):
-            for j in range(self.num_row):
-                values = dict()
-                values['default.dimension'] = [img_path,i*W_ratio,j*H_ratio, W_ratio, H_ratio]
+        pim = current_part.toPILImage()
+        W_ratio = 1.0/self.col
+        H_ratio = 1.0/self.row
+        W,H = pim.size
+        for i in range(self.col):
+            for j in range(self.row):
                 pack = StackPart()
                 pack.qt = current_part.qt
                 pack.dual = current_part.dual
-
-                ENV['stack'].append(pack)
+                box = [i*W_ratio*W,j*H_ratio*H, (i+1)*W_ratio*W, (j+1)*H_ratio*H]
+                pack.setImage(pim.crop([int(x) for x in box]))
+                stack.add_widget(pack)
 
 class MirrorBackground(Script):
-    name = "Add Mirror Background"
+    name = "Mirror Background"
     help = "Duplicate each entry as dual, optionnaly greyscale"
-    grey_mode = BooleanProperty(False)
+    greyscale = BooleanProperty(False)
 
-    vars = {'grey_mode' : BooleanEditor}
+    vars = {'greyscale' : BooleanEditor}
 
     def execute(self):
-        from conf import ENV, fill_env
-        fill_env()
-        if self.grey_mode:
-            from template import BGTemplate
-        from sgm import StackPart
-        children = ENV['stack'].children[::-1]
+        stack = self.stack
+        children = stack.children[::-1]
+        if self.greyscale:
+            from img_xfos import grey
         for p in children:
             if not isinstance(p,StackPart):
                 continue
             pack = p.Copy()
             pack.dual = not p.dual
-            if self.grey_mode:
-                GS = BGTemplate.FromFile('@Templates/GreyScale.kv')[0]
-                if not pack.template:
-                    pack.values['default'] = pack.source
-                else:
-                    if not pack.tmplWidget:
-                        pack.realise(withValue = True)
-                    GS.ids.default.source = pack.tmplWidget
-                pack.template = "@Templates/GreyScale.kv"
-                pack.tmplWidget = GS
+            if self.greyscale:
+                pack.setImage(grey(pack.toPILImage()))
+            stack.add_widget(pack)
 
-            ENV['stack'].add_widget(pack)
+class Flipper(Script):
+    name = "Flip Image"
+    help = "Flip H or V in place"
+    vertical = BooleanProperty(False)
+    horizontal = BooleanProperty(False)
 
+    vars = {'vertical': BooleanEditor, 'horizontal': BooleanEditor}
+
+    def execute(self):
+        if not self.stack.last_selected:
+            alert('Select a StackPart First')
+            return
+        img = self.stack.last_selected.toPILImage()
+        if self.vertical:
+            from img_xfos import v_flip
+            img = v_flip(img)
+        if self.horizontal:
+            from img_xfos import h_flip
+            img = h_flip(img)
+        self.stack.last_selected.setImage(img)
+
+class Rotater(Script):
+    name = 'Rotate Image'
+    help = 'Rotate current image in place'
+    angle = NumericProperty(0)
+    vars = {'angle': AdvancedIntEditor}
+
+    def execute(self):
+        if not self.stack.last_selected:
+            alert('Select a StackPart First')
+            return
+        img = self.stack.last_selected.toPILImage()
+        img = img.rotate(self.angle)
+        self.stack.last_selected.setImage(img)
+
+class GreyScale(Script):
+    name = 'GreyScale'
+    help = 'Turn Image to greyscale'
+
+    def execute(self):
+        if not self.stack.last_selected:
+            alert('Selecta Stackpart First')
+            return
+        img = self.stack.last_selected.toPILImage()
+        from img_xfos import grey
+        self.stack.last_selected.setImage(grey(img))
 
 scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]
 for s in scripts:

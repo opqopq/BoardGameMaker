@@ -1,40 +1,98 @@
 #:import BANNER scripts.BANNER
+#:import F kivy.factory.Factory
+
+<Repl_line@BoxLayout>:
+    size_hint_y: None
+    height: 50
+    mode: 'In'
+    text: ""
+    canvas.before:
+        Color:
+            rgb: .1,.1,.1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    canvas.after:
+        Color:
+            rgb: (1,0,0) if root.mode=="Err" else (0,1,0)
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            dash_offset: 3
+            dash_length: 3
+    Label:
+        size_hint_x: .1
+        text: "%s #%s:"%(root.mode, len(root.parent.children) if root.parent else "")
+    Label:
+        text: root.text
+        color: (1,0,0) if root.mode=='Err' else (1,1,1)
+        text_size: self.size
+        valign: 'middle'
+
 <BGScriptEditor>:
     orientation: "horizontal"
     Splitter:
         size_hint:0.3,1
         sizable_from: 'right'
-        FileChooserListView:
-            rootpath:"Scripts"
-            on_selection: input_line.text = file(self.selection[0], 'rb').read()
+        Accordion:
+            orientation: 'vertical'
+            canvas.before:
+                Color:
+                    rgba: .3,.3,.3,.7
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            AccordionItem:
+                title: 'Scripts Folder'
+                FileChooserListView:
+                    rootpath:"Scripts"
+                    on_selection: repl.text = file(self.selection[0], 'rb').read()
+            AccordionItem:
+                title: 'Script Globals'
+                Label:
+                    text: BANNER
+                    text_size: self.size
+                    #halign: 'center'
+                    valign: 'top'
+
+
     BoxLayout:
         orientation: "vertical"
-
         Label:
             id: script_name
-            text: root.script_name + ("*" if root.modified else "")
+            text: "Console & Script"
             size_hint_y: None
-            height: 30
-        CodeInput:
-            id: input_line
-            text: BANNER
-        REPL:
-            id: repl
-            multiline: False
-            size_hint_y: None
-            height: 30
-            background_color: 0,0,0,1
-            foreground_color: 1,1,1,1
-            env: root.env
+            height: 50
+            canvas.before:
+                Color:
+                    rgb: .7,.7,.7
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+        ScrollView:
+            size_hint_y: .6
+            GridLayout:
+                size_hint_y: None
+                id: historic
+                cols: 1
+                on_minimum_height: self.height = self.minimum_height
+                canvas.before:
+                    Color:
+                        rgb: 0,0,0
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+        Splitter:
+            sizable_from: "top"
+            size_hint_y: .1
+            CodeInput:
+                id: repl
         BoxLayout:
             orientation: "horizontal"
             size_hint_y: None
             height: 30
             Button:
                 text: "Execute"
-                on_press: repl.exec_code(input_line.text)
-            Button:
-                text: "Save As"
+                on_press: l = F.get('Repl_line')(); l.text = repl.text; historic.add_widget(l); root.exec_code(repl.text.strip())
             Button:
                 text: "Clear"
-                on_press: input_line.text= BANNER
+                on_press: repl.text= ""

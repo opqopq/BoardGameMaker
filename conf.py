@@ -24,6 +24,11 @@ if not isdir(gamepath):
 else:
     resource_add_path(gamepath)
 
+FORCE_FIT_FORMAT = CP.getboolean('Layout','force_fit_format')
+
+def set_force_fit_format(force):
+    CP.set('Layout','force_fit_format',int(force))
+    CP.write()
 
 USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 
@@ -139,6 +144,10 @@ def path_reader(path):
 
 def find_path(path):
     from os.path import isfile
+    from kivy.resources import resource_find
+    r = resource_find(path)
+    if r:
+        return r
     if not isfile(path_reader(path)):
         if isfile(join(gamepath, path_reader(path))):
             return join(gamepath, path_reader(path))

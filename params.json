@@ -52,6 +52,31 @@
     "options": ["jpg","png"]
     },
     {
+    "type": "bool",
+    "title": "Auto Save CSV",
+    "desc": "Save csv along PDF",
+    "section": "Print",
+    "key": "AUTOCSV"
+    },
+    {
+    "type": "bool",
+    "title": "Draw Cutting Lines",
+    "desc": "Draw a rectangle around picture for easier cutting",
+    "section": "Print",
+    "key": "DRAW_CUT_RECT"
+    },
+    {
+        "type": "title",
+        "title": "Layout"
+    },
+    {
+    "type": "bool",
+    "title": "Force Fit Format",
+    "desc": "Change size for all stack part to the fit format for layout",
+    "section": "Layout",
+    "key": "FORCE_FIT_FORMAT"
+    },
+    {
         "type": "title",
         "title": "Designer"
     },
