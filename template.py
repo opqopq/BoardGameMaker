@@ -260,7 +260,7 @@ class BGTemplate(Field, RelativeLayout):
         return t
 
     def apply_values(self, values):
-        #print 'appy_values', self, values
+        print 'appy_values', self, values
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:
@@ -273,10 +273,12 @@ class BGTemplate(Field, RelativeLayout):
                     setattr(self,k,v)
             else:
                 childName, attrName = k.split('.', 2)
+                print 'startllop', childName, attrName
                 for cname in self.ids.keys():
                     if cname == childName:
                         if isinstance(self.ids[cname], ImageField):
                             self.ids[cname].source = v
+                        print 'seting child params throu id', cname, self.ids[cname], attrName, v
                         setattr(self.ids[cname], attrName, v)
                 for child in self.children:
                     if child in childrens:
@@ -284,6 +286,7 @@ class BGTemplate(Field, RelativeLayout):
                     if child.id == childName:
                         if isinstance(child, ImageField):
                             child.source = v
+                        print 'Settung child params', child, attrName, v
                         setattr(child, attrName, v)
 
     def export_to_kv(self, level = 1, save_cm = True, relativ = True, save_relpath = True):

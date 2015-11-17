@@ -715,6 +715,10 @@ class BGDeckMaker(BoxLayout):
         p.open()
 
     def write_file_popup(self,title,cb, default='export.pdf'):
+        if default.endswith('.csv'): #try to use last file if exsits
+            from conf import CP
+            lf = CP.get('Path','last_file')
+            default = lf or default
         p = Factory.get('WriteFilePopup')()
         p.title = title
         p.cb = cb

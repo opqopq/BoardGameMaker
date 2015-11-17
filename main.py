@@ -1,19 +1,24 @@
 'Main Entry point for new KIVY bassed BGM'
 
-todos= [
+todos = [
     'P3: change virtual screen stack',
     "P3: browser v2 - file & links",
     "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
     "change stackpart selected to toggle button behavior",
-    "why does text editor appears when export liloops.kv",
     "redo styles in designer switching to a popup with all style params",
     "when loading a deck, ensure taht kv file need not to be reloaded at each line: bummer: it does",
-    "add custom klass import in designer",
+    "add custom klass import in designer ?????: when defining a klasss in kv or py it could nbe loaded in designer",
     "Bug: why laoding all templates from libray result in double load ? ",
-    "P1: repair Z not working anymore"
+    "P1: repair Z not working anymore",
+    "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",
+    "when editing kv with forved fit, size change !!!!",
+    "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
+    "vug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
+    "auto layout bug: infinite loop between realise/inner and eventloopi lde",
+    "learn way to split pdf other than pocket mod for bigger pictures"
 ]
 
-for i,todo in enumerate(todos):
+for i, todo in enumerate(todos):
     print i, todo
 
 from kivy.logger import Logger
@@ -25,6 +30,8 @@ Builder.load_file('kv/bgm.kv')
 ##############################################
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty
+
+
 class RootWidget(BoxLayout):
 
     screen_name = StringProperty('Deck')
@@ -34,22 +41,19 @@ class RootWidget(BoxLayout):
             if name == 'Browser':
                 from geekbrowser import BGGeekBrowser
                 self.ids['browser'] = last = BGGeekBrowser(name=name)
-            # elif name == 'PrintPreview':
-            #     from printer import BGPrinter
-            #     self.ids['printer'] = last = BGPrinter(name=name)
             elif name == 'Layout':
                 from layout import BGLayoutMaker
                 self.ids['layout'] = last = BGLayoutMaker(name=name)
-#            elif name == 'Console':
-#                from console import BGConsole
-#                self.ids['bgconsole'] = last = BGConsole(name=name, updated=False)
+            elif name == 'Console':
+                from console import BGConsole
+                self.ids['bgconsole'] = last = BGConsole(name=name, updated=False)
             elif name == 'Script':
                 from scripts import BGScriptEditor
                 self.ids['bgscript'] = last = BGScriptEditor(name=name, env=self)
             elif name == 'Designer':
                 from designer import BGDesigner
                 self.ids['designer'] = last = BGDesigner(name=name)
-            elif name =='Settings':
+            elif name == 'Settings':
                 from conf import CreateConfigPanel
                 self.ids['settings'] = last = CreateConfigPanel()
             else:

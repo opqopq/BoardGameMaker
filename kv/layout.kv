@@ -3,20 +3,6 @@
 #:import FontIcon utils.fontello.FontIcon
 #:import TemplateEditTree sgm.TemplateEditTree
 
-<SelectableAction@ToggleButtonBehavior+FontIcon>:
-    group: 'screenshot'
-    size_hint: None, None
-    size: 200,200
-    canvas.before:
-        Color:
-            rgb: (0,0,0) if self.state=='normal' else (.7,.7,.7)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    on_press: if args[0].last_touch.is_double_tap: self.lph.add_all_imgs()
-    icon: 'apply'
-    font_size: 80
-
 <SelectableScreenshoot@ToggleButtonBehavior+Image>:
     #size_hint_y: None
     #height: 200
@@ -88,14 +74,33 @@
             AccordionItem:
                 title: "Images"
                 collapse: False
-                ScrollView:
-                    StackLayout:
+                BoxLayout:
+                    orientation: 'vertical'
+                    BoxLayout:
                         size_hint_y: None
-                        on_minimum_height: self.height = self.minimum_height
-                        #cols: 1
-                        orientation: 'lr-tb'
-                        id: pictures
-                        spacing: 10
+                        height: 80
+                        canvas.before:
+                            Color:
+                                rgba: .7,.7,.7,.7
+                            Rectangle:
+                                size: self.size
+                                pos: self.pos
+                        Icon:
+                            icon: 'apply'
+                            text: "All"
+                            on_press: root.add_all_imgs()
+                        Icon:
+                            icon: 'cw'
+                            text: "Cache"
+                            on_press: root.update_images()
+                    ScrollView:
+                        StackLayout:
+                            size_hint_y: None
+                            on_minimum_height: self.height = self.minimum_height
+                            #cols: 1
+                            orientation: 'lr-tb'
+                            id: pictures
+                            spacing: 10
             AccordionItem:
                 title: "PlaceHolder"
                 GridLayout:
@@ -170,11 +175,85 @@
                             text: 'Empty Book'
                             icon: 'trash'
                             on_press: root.new_book()
-                        Icon:
-                            text: 'Refresh Images'
-                            icon: 'cw'
-                            on_press: root.update_images()
+            AccordionItem:
+                title: 'Custom Layout'
+                GridLayout:
+                    cols: 1
+                    ScrollView:
 
+                        GridLayout:
+                            size_hint_y: None
+                            on_minimum_height: self.height = self.minimum_height
+                            row_force_default: True
+                            row_default_height: 30
+                            cols: 2
+                            Label:
+                                text: 'Current'
+                            Label:
+                                text: "Fit Format"
+                            Label:
+                                text: "Card Width:"
+                            TextInput:
+                                id: cw
+                                text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                                #on_text_validate: CARD.updateW(self.text, unit.text)
+                                on_focus: if not self.focus: CARD.updateW(self.text, unit.text)
+                                multiline: False
+                            Label:
+                                text: "Card Height:"
+                            TextInput:
+                                id: ch
+                                text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                                #on_text_validate: CARD.updateH(self.text, unit.text)
+                                on_focus: if not self.focus: CARD.updateH(self.text, unit.text)
+                                multiline: False
+                            Label:
+                                text: "Unit:"
+                            Spinner:
+                                id: unit
+                                values: ['cm','px']
+                                text: 'cm'
+                            Label:
+                                text: "Keep Ratio:"
+                            CheckBox:
+                                ratio: 1
+                                active: True
+                                id: keep_ratio
+                                on_active: CARD.keep_ratio = self.active
+                            Label:
+                                text: 'H Step (cm)'
+                            TextInput:
+                                id: w_step
+                            Label:
+                                text: 'V Step (cm)'
+                            TextInput:
+                                id: h_step
+                            Label:
+                                text: 'Angle Step'
+                            TextInput:
+                                id: angle_step
+                            Label:
+                                text: "Delta x func"
+                            TextInput:
+                                id: dx_func
+                            Label:
+                                text: "Delta Y Func"
+                            TextInput:
+                                id: dy_func
+                            Label:
+                                text: "Reset Book"
+                            CheckBox:
+                                active: "True"
+                                id: clean_book_first
+                    Button:
+                        size_hint_y: None
+                        height: 30
+                        on_press: root.custom_layout(w_step.text, h_step.text, angle_step.text, dx_func.text, dy_func.text, clean_book_first.active)
+                        FontIcon:
+                            size: self.parent.size
+                            pos: self.parent.pos
+                            font_size: 30
+                            icon: "apply"
     Spinner:
         id: page_index
         pos: main_split.right, 0
@@ -289,16 +368,6 @@
                     TextInput:
                         id: ph_angle
                         text: '%.2d'%root.selected_ph.angle if root.selected_ph else "0"
-        AccordionItem:
-            title: 'Values'
-            ScrollView:
-                TemplateEditTree:
-                    disabled: not(root.selected_ph)
-                    on_minimum_height: self.height = self.minimum_height
-                    size_hint_y: None
-                    id: tmpltree
-                    target: root.selected_ph if root.selected_ph else False
-                    on_disabled: if self.disabled: self.clear_widgets(); self.root.nodes = list()
         AccordionItem:
             title: 'Operation'
             GridLayout:
@@ -468,6 +537,16 @@
                         value: root.selected_ph.angle if root.selected_ph else 0
                         #:import BGTemplate template.BGTemplate
                         on_value: if root.selected_ph: root.selected_ph.angle = args[1]; #root.selected_ph.children[0].angle = args[1]
+        AccordionItem:
+            title: 'Template'
+            ScrollView:
+                TemplateEditTree:
+                    disabled: not(root.selected_ph)
+                    on_minimum_height: self.height = self.minimum_height
+                    size_hint_y: None
+                    id: tmpltree
+                    target: root.selected_ph if root.selected_ph else False
+                    on_disabled: if self.disabled: self.clear_widgets(); self.root.nodes = list()
         AccordionItem:
             title: 'Groups (%d selections)'%(len(root.selections))
             ScrollView:

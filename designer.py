@@ -281,9 +281,13 @@ class BGDesigner(FloatLayout):
         ##self.insert_field(self.current_template, is_root=True)
 
     def save(self,PATH=None,*args):
-        self.current_template.template_name = self.current_template.template_name.capitalize()
         from conf import CP
-        from os.path import isfile
+        from os.path import isfile, split, splitext
+        if PATH is not None:
+            self.current_template.template_name = splitext(split(PATH)[-1])[0].capitalize()
+            self.tmplPath = PATH
+        else:
+            self.current_template.template_name = self.current_template.template_name.capitalize()
         if PATH is None:
             if self.tmplPath:
                 PATH = self.tmplPath

@@ -109,7 +109,7 @@ class PDFBook:
             else:
                 x, y = width - (1+col)*self.x - left - right, height-(1+row)*self.y - top
         #print i, row, col, face, item, x, y, self.x, self.y
-        self.pdf.drawImage(src, x*r_cm, y*r_cm, self.x*r_cm, self.y*r_cm)
+        self.pdf.drawImage(src, x*r_cm, y*r_cm, self.x*r_cm, self.y*r_cm, mask='auto')
         from conf import CP
         if CP.getboolean('Print','draw_cut_rect'):
             #add line after image: they ll be above

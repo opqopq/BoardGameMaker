@@ -255,7 +255,7 @@
     title: "Edit Size for %s"%split(self.name)[-1]
     target: None
     cb: None
-    size_hint: .3, None
+    size_hint: .5, None
     height: 150
     pos_hint: {'center_x': .5, 'center_y': .5}
     GridLayout:
@@ -268,7 +268,7 @@
             values: ['px','cm']
             id: w_metric
             text: "px"
-            on_text: width.text = str((float(width.text) * cm(1)) if args[1]=='px' else (float(width.text)/cm(1)))
+            on_text: width.text = "%.2f"%((float(width.text) * cm(1)) if args[1]=='px' else (float(width.text)/cm(1)))
         Label:
             text: "Height:"
         TextInput:
@@ -276,7 +276,7 @@
         Spinner:
             values: ['px','cm']
             id: h_metric
-            on_text: height.text = str((float(height.text) * cm(1)) if args[1]=='px' else (float(height.text)/cm(1)))
+            on_text: height.text = "%.2f"%((float(height.text) * cm(1)) if args[1]=='px' else (float(height.text)/cm(1)))
             text: "px"
         Button:
             text: "Apply"

@@ -48,6 +48,8 @@
             TextInput:
                 id: target
                 text: join(fselect.path,root.default_name)
+                multiline: False
+                on_text_validate: root.dismiss(); root.cb(self.text)
         BoxLayout:
             size_hint_y: None
             height: 30
@@ -82,7 +84,7 @@
             width: 100
             on_text: root.screen_name = self.text
             text: "Deck"
-            values: 'Deck','Designer', 'Layout', 'Settings', 'Browser', 'Script'#,'Console'
+            values: 'Deck','Designer', 'Layout', 'Settings', 'Browser', 'Script', 'Console'
         LabelButton:
             id: message
             on_press: app.alert('')# dismiss message

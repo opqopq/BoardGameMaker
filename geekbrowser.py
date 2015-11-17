@@ -373,7 +373,7 @@ class BGGeekBrowser(BoxLayout):
         except UnicodeDecodeError:
             elts['Links'] = ""
         sub = tmpl%elts
-        file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
+        file(join(path, "expl@ore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
         from conf import start_file
         start_file(join(path, "explore_%s.html"%self.selected_game))
 

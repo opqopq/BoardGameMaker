@@ -223,6 +223,50 @@ class GreyScale(Script):
         from img_xfos import grey
         self.stack.last_selected.setImage(grey(img))
 
+class Pocketer(Script):
+    name = 'PocketModer'
+    help = 'Turn eight last pictures into pocket mode'
+
+    replace = BooleanProperty(False)
+
+    vars = {'replace': BooleanEditor}
+
+    def execute(self):
+        if len(self.stack.children) < 8:
+            alert('Stack contains less than 8 items !')
+            return
+        from PIL.Image import FLIP_TOP_BOTTOM
+        from kivy.graphics.texture import Texture
+        from img_xfos import img_modes
+
+        pockets = self.stack.children[:8]
+        imgs = [p.toPILImage() for p in reversed(pockets)]
+        from template import BGTemplate
+        tmpl = BGTemplate.FromFile('Templates/pocketmode.kv')[0]
+        from sgm import StackPart
+        pim = tmpl.toPILImage()
+        pm = StackPart()
+        for i in range(1,9):
+            name = 'page%d'%i
+            imgfield = tmpl.ids[name]
+            pilimage = imgs[i-1]
+            flip = pilimage.transpose(FLIP_TOP_BOTTOM)
+            ktext = Texture.create(size=flip.size)
+            ktext.blit_buffer(flip.tobytes(), colorfmt=img_modes[flip.mode])
+            imgfield.texture = ktext
+        def inner(*args):
+            #Here is hould loop on the template to apply them on values
+            from kivy.base import EventLoop
+            EventLoop.idle()
+            pim = tmpl.toPILImage().rotate(90)
+            pm.setImage(pim)
+            self.stack.add_widget(pm)
+        if self.replace:
+            for p in pockets:
+                self.stack.remove_widget(p)
+        from kivy.clock import Clock
+        Clock.schedule_once(inner,-1)
+
 scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]
 for s in scripts:
     scriptList.register(s())

@@ -111,6 +111,7 @@ def fill_env(*args):
     if not app:
         return
     root = app.root
+    ENV['main'] = root
     for _id in root.ids:
         ENV[_id] = root.ids[_id]
     ENV['log'] = log

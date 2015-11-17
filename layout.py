@@ -55,7 +55,7 @@ class LayoutPlaceHolder(TextField):
         return TextField.on_touch_down(self, touch)
 
     def on_touch_move(self, touch):
-        if self.selected:
+        if self.selected and touch.grab_current == self:
             for c in self.layout_maker.selections:
                 if c == self:
                     continue
@@ -69,7 +69,8 @@ class LayoutPlaceHolder(TextField):
             self.layout_maker.selections[self] = None
             self.layout_maker.selected_ph = self
         else:
-            del self.layout_maker.selections[self]
+            if self in self.layout_maker.selections:
+                del self.layout_maker.selections[self]
             self.layout_maker.selected_ph = False
 
 class BGLayoutMaker(FloatLayout):
@@ -78,9 +79,6 @@ class BGLayoutMaker(FloatLayout):
     page_index = NumericProperty(0)
     selections = DictProperty()
     display_index = BooleanProperty(True, rebind = True)
-
-    def on_display_index(self, instance, value):
-        print 'ODI', instance, value
 
     def __init__(self, *args, **kwargs):
         FloatLayout.__init__(self, *args, **kwargs)
@@ -96,9 +94,6 @@ class BGLayoutMaker(FloatLayout):
         stack = App.get_running_app().root.ids.deck.ids.stack
         pictures = self.ids.pictures
         pictures.clear_widgets()
-        a = Factory.SelectableAction()
-        a.lph = self
-        pictures.add_widget(a)
         for s in reversed(stack.children):
             for _ in range(s.qt):
                 object = Factory.SelectableScreenshoot()
@@ -112,11 +107,17 @@ class BGLayoutMaker(FloatLayout):
         stack.bind(children=self.update_images)
 
     def add_all_imgs(self):
-        for i,c in enumerate(reversed(self.ids.pictures.children)):
-            #skip all
-            if not i:
-                continue
-            self.add_img_ph(c)
+        from kivy.clock import Clock
+        cs = self.ids.pictures.children[:]
+        self.ids.progress.max = len(cs)
+        self.ids.progress.value = 0
+        def inner(*args):
+            if not cs:
+                Clock.unschedule(inner)
+                return
+            self.ids.progress.value +=1
+            self.add_img_ph(cs.pop())
+        Clock.schedule_interval(inner,.1)
 
     def add_ph(self):
         from conf import card_format as CARD
@@ -140,12 +141,15 @@ class BGLayoutMaker(FloatLayout):
         ph.size = s
         ph.rotation = a
 
-    def remove_ph(self):
-        if self.selected_ph:
-            self.delete_ph(self.selected_ph)
-            #remove myself from selection
-            self.selected_ph.selected = False
-            self.selected_ph = None
+    def remove_ph(self, ph=None):
+        if ph is None:
+            ph = self.selected_ph
+        if ph:
+            self.delete_ph(ph)
+            if self.selected_ph:
+                #remove myself from selection
+                self.selected_ph.selected = False
+                self.selected_ph = None
 
     def delete_ph(self,ph):
         page = ph.parent
@@ -230,8 +234,8 @@ class BGLayoutMaker(FloatLayout):
             setattr(self.selected_ph, 'center_%s'%direction,getattr(self.selected_ph.parent,way)/2)
 
     def export_phs(self):
-        for page in self.pages:
-            for pindex, ph in enumerate(page.children):
+        for pindex,page in enumerate(self.pages):
+            for ph in page.children:
                 if not ph:
                     continue
                 #Export layout
@@ -287,14 +291,14 @@ class BGLayoutMaker(FloatLayout):
         page_index = int(page_index.split()[-1])-1
         self.ids.view.remove_widget(self.pages[self.page_index])
         self.page_index = page_index
-        w = self.pages[self.page_index]
+        w = self.pages[self.page_index%len(self.pages)]
         self.ids.view.add_widget(w)
         self.ids['page'] = self.pages[self.page_index]
         self.ids.page_index.text = 'Page %d'%(self.page_index+1)
 
     def auto_fill_page(self, all=False):
         "Fill current page'PH with with images, in order"
-        pictures = self.ids.pictures.children[:-1]
+        pictures = self.ids.pictures.children[:]
         phs = [x for x in self.pages[self.page_index].children]
         if not all:
             phs = [x for x in self.pages[self.page_index].children if not x.stack]
@@ -306,7 +310,7 @@ class BGLayoutMaker(FloatLayout):
             self.set_ph_img(ph,p, False)
 
     def move_page(self, page, new_index):
-        print 'todo: move this mirror page to next the current one'
+        pass
         #oindex = self.pages.index(page)
         #del self.pages[oindex]
         #self.pages.insert(new_index,page)
@@ -407,21 +411,12 @@ class BGLayoutMaker(FloatLayout):
                 #m = Matrix()
                 #m.rotate(ph.angle,0,0,1)
 
-    def magic_fill(self):
-        #alas, I have to linezarise in order to save layout for each widget
-        from kivy.app import App
-        App.get_running_app().root.ids.deck.linearize()
-
-        init_pi = self.page_index
-        from conf import page_format
-        SIZE = page_format.width-page_format.left-page_format.right, page_format.height-page_format.top-page_format.bottom
+    def get_duals(self):
         #first create tuple of fg/bg
         fg = list()
         bg = list()
         dual_dict = dict()
         for i,c in enumerate(reversed(self.ids.pictures.children)):
-            if not i:
-                continue
             if c.stack.dual:
                 bg.append((c, i))
             else:
@@ -434,6 +429,17 @@ class BGLayoutMaker(FloatLayout):
                 f, i = f
                 b, i = b
                 dual_dict[f] = b
+        return fg,bg,dual_dict
+
+    def magic_fill(self):
+        #alas, I have to linezarise in order to save layout for each widget
+        from kivy.app import App
+        App.get_running_app().root.ids.deck.linearize()
+        init_pi = self.page_index
+        from conf import page_format
+        SIZE = page_format.width-page_format.left-page_format.right, page_format.height-page_format.top-page_format.bottom
+        #first create tuple of fg/bg
+        fg,bg,dual_dict = self.get_duals()
         #fill current page with what you can
         def skey(item):
             w,h = item[0].stack.getSize()
@@ -457,6 +463,7 @@ class BGLayoutMaker(FloatLayout):
             added_ones = list()
             PAGE_LAYOUT = BinCanNode(0, 0, SIZE[0], SIZE[1])
             for f, i in sorted_phs:
+                print f.stack, f.stack.getSize(), f.stack.source
                 layout = PAGE_LAYOUT.find(f, *f.stack.getSize())
                 if not layout:
                     continue
@@ -499,6 +506,91 @@ class BGLayoutMaker(FloatLayout):
         self.ids.page_index.values = ['Page 1']
         self.ids.page_index.text = 'Page %d'%len(self.pages)
         self.update_images()
+
+    def custom_layout(self, w, h, a, dxf, dyf, clean_book_first=False):
+        if clean_book_first:
+            self.new_book()
+        from conf import FORCE_FIT_FORMAT
+        #alas, I have to linezarise in order to save layout for each widget
+        from kivy.app import App
+        App.get_running_app().root.ids.deck.linearize()
+        fg,bg,dual_dict = self.get_duals()
+        for f in dual_dict:
+            print 'f', f.stack.source, dual_dict[f].stack.source
+        fg = list(reversed(fg))
+        from kivy.metrics import cm
+        from conf import page_format
+        w = 0 if not(w) else float(w)
+        w *= cm(1)
+        h = 0 if not(h) else float(h)
+        h *= cm(1)
+        a = 0 if not(a) else float(a)
+        if not dxf:
+            xf = lambda r, c, ang: 0
+        else:
+            def xf(row, col, index):
+                from kivy.metrics import cm
+                return cm(1) * eval(dxf)
+        if not dyf:
+            yf = lambda r, c, ang: 0
+        else:
+            def yf(row, col, index):
+                from kivy.metrics import cm
+                return cm(1) * eval(dyf)
+
+        vars = dict(row_index=0, col_index = 0, former_angle=0, added_ones=list(),cindex=-1)
+
+        from kivy.clock import Clock
+        self.ids.progress.max = len(fg)
+        def inner(*args):
+            if not fg:
+                Clock.unschedule(inner)
+                return
+            self.ids.progress.value += 1
+            cs, _ = fg.pop()
+            vars['cindex'] +=1
+            ph = self.add_ph()
+            self.set_ph_img(ph, cs, not(FORCE_FIT_FORMAT))
+            ph.x = w * vars['col_index'] + page_format.left
+            ph.top = page_format.height - page_format.top - h * vars['row_index']
+            ph.angle = (vars['former_angle']+a)%360
+            vars['former_angle'] = ph.angle
+            vars['col_index'] += 1
+            ph.x += xf(vars['row_index'],vars['col_index'], vars['cindex'])
+            ph.y += yf(vars['row_index'], vars['col_index'], vars['cindex'])
+            if ph.right > page_format.width-page_format.right:
+                vars['row_index'] += 1
+                vars['col_index'] = 1
+                ph.x = page_format.left
+                ph.top = page_format.height - page_format.top - h * vars['row_index']
+                ph.x += xf(vars['row_index'],vars['col_index'], vars['cindex'])
+                ph.y += yf(vars['row_index'],vars['col_index'], vars['cindex'])
+            if ph.y < page_format.bottom:
+                self.remove_ph(ph)
+                vars['row_index'] = 0
+                vars['col_index'] = 0
+                if dual_dict:
+                    #First page is done, create dual
+                    mp = self.add_mirror_page()
+                    for ph, b in zip (reversed(mp.children), [dual_dict[f] for f in vars['added_ones']]):
+                        self.set_ph_img(ph,b, use_img_size= False)
+                #Once completed, add a new page
+                self.add_page()
+                vars['added_ones'] = list()
+                #Now, put back into the fg the needed cs. Also link dual if exists
+                ncs = self.ids.pictures.children[0]
+                if dual_dict:
+                    dual_dict[ncs] = dual_dict[cs]
+                fg.append((ncs,_))
+            elif not(fg) and dual_dict: #layout is done. proceed with last uncompleted mirror page
+                vars['added_ones'].append(cs)
+                mp = self.add_mirror_page()
+                for ph, b in zip (reversed(mp.children), [dual_dict[f] for f in vars['added_ones']]):
+                    self.set_ph_img(ph,b, use_img_size= False)
+            else:
+                vars['added_ones'].append(cs)
+
+        Clock.schedule_interval(inner,.05)
 
 Builder.load_file('kv/layout.kv')
 

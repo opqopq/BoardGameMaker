@@ -59,6 +59,7 @@
                 text: "Font Path"
             TextInput:
                 id: font_path
+                multiline: False
         BoxLayout:
             size_hint: 1, None
             height: 30
@@ -566,6 +567,7 @@
                             id: img_x
                             text: str(root.dimension[1])
                             #on_text: root.dimension[1] = float(self.text)
+                            multiline: False
                         Label:
                             text: "Width Ratio:"
                         TextInput:
@@ -581,12 +583,14 @@
                             id: img_y
                             text: str(root.dimension[2])
                             #on_text: root.dimension[2] = float(self.text)
+                            multiline: False
                         Label:
                             text: "Height Ratio:"
                         TextInput:
                             id: img_height
                             text: str(root.dimension[4])
                             #on_text: root.dimension[4] = float(self.text)
+                            multiline: False
                         Button:
                             text: "Reset"
                             id: restore_button
