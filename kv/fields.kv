@@ -51,29 +51,6 @@
             angle: -self.angle
             origin: self.center # if scatter self.width/2, self.height/2
             axis: 0,0,1
-    Label:
-        is_context: True
-        size_hint_y: None
-        height: 20
-        shorten: True
-        shorten_from: 'left'
-        halign: 'right'
-        text: root.name if root.name else root.Type
-        pos: (root.x, root.center_y-self.height) if root.Type!='TemplateField' else (0, root.height/2-self.height)
-        color: (1,1,1,1) if root.hovered else (0,0,0,0)
-        canvas.before:
-            Color:
-                rgba: (.7,.7,.7,1) if root.hovered else (0,0,0,0)
-            Rectangle:
-                pos: self.pos
-                size: self.size
-#    Image:
-#        is_context: True
-#        source: "img/%s.png"%root.Type
-#        size_hint: None, None
-#        size: 24,24
-#        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='TemplateField' else (root.center_x-self.width/2, root.y-self.height/2)
-#        opacity: 1 if root.designed else 0
     FontIcon:
         is_context: True
         icon: root.Type

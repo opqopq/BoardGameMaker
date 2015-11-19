@@ -113,10 +113,7 @@ FONT_PATH = 'utils/fontello.ttf'
 
 class FontIcon(Label):
     icon = StringProperty()
-
-    def __init__(self,**kwargs):
-        Label.__init__(self,**kwargs)
-        self.font_name = FONT_PATH
+    font_name = StringProperty(FONT_PATH)
 
     def on_icon(self,instance, icon):
         self.text = FONTELLO.get(icon, 'X') if icon.startswith('icon-') else FONTELLO.get('icon-'+icon, 'X')

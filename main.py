@@ -135,13 +135,13 @@ class BGMApp(App):
     def compute_stats(self,grid):
         return self.root.ids['deck'].compute_stats(grid)
 
-    def on_start(self):
-        self.profile = cProfile.Profile()
-        self.profile.enable()
+#    def on_start(self):
+#        self.profile = cProfile.Profile()
+#        self.profile.enable()
 
-    def on_stop(self):
-        self.profile.disable()
-        self.profile.dump_stats('bgm.profile')
+#    def on_stop(self):
+#        self.profile.disable()
+#        self.profile.dump_stats('bgm.profile')
 
 if __name__ == '__main__':
     BGMApp().run()

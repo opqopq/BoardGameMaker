@@ -8,7 +8,6 @@ from kivy.properties import ObservableDict, ObservableList, ObservableReferenceL
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.texture import Texture
 from kivy.uix.behaviors import FocusBehavior
-from utils.hoverable import HoverBehavior
 from kivy.graphics import Color, Rectangle, Canvas
 from kivy.graphics.fbo import Fbo
 from utils.symbol_label import SymbolLabel
@@ -67,18 +66,16 @@ def get_hint(rootsize, fieldsize, is_pos=False):
     return rounded_x, rounded_y
 
 from kivy.uix.widget import WidgetMetaclass
-class MyMeta(WidgetMetaclass):
+class MetaField(WidgetMetaclass):
     def __new__(meta, name, bases, dct):
-        print 'skip_designer' in dct, name, 'new'
         #print bases
         #print dct
-        return super(MyMeta, meta).__new__(meta, name, bases, dct)
+        return super(MetaField, meta).__new__(meta, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
-        print 'skip_designer' in dct, name, 'init'
-        super(MyMeta, cls).__init__(name, bases, dct)
+        super(MetaField, cls).__init__(name, bases, dct)
 
-class BaseField(HoverBehavior, FocusBehavior):
+class BaseField(FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
     selected = BooleanProperty(False)
     z = NumericProperty(0)
@@ -424,7 +421,6 @@ class BaseField(HoverBehavior, FocusBehavior):
         tmpls.append('')
         return (tmpls, imports, directives)
 
-#class Field(HoverBehavior, FocusBehavior, FloatLayout):
 from kivy.uix.relativelayout import RelativeLayout
 class Field( BaseField, RelativeLayout):
 

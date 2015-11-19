@@ -115,11 +115,9 @@ def fill_env(*args):
     for _id in root.ids:
         ENV[_id] = root.ids[_id]
     ENV['log'] = log
-    from template import templateList
-    ENV['tmpls'] = templateList
-    from printer import prepare_pdf
-    ENV['prepare_pdf'] = prepare_pdf
-    #ENV['stack'] = root.ids['deck'].ids['stack']
+    ENV['alert'] = alert
+    #from printer import prepare_pdf
+    #ENV['prepare_pdf'] = prepare_pdf
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)

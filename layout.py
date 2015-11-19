@@ -120,14 +120,13 @@ class BGLayoutMaker(FloatLayout):
         Clock.schedule_interval(inner,.1)
 
     def add_ph(self):
-        from conf import card_format as CARD
         page = self.pages[self.page_index]
         page.index += 1
         ph = LayoutPlaceHolder(index=page.index)
         ph.layout_maker = self
         ph.autofit = True
         ph.valign = 'middle'
-        ph.halign='center'
+        ph.halign= 'center'
         page.add_widget(ph)
         ph.designed = True
         return ph
