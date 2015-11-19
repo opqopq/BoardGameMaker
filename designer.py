@@ -62,7 +62,7 @@ class BGDesigner(FloatLayout):
             TFE = Factory.get("TmplFieldEntry")
             PFE = Factory.get('LinkedFieldEntry')
             for key in sorted(fieldDict):
-                if hasattr(fieldDict[key], 'skip_designer') and fieldDict[key].skip_designer:
+                if "skip_designer" in fieldDict[key].__dict__ and fieldDict[key].skip_designer:#test of __dict__ ensure existencfe at the calss level,, not in its basis
                     continue
                 fe = FE()
                 fe.text= key

@@ -15,7 +15,8 @@ todos = [
     "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
     "vug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
     "auto layout bug: infinite loop between realise/inner and eventloopi lde",
-    "learn way to split pdf other than pocket mod for bigger pictures"
+    "learn way to split pdf other than pocket mod for bigger pictures",
+    "metaclass for field, for computing vars & menus only once"
 ]
 
 for i, todo in enumerate(todos):
@@ -68,15 +69,18 @@ class RootWidget(BoxLayout):
             try:
                 self.on_screen_name(self, 'Console', False)
             except ValueError:
-                print 'Console/Log Screen disabled: resorting to print: ',
+                print '[LOG]: ',
                 print text, stack
                 return
         if not stack:
             import traceback
             stack = traceback.format_exc()
+        from conf import alert
+        alert(text)
         self.ids.bgconsole.add(text, stack)
 
 from kivy.app import App
+import cProfile
 
 class BGMApp(App):
     title = "Board Game Maker"
@@ -122,7 +126,7 @@ class BGMApp(App):
         if not keep:
             from kivy.clock import Clock
             def cb(*args):
-                self.alert(keep = True)
+                self.alert(keep=True)
             Clock.schedule_once(cb, 2)
 
     def set_screen(self, screen_name):
@@ -130,6 +134,14 @@ class BGMApp(App):
 
     def compute_stats(self,grid):
         return self.root.ids['deck'].compute_stats(grid)
+
+    def on_start(self):
+        self.profile = cProfile.Profile()
+        self.profile.enable()
+
+    def on_stop(self):
+        self.profile.disable()
+        self.profile.dump_stats('bgm.profile')
 
 if __name__ == '__main__':
     BGMApp().run()

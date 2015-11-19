@@ -8,6 +8,7 @@ from kivy.properties import *
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
+from conf import log, alert
 
 Builder.load_file('kv/editors.kv')
 
@@ -255,7 +256,6 @@ class TransfoListEditor(Editor):
                 setattr(self.target, keyname, value )
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
                 log(E)
         t.bind(text=cbimg)
         def button_callback(instance):
@@ -282,7 +282,7 @@ class IntEditor(TextEditor):
                 setattr(self.target, keyname, int(value))
                 t.stored_value = int(value)
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
@@ -339,7 +339,6 @@ class FloatEditor(IntEditor):
                 setattr(self.target, keyname, float(value))
                 t.stored_value = float(value)
             except ValueError,E:
-                from conf import log
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
@@ -376,7 +375,7 @@ class MetricEditor(Editor):
                 args = {keyname: xcb}
                 self.target.bind(**args)
             except ValueError,E:
-                from conf import log
+
                 log(E)
                 print E
         ti.bind(text=cb)
@@ -392,7 +391,7 @@ class MetricEditor(Editor):
                 #no change in value <=> no settr ####setattr(self.target, keyname, "%s%s"%(ti.text,theText))
                 t.stored_value= "%s%s"%(ti.text,theText)
             except ValueError,E:
-                from conf import log
+
                 log(E)
                 print E
         ts.bind(text=cbs)
@@ -427,6 +426,7 @@ class SizeHintEditor(Editor):
         t.add_widget(tih)
 
         def cb_w(instance, value):
+            if value is None: return
             try:
                 sh = getattr(self.target, keyname)
                 if not value:
@@ -435,10 +435,10 @@ class SizeHintEditor(Editor):
                     sh[0] = float(value)
                 t.stored_value = float(value)
             except ValueError, E:
-                from conf import log
                 log(E)
 
         def cb_h(instance, value):
+            #if value is None: return
             try:
                 sh = getattr(self.target, keyname)
                 if not value:
@@ -447,7 +447,6 @@ class SizeHintEditor(Editor):
                     sh[1] = float(value)
                 t.stored_value = float(value)
             except ValueError, E:
-                from conf import log
                 log(E)
 
         tiw.bind(text=cb_w)
@@ -467,7 +466,7 @@ class PosHintEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
         def button_callback(instance):
@@ -612,7 +611,7 @@ class RangeEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(value=cb)
         t.target_key = keyname
@@ -655,7 +654,7 @@ class ChoiceEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
@@ -723,7 +722,7 @@ class ColorOptionEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cb)
         #Cross bingding: when selection_values is changed,
@@ -767,7 +766,7 @@ class ImgOptionEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cb)
         #Cross bingding: when selection_values is changed,
@@ -786,7 +785,7 @@ class ImgOptionEditor(Editor):
 class ImageChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         text = ""
-        if self.target.choices:
+        if getattr(self.target, keyname):
             text= self.target.selection or self.target.choices.keys()[0]
         t=Button(text = "Define")
         def cbimg(value):
@@ -794,7 +793,7 @@ class ImageChoiceEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
         def button_callback(instance):
@@ -802,7 +801,7 @@ class ImageChoiceEditor(Editor):
             cp_width = min(Window.size)
             size = Vector(Window.size)*.9
             popup = ImageChoiceEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg, keyname = getattr(self.target, keyname))
-            popup.load_choices(self.target.choices)
+            popup.load_choices(getattr(self.target,keyname))
             popup.open()
         t.bind(on_press= button_callback)
         t.target_key = keyname
@@ -822,7 +821,7 @@ class ColorChoiceEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError, E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
 
@@ -883,7 +882,7 @@ class FontChoiceEditor(ChoiceEditor):
                 t.stored_value = [font_name, font_size, bold, italic]
                 setattr(self.target, 'font', t.stored_value)
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
 
@@ -918,7 +917,7 @@ class EffectsEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
         def button_callback(instance):
@@ -946,7 +945,7 @@ class StyleEditor(Editor):
                 setattr(self.target, keyname, value)
                 t.stored_value = value
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cbimg)
         def button_callback(instance):
@@ -981,7 +980,7 @@ class FieldEditor(ChoiceEditor):
                 setattr(self.target, keyname, fields[value])
                 t.stored_value = fields[value]
             except ValueError,E:
-                from conf import log
+
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
@@ -1433,7 +1432,6 @@ class PosHintChoiceEditorPopup(Popup):
             try:
                 self.choices[name] = float(path)
             except ValueError,E:
-                from conf import log, alert
                 alert(E)
                 log(E,'while converting to float')
         print 'new poshint is', self.choices

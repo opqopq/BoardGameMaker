@@ -66,6 +66,18 @@ def get_hint(rootsize, fieldsize, is_pos=False):
         return {'x': rounded_x, 'y': rounded_y}
     return rounded_x, rounded_y
 
+from kivy.uix.widget import WidgetMetaclass
+class MyMeta(WidgetMetaclass):
+    def __new__(meta, name, bases, dct):
+        print 'skip_designer' in dct, name, 'new'
+        #print bases
+        #print dct
+        return super(MyMeta, meta).__new__(meta, name, bases, dct)
+
+    def __init__(cls, name, bases, dct):
+        print 'skip_designer' in dct, name, 'init'
+        super(MyMeta, cls).__init__(name, bases, dct)
+
 class BaseField(HoverBehavior, FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
     selected = BooleanProperty(False)
@@ -633,7 +645,6 @@ class FloatField(BaseField, FloatLayout):
             self.canvas.insert(0,c.canvas)
 
 class TextField(Label, FloatField):
-    skip_designer = False
     autofit = BooleanProperty(False)
     multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
@@ -717,7 +728,6 @@ class TextField(Label, FloatField):
                     self.font_size-=1
 
 class ImageField(Image, FloatField):
-    skip_designer = False
     attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
@@ -744,7 +754,6 @@ class BorderField(Field):
 
 class ImgChoiceField(Image, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
-    skip_designer = False
     choices = DictProperty()
     attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     default_attr = 'selection'
@@ -795,7 +804,6 @@ class ColorChoiceField(Field):
 class SymbolField(SymbolLabel, FloatField):
     source=StringProperty()
     default_attr = 'text'
-    skip_designer = False
 
     def __init__(self,**kwargs):
         SymbolLabel.__init__(self,**kwargs)
@@ -977,13 +985,67 @@ class SourceShapeField(ShapeField):
 #    pass
 
 class RectangleField(SourceShapeField):
-    skip_designer = False
     corner_radius = NumericProperty(0)
     fg_color = ListProperty([1,1,1,1])
     attrs = {'corner_radius': AdvancedIntEditor, 'fg_color': ColorEditor}
 
+class GridField(ShapeField):
+    cols = NumericProperty(5)
+    rows = NumericProperty(5)
+    attrs = {'cols': AdvancedIntEditor, 'rows': AdvancedIntEditor, 'images': ImageChoiceEditor}
+    points = ListProperty()
+    images = DictProperty()
+    not_exported = ['points']
+
+    def on_cols(self, instance, value):
+        self.update_points()
+
+    def on_rows(self, instance, value):
+        self.update_points()
+
+    def on_pos(self, instance, value):
+        self.update_points()
+
+    def on_size(self, instance, value):
+        self.update_points()
+
+    def on_images(self, instance, value):
+        self.update_points()
+
+    def update_points(self):
+        self.clear_widgets()
+        points = list()
+        for i in range(self.cols):
+            if i%2:
+                points.extend((self.x+(i*self.width/self.cols),self.top))
+                points.extend((self.x+(i*self.width/self.cols),self.y))
+                #points.append(self.x+(i+1*self.width/self.cols),self.y)
+            else:
+                points.extend((self.x+(i*self.width/self.cols),self.y))
+                points.extend((self.x+(i*self.width/self.cols),self.top))
+                #points.append(self.x+(i+1*self.width/self.cols),self.top)
+        #Rebase thinks to start from lower right
+        if self.cols%2:
+            points.extend((self.right, self.top))
+        for j in range(self.rows):
+            if j%2:
+                points.extend((self.x, self.y+(j*self.height/self.rows)))
+                points.extend((self.right, self.y+(j*self.height/self.rows)))
+            else:
+                points.extend((self.right, self.y+(j*self.height/self.rows)))
+                points.extend((self.x, self.y+(j*self.height/self.rows)))
+        self.points = points
+        #Now, try to stick as much image as possible:
+        imgs = sorted(self.images.keys(), reverse=True)
+        from kivy.uix.image import Image
+        for i in range(self.cols):
+            for j in range(self.rows):
+                if not imgs:
+                    return
+                img = imgs.pop()
+                self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img]), size=(self.width/max(self.cols,1),(self.height/max(self.rows,1))), pos=(self.x+i*self.width/max(1, self.cols),self.y+j*self.height/max(1,self.rows)))
+
 class EllipseField(SourceShapeField):
-    skip_designer = False
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
     fg_color = ListProperty([1,1,1,1])
@@ -995,7 +1057,6 @@ class WireField(ShapeField):
     points = ListProperty()
 
 class MeshField(SourceShapeField):
-    skip_designer = False
     attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
     vertices = ListProperty()
     not_exported = ['vertices']
@@ -1022,8 +1083,6 @@ class MeshField(SourceShapeField):
 
 class PolygonField(SourceShapeField):
     #Mesh field with predefined points for regular polygon
-
-    skip_designer = False
     attrs = {'side': AdvancedIntEditor, 'angle_start': AdvancedIntEditor}
     side = NumericProperty(4)
     angle_start = NumericProperty(0)
@@ -1130,7 +1189,6 @@ class MaskField(LinkedField):
 
     alpha = NumericProperty(1)
 
-    skip_designer = False
     attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
     default_attr = 'points'
     vertices = ListProperty()
@@ -1148,7 +1206,6 @@ class MaskField(LinkedField):
             self.vertices.append(cy+points[i+1] * self.height)
             #Texture have to be vertically flipped for kivy to load. why ???
             self.vertices.extend([points[i], 1-points[i+1]])
-
 
     def add_widget(self, *largs):
         largs= list (largs)

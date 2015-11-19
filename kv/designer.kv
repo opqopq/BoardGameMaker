@@ -36,36 +36,28 @@
     size_hint_y: None
     height: 30
     orientation: 'horizontal'
-#:import isfile os.path.isfile
+    spacing: 15
+    #:import isfile os.path.isfile
     FontIcon:
         icon: root.target.Type if root.target else "settings"
         size_hint: .25,1
-    #Image:
-    #    source: "img/%s.png"%root.target.Type if root.target and isfile("img/%s.png"%root.target.Type) else "img/misc.png"
-    #    size_hint: .25,1
-
     Label:
         text: (root.target.name or root.target.Type[:-5] if root.target and isinstance(root.target, Field)  else (root.target.Type if root.target and isinstance(root.target, Field) else ""))
         size_hint: .5,1
-    Button:
+    Icon:
         disabled: not(root.is_selected)
-        size_hint: .1,1
+        size_hint: .1,.8
         on_press: root.designer.duplicate_selection()
-        FontIcon:
-            font_size: 20
-            color: 1,1,1,1
-            icon: 'duplicate'
-            pos: self.parent.pos
-            size: self.parent.size
-    Button:
+        icon: 'duplicate'
+        font_size: 25
+    Icon:
         disabled: not(root.is_selected)
-        size_hint: .1,1
+        size_hint: .1,.8
         on_press: root.designer.remove_selection()
-        FontIcon:
-            font_size: 30
-            icon: 'cancel'
-            pos: self.parent.pos
-            size: self.parent.size
+        icon: 'cancel'
+        font_size: 30
+        text_size: self.size
+        valign: 'bottom'
 
 <FieldEntry@ButtonBehavior+HoverBehavior+BoxLayout>:
 #Used in the left scrollview with all potential fields
@@ -86,9 +78,6 @@
         icon: root.text if root.text else "settings"
         size_hint: .25,1
         font_size: 40
-    #Image:
-    #    source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
-    #    size_hint: .25,1
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
         size_hint: .75,1
@@ -108,9 +97,6 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    #Image:
-    #    source: "img/TemplateField.png"
-    #    size_hint: .25,1
     FontIcon:
         icon: "TemplateField"
         size_hint: .25,1
@@ -138,10 +124,6 @@
         icon: root.text if root.text else "settings"
         size_hint: .25,1
         font_size: 40
-
-    #Image:
-    #    source: root.source if root.source else "img/%s.png"%root.text if root.text else "img/misc.png"
-    #    size_hint: .25,1
     Label:
         text: root.text[:-5] if root.text.endswith('Field') else root.text
         size_hint: .75,1
@@ -178,136 +160,43 @@
 <BGDesigner>:
     BoxLayout:
         orientation: "horizontal"
-        Splitter:
-            size_hint: .4,1
-            sizable_from: 'right'
-            max_size: 0.6*root.width
-            TabbedPanel:
-                do_default_tab: False
-                TabbedPanelItem:
-                    text: 'Template'
-                    Accordion:
-                        orientation: 'vertical'
-                        AccordionItem:
-                            collapse: False
-                            title: 'Fields'
-                            GridLayout:
-                                #size_hint_y: None
-                                cols: 1
-                                ScrollView:
-                                    FieldTreeView:
-                                        designer: root
-                                        indent_level: 0
-                                        #hide_root: True
-                                        size_hint_y: None
-                                        #size_hint_x: None
-                                        width: self.parent.width if self.parent else 200
-                                        on_minimum_height: self.height = self.minimum_height
-                                        on_minimum_width: self.width= self.minimum_width
-                                        id: fields
-                                        root_options: {'text': 'Fields' if not root.current_template else root.current_template.template_name}
-                                        canvas.before:
-                                            Color:
-                                                rgb: .2,.2,.2
-                                            Rectangle:
-                                                size: self.size
-                                                pos: self.pos
-                                Splitter:
-                                    sizable_from: 'top'
-                                    ScrollView:
-                                        TreeView:
-                                            on_minimum_height: self.height= self.minimum_height
-                                            id: params
-                                            current_field: None
-                                            size_hint_y:  None
-                                            #hide_root: bool(root.selection)
-                        AccordionItem:
-                            title: 'File'
-                            GridLayout:
-                                #size_hint_y: None
-                                cols: 1
-                                spacing: 10
-#                                BoxLayout:
-#                                    orientation: "horizontal"
-#                                    size_hint_y: None
-#                                    height: 30
-#                                    id: bl_name
-#                                    Label:
-#                                        text: "Name: "
-#                                        size_hint_x: None
-#                                        width: 50
-#                                    TextInput:
-#                                        id: tmplName
-#                                        size_hint_x: None
-#                                        width: bl_name.width-50-10
-#                                        text: root.current_template.template_name
-#                                        on_text: if root.current_template: root.current_template.template_name = tmplName.text
-#                                    Button:
-#                                        text: '...'
-                                Icon:
-                                    icon: "new"
-                                    on_press: root.new()
-                                    text: 'New'
-                                Icon:
-                                    text: "Tmpl Preview"
-                                    icon: 'print'
-                                    #:import F kivy.factory.Factory
-                                    on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
-                                Icon:
-                                    icon: 'save'
-                                    on_press: root.save()
-                                    text: 'Save'
-                                Icon:
-                                    icon: 'saveas'
-                                    on_press: root.write_file_popup("Template File Save", root.save,"%s.kv"%root.current_template.template_name)
-                                    text: 'Save As'
-#                                Icon:
-#                                    icon: 'library'
-#                                    on_press: root.save_in_library()
-#                                    text: 'Save in Library'
-                TabbedPanelItem:
-                    text: 'Library'
+        Accordion:
+            id: left_accordion
+            size_hint_x: None
+            width: 150
+            canvas.before:
+                Color:
+                    rgb: .6,.6,.6,
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            orientation: 'vertical'
+            AccordionItem:
+                title: 'Fields'
+                collapse: False
+                ScrollView:
                     GridLayout:
-                        #size_hint_y: None
                         cols: 1
-                        #Field Grid
-                        Accordion:
-                            id: left_accordion
-                            #size_hint: .2,1
-                            canvas.before:
-                                Color:
-                                    rgb: .6,.6,.6,
-                                Rectangle:
-                                    size: self.size
-                                    pos: self.pos
-                            orientation: 'vertical'
-                            AccordionItem:
-                                title: 'Fields'
-                                collapse: False
-                                ScrollView:
-                                    GridLayout:
-                                        cols: 1
-                                        id: fields_stack
-                                        size_hint_y: None
-                                        on_minimum_height: self.height = self.minimum_height
-                            AccordionItem:
-                                title: "Shapes"
-                                ScrollView:
-                                    GridLayout:
-                                        cols: 1
-                                        id: shapes_stack
-                                        on_minimum_height: self.height = self.minimum_height
-                                        size_hint_y: None
+                        id: fields_stack
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
+            AccordionItem:
+                title: "Shapes"
+                ScrollView:
+                    GridLayout:
+                        cols: 1
+                        id: shapes_stack
+                        on_minimum_height: self.height = self.minimum_height
+                        size_hint_y: None
 
-                            AccordionItem:
-                                title: "Linked"
-                                ScrollView:
-                                    GridLayout:
-                                        cols: 1
-                                        id: effects_stack
-                                        size_hint_y: None
-                                        on_minimum_height: self.height = self.minimum_height
-
+            AccordionItem:
+                title: "Linked"
+                ScrollView:
+                    GridLayout:
+                        cols: 1
+                        id: effects_stack
+                        size_hint_y: None
+                        on_minimum_height: self.height = self.minimum_height
         #Center layout, with template
         FloatLayout
             size_hint: .65,1
@@ -391,7 +280,71 @@
                     active: True
                     size_hint_x: None
                     width: 30
-
+        Splitter:
+            size_hint: .4,1
+            sizable_from: 'left'
+            max_size: 0.6*root.width
+            Accordion:
+                orientation: 'vertical'
+                size_hint_x: .2
+                AccordionItem:
+                    collapse: False
+                    title: 'Fields'
+                    GridLayout:
+                        #size_hint_y: None
+                        cols: 1
+                        ScrollView:
+                            FieldTreeView:
+                                designer: root
+                                indent_level: 0
+                                #hide_root: True
+                                size_hint_y: None
+                                #size_hint_x: None
+                                width: self.parent.width if self.parent else 200
+                                on_minimum_height: self.height = self.minimum_height
+                                on_minimum_width: self.width= self.minimum_width
+                                id: fields
+                                root_options: {'text': 'Fields' if not root.current_template else root.current_template.template_name}
+                                canvas.before:
+                                    Color:
+                                        rgb: .2,.2,.2
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                        Splitter:
+                            sizable_from: 'top'
+                            ScrollView:
+                                TreeView:
+                                    on_minimum_height: self.height= self.minimum_height
+                                    id: params
+                                    current_field: None
+                                    size_hint_y:  None
+                                    hide_root: True
+                                    #indent_start: 20  #fdefault 24
+                                    indent_level: 8 # default 16
+                AccordionItem:
+                    title: 'File'
+                    GridLayout:
+                        #size_hint_y: None
+                        cols: 1
+                        spacing: 10
+                        Icon:
+                            icon: "new"
+                            on_press: root.new()
+                            text: 'New'
+                        Icon:
+                            text: "Tmpl Preview"
+                            icon: 'print'
+                            #:import F kivy.factory.Factory
+                            on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
+                        Icon:
+                            icon: 'save'
+                            on_press: root.save()
+                            text: 'Save'
+                        Icon:
+                            icon: 'saveas'
+                            on_press: root.write_file_popup("Template File Save", root.save,"%s.kv"%root.current_template.template_name)
+                            text: 'Save As'
 <TmplChoicePopup>:
     BoxLayout:
         orientation: 'vertical'

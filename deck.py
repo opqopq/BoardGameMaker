@@ -31,12 +31,12 @@ class TreeViewField(TreeViewNode,BoxLayout):
             bl.add_widget(self.editor.create(self.pre_label, self.name,size_hint_x=.75))
         else:
             if 'standard' in kwargs and kwargs['standard']:
-                b = Label(size_hint_x=.4, halign='left', shorten=True, text=self.name)
+                b = Label( halign='left', shorten=True, text=self.name)
                 e = self.editor.create(self.name, self.name,size_hint_x=.75)
                 bl.add_widget(b)
                 bl.add_widget(e)
             else:
-                b = ToggleButton(size_hint_x=.4, halign='left', shorten=True, text=self.name)
+                b = ToggleButton(halign='left', shorten=True, text=self.name)
                 e = self.editor.create(self.name, self.name,size_hint_x=.75)
                 t = AdvancedCodeEditor(self.editor.target).create(self.name, self.name, size_hint_x=.75)
                 def switch(*args):

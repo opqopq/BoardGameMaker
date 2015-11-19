@@ -199,6 +199,26 @@
             #in 1.9.1 radius: self.corner_radius
 
 
+<GridField>:
+    canvas.after:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            points: self.points
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            #if field is floatlayout rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+            rectangle: self.x,self.y,self.width, self.height
+
 <EllipseField>:
     canvas:
         Color:

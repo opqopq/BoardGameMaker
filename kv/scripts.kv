@@ -1,11 +1,13 @@
 #:import BANNER scripts.BANNER
 #:import F kivy.factory.Factory
 
-<Repl_line@BoxLayout>:
+<Repl_line@ButtonBehavior+BoxLayout>:
     size_hint_y: None
     height: 50
     mode: 'In'
     text: ""
+    stack: ""
+    on_press: if self.stack: F.Popup(title="Full Traceback",size_hint_y=.7,content=F.Label(text=self.stack)).open()
     canvas.before:
         Color:
             rgb: .1,.1,.1
