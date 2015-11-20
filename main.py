@@ -4,7 +4,6 @@ todos = [
     'P3: change virtual screen stack',
     "P3: browser v2 - file & links",
     "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
-    "change stackpart selected to toggle button behavior",
     "redo styles in designer switching to a popup with all style params",
     "when loading a deck, ensure taht kv file need not to be reloaded at each line: bummer: it does",
     "add custom klass import in designer ?????: when defining a klasss in kv or py it could nbe loaded in designer",
@@ -16,6 +15,8 @@ todos = [
     "bug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
     "auto layout bug: infinite loop between realise/inner and eventloopi lde",
     "learn way to split pdf other than pocket mod for bigger pictures",
+    "add layout tools (distribute, stick,.... to designer. This means allows for multiple selection",
+    "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout"
 ]
 
 for i, todo in enumerate(todos):
@@ -88,33 +89,32 @@ class BGMApp(App):
         from conf import CP, gamepath, path_reader
         import conf
         from kivy.clock import Clock
-        if gamepath is None:
-            conf.gamepath = '.'
-            def cb(*args):
-                #self.set_screen('Settings')
-                from kivy.uix.popup import Popup
-                from kivy.uix.label import Label
-                p=Popup(content=Label(text='Press escape then Please choose a valid Gamepath and reload BGM'),title='Choose Gamepath.')
-                p.open()
-            Clock.schedule_once(cb, 0)
-            return conf.CreateConfigPanel()
         root = RootWidget()
         if CP.getboolean('Startup','load_tmpl_lib'):
             root.ids.deck.load_template_lib(force_reload=True, background_mode=True)
-        #Startup file csv
-        fpath = CP.get('Path','last_file')
-        from os.path import join, isfile, split
-        j = join(gamepath,fpath)
-        TARGET= None
-        if isfile(j):
-            TARGET = join(gamepath,fpath)
-        elif isfile(path_reader(fpath)):
-            TARGET = path_reader(fpath)
-        def launcher(*args):
-            if TARGET:
-                root.ids.deck.load_folder(split(TARGET)[0])
-                root.ids.deck.load_file(TARGET)
-        Clock.schedule_once(launcher,1)
+        if CP.getboolean('Startup','startup_tips'):
+            from kivy.factory import Factory
+            p = Factory.StartupPopup()
+            from kivy.clock import Clock
+            def _inner(*args):
+                p.open()
+            Clock.schedule_once(_inner)
+
+        if gamepath:
+            #Startup file csv
+            fpath = CP.get('Path','last_file')
+            from os.path import join, isfile, split
+            j = join(gamepath,fpath)
+            TARGET= None
+            if isfile(j):
+                TARGET = join(gamepath,fpath)
+            elif isfile(path_reader(fpath)):
+                TARGET = path_reader(fpath)
+            def launcher(*args):
+                if TARGET:
+                    root.ids.deck.load_folder(split(TARGET)[0])
+                    root.ids.deck.load_file(TARGET)
+            Clock.schedule_once(launcher,1)
         return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):

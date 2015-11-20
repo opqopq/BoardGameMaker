@@ -170,7 +170,7 @@ class BGDesigner(FloatLayout):
         child.target = target
         return child
 
-    def display_field_attributes(self,target):
+    def display_field_attributes(self, target):
         #Create Nodes based on the menu info of the fields
         nodes_done = set()
         nodes_done.add('styles')

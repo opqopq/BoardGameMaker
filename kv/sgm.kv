@@ -356,7 +356,7 @@
                         size_hint_y: None
                         on_minimum_height: self.height = self.minimum_height
                         id: file_chooser
-                        rootpath: GAMEPATH
+                        rootpath: GAMEPATH if GAMEPATH else ""
                         filters: ['.jpg','.jpeg', '.png','.gif', '.kv']
                         on_selected_node: root.load_folder(args[1].path if hasattr(args[1],'path') else "")
                 GridLayout:

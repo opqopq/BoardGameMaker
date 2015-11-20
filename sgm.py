@@ -215,7 +215,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     values = DictProperty()
     source = StringProperty()
     image = ObjectProperty(False)
-    layout = ListProperty(None)
+    layout = ObjectProperty(None)
 
 
     def realise(self,withValue = False):
@@ -529,9 +529,15 @@ class BGDeckMaker(BoxLayout):
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
         USE_LAYOUT = True
+        WARNING = False
         for cs in self.ids.stack.children:
+            if cs.layout:
+                WARNING = True
             if not cs.layout:
                 USE_LAYOUT = False
+                if WARNING:
+                    from conf import alert
+                    alert('No All Stack Members have Layout value !')
                 break
         #Do that only if fit format is not forced
         if not self.ids['force_format'].active:
@@ -679,10 +685,13 @@ class BGDeckMaker(BoxLayout):
         p.open()
 
     def write_file_popup(self,title,cb, default='export.pdf'):
+        from conf import CP
+        lf = CP.get('Path','last_file')
         if default.endswith('.csv'): #try to use last file if exsits
-            from conf import CP
-            lf = CP.get('Path','last_file')
             default = lf or default
+        elif default.endswith('.pdf'):
+            if lf:
+                default = lf.replace('.csv','.pdf')
         p = Factory.get('WriteFilePopup')()
         p.title = title
         p.cb = cb

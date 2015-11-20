@@ -1,9 +1,47 @@
-#:import VirtualScreenManagerStack utils.virtual_screen.VirtualScreenManagerStack
 #:import VirtualScreenManagerGrid utils.virtual_screen.VirtualScreenManagerGrid
-#:import kivy_data_dir kivy.kivy_data_dir
 #:import join os.path.join
 #:import FontIcon utils.fontello.FontIcon
 #:import BGGDeck sgm.BGDeckMaker
+
+
+<StartupPopup@Popup>
+    size_hint: .9,.7
+    title: "Welcome to BoardGame Maker"
+    BoxLayout:
+        orientation: 'vertical'
+        ScrollView:
+            Label:
+                size_hint_y: None
+                height: self.texture_size[1]
+                text_size: self.width, None
+                text: "\n\nIf this is your first startup, you'll need to setup a working directory, where your games & pictures will be saved. \nFuture template made with the tools will record their path relative to this folder.\n\nTo setup this gamepath, click on 'go to settings' button below. Then click on the GamePath Line and select a suitable folder. THEN RESTART BGM !\n\nThe tools is beta software. So report all request & bugs to the bithub site.\nHope you enjoy this tools"
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            canvas.before:
+                Color:
+                    rgba: .7,.7,.7,.7
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            CheckBox:
+                active: True
+                size_hint_x: None
+                width: 20
+                #:import startup_tips conf.startup_tips
+                on_active: startup_tips(args[1])
+            Label:
+                text: "Show this message at startup"
+                size_hint_x: .4
+            Button:
+                text: "Go To Settings"
+                on_press: root.dismiss(); app.set_screen('Settings')
+                size_hint_x: .4
+            Button:
+                text: "Close"
+                size_hint_x: .3
+                on_press: root.dismiss()
+
 
 <ImageButton@ButtonBehavior+BoxLayout>:
     source: None

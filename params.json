@@ -40,6 +40,13 @@
     "key": "LOAD_TMPL_LIB"
     },
     {
+    "type": "bool",
+    "title": "Show Startup Tips",
+    "desc": "Show Startup Tips on load",
+    "section": "Startup",
+    "key": "STARTUP_TIPS"
+    },
+    {
         "type": "title",
         "title": "Print"
     },

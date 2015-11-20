@@ -107,7 +107,8 @@ class PDFBook:
             if face == 'F':
                 x, y = col * self.x + left, height-(1+row)*self.y - top
             else:
-                x, y = width - (1+col)*self.x - left - right, height-(1+row)*self.y - top
+                #x, y = width - (1+col)*self.x - left - right, height-(1+row)*self.y - top
+                x, y = width - (1+col)*self.x - right, height-(1+row)*self.y - top
         #print i, row, col, face, item, x, y, self.x, self.y
         self.pdf.drawImage(src, x*r_cm, y*r_cm, self.x*r_cm, self.y*r_cm, mask='auto')
         from conf import CP
@@ -182,7 +183,7 @@ class PDFBook:
 
     def AddPage(self):
         self.pdf.showPage()
-        self.pdf.drawString(20,20,self.banner)
+        self.pdf.drawString(20,30,self.banner)
 
     def AddLines(self, x, y, w, h):
         from kivy.metrics import cm

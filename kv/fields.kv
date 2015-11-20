@@ -16,7 +16,7 @@
             axis: 0,0,1
         #Border Frame - designer
         Color:
-            rgba: (.2,.2,.2,1) if self.selected else (0,0,0,0)
+            rgba: (.2,.2,.2,1) if self.selected else (.2,.2,.2,.2)
         Line:
             rectangle: self.x, self.y, self.width, self.height
             dash_offset: 3
@@ -99,6 +99,10 @@
 
 <BGTemplate>:
     size: CARD.width, CARD.height
+
+<ImageField>:
+    allow_stretch: True
+    keep_ratio: False
 
 <ColorField>:
     canvas:

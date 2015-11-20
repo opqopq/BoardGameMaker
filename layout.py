@@ -239,15 +239,9 @@ class BGLayoutMaker(FloatLayout):
                     continue
                 #Export layout
                 if hasattr(ph, 'layout'):
-                    if ph.stack.qt == 1:
-                        ph.stack.layout = [ph.layout]
-                    else:
-                        ph.stack.append(ph.layout)
+                    ph.stack.layout = ph.layout
                 elif ph.stack:
-                    if ph.stack.qt == 1:
-                        ph.stack.layout = ph.x, ph.y, ph.width, ph.height, ph.angle, pindex
-                    else:
-                        ph.stack.layout.append([ph.x, ph.y, ph.width, ph.height, ph.angle, pindex])
+                    ph.stack.layout = ph.x, ph.y, ph.width, ph.height, ph.angle, pindex
                 #For template, export values
                 if ph.stack:
                     values = self.get_changes_values(ph)
@@ -294,9 +288,7 @@ class BGLayoutMaker(FloatLayout):
             self.ids.page_index.text = 'Page %d'%max(self.page_index-1,1)
 
     def set_page(self, page_index):
-        print 'setting page to ', page_index, self.pages,
         page_index = int(page_index.split()[-1])-1
-        print 'page_index', page_index, self.page_index
         self.ids.view.remove_widget(self.pages[self.page_index])
         self.page_index = page_index
         w = self.pages[self.page_index%len(self.pages)]
@@ -471,7 +463,6 @@ class BGLayoutMaker(FloatLayout):
             added_ones = list()
             PAGE_LAYOUT = BinCanNode(0, 0, SIZE[0], SIZE[1])
             for f, i in sorted_phs:
-                print f.stack, f.stack.getSize(), f.stack.source
                 layout = PAGE_LAYOUT.find(f, *f.stack.getSize())
                 if not layout:
                     continue
@@ -523,8 +514,6 @@ class BGLayoutMaker(FloatLayout):
         from kivy.app import App
         App.get_running_app().root.ids.deck.linearize()
         fg,bg,dual_dict = self.get_duals()
-        for f in dual_dict:
-            print 'f', f.stack.source, dual_dict[f].stack.source
         fg = list(reversed(fg))
         from kivy.metrics import cm
         from conf import page_format
