@@ -239,9 +239,15 @@ class BGLayoutMaker(FloatLayout):
                     continue
                 #Export layout
                 if hasattr(ph, 'layout'):
-                    ph.stack.layout = ph.layout
+                    if ph.stack.qt == 1:
+                        ph.stack.layout = [ph.layout]
+                    else:
+                        ph.stack.append(ph.layout)
                 elif ph.stack:
-                    ph.stack.layout = ph.x, ph.y, ph.width, ph.height, ph.angle, pindex
+                    if ph.stack.qt == 1:
+                        ph.stack.layout = ph.x, ph.y, ph.width, ph.height, ph.angle, pindex
+                    else:
+                        ph.stack.layout.append([ph.x, ph.y, ph.width, ph.height, ph.angle, pindex])
                 #For template, export values
                 if ph.stack:
                     values = self.get_changes_values(ph)
@@ -284,10 +290,13 @@ class BGLayoutMaker(FloatLayout):
             self.ids['page'] = self.pages[max(self.page_index-1,0)]
             del self.pages[self.page_index]
             self.ids.page_index.values = ['Page %d'%(i+1) for i in range(len(self.pages))]
-            self.ids.page_index.text = 'Page %d'%len(self.pages)
+            self.page_index = max(self.page_index-1,0)
+            self.ids.page_index.text = 'Page %d'%max(self.page_index-1,1)
 
     def set_page(self, page_index):
+        print 'setting page to ', page_index, self.pages,
         page_index = int(page_index.split()[-1])-1
+        print 'page_index', page_index, self.page_index
         self.ids.view.remove_widget(self.pages[self.page_index])
         self.page_index = page_index
         w = self.pages[self.page_index%len(self.pages)]
@@ -297,7 +306,7 @@ class BGLayoutMaker(FloatLayout):
 
     def auto_fill_page(self, all=False):
         "Fill current page'PH with with images, in order"
-        pictures = self.ids.pictures.children[:]
+        pictures = list(reversed(self.ids.pictures.children[:]))
         phs = [x for x in self.pages[self.page_index].children]
         if not all:
             phs = [x for x in self.pages[self.page_index].children if not x.stack]

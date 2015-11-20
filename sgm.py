@@ -90,45 +90,6 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             else:
                 self.add_item("1", 'normal')
 
-    def apply_item(self,name):
-        from os.path import relpath
-        stack = App.get_running_app().root.ids['deck'].ids['stack']
-        if stack.last_selected:
-            sel = stack.last_selected
-            #if selected stackpart was an image, copy the source file to values, to be applied on templ
-            if not sel.template:
-                sel.values['default'] = sel.source
-            #Replace template
-            if self.name.startswith(gamepath):
-                fold = relpath(self.name, gamepath)
-            else:
-                fold = self.name
-            #Creta & open the popup for all details
-            p = Factory.get('TemplateEditPopup')()
-            p.name = fold
-            options = p.ids['options']
-            options.values = sel.values
-            options.tmplPath = "@%s"%fold #trigger options building on popup
-            p.stackpart = sel
-            p.open()
-            p.do_layout()
-            p.content.do_layout()
-            from kivy.clock import Clock
-            def _inner(*args):
-                prev = p.ids['preview']
-                tmpl = prev.children[0]
-                TS = tmpl.size
-                PS = prev.size
-                W_ratio = float(.9*PS[0])/TS[0]
-                H_ratio = float(.9*PS[1])/TS[1]
-                ratio = min(W_ratio, H_ratio)
-                x,y = p.ids['FL'].center
-                prev.center = ratio * x, ratio * y
-                p.ids['preview'].scale = ratio
-                #forcing x to 0
-                prev.x = 5
-            Clock.schedule_once(_inner, 0)
-
     def add_item(self, qt, verso):
             from os.path import relpath
             stack = App.get_running_app().root.ids['deck'].ids['stack']
@@ -254,7 +215,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     values = DictProperty()
     source = StringProperty()
     image = ObjectProperty(False)
-    layout = ObjectProperty(None)
+    layout = ListProperty(None)
 
 
     def realise(self,withValue = False):
@@ -339,6 +300,9 @@ class StackPart(ButtonBehavior, BoxLayout):
                         p.ids['preview'].scale = ratio
                         #forcing x to 0
                         prev.x = 5
+                        from kivy.metrics import cm
+                        p.tsize = options.current_selection[0].size[0]/cm(1), options.current_selection[0].size[1]/cm(1)
+
 
                     Clock.schedule_once(_inner, 0)
             else: #edit button for pure image

@@ -13,10 +13,9 @@ todos = [
     "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",
     "when editing kv with forved fit, size change !!!!",
     "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
-    "vug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
+    "bug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
     "auto layout bug: infinite loop between realise/inner and eventloopi lde",
     "learn way to split pdf other than pocket mod for bigger pictures",
-    "metaclass for field, for computing vars & menus only once"
 ]
 
 for i, todo in enumerate(todos):

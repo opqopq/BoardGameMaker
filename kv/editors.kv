@@ -1,5 +1,4 @@
 #:import resplit re.split
-#:import FileChooserThumbView utils.filechooserthumbview
 #:import get_last_dir conf.get_last_dir
 #:import set_last_dir conf.set_last_dir
 
@@ -8,6 +7,7 @@
 ##############################################################################
 
 #:import KeyboardSpinner utils.keyboard_spinner.KeyboardSpinner
+
 <FontEditorPopup@Popup>:
     #size_hint: None, None
     title: 'Choose Font for %s'%self.name
@@ -297,7 +297,6 @@
     GridLayout:
         cols:1
         FileChooserListView:
-        #FileChooserThumbView:
             id: fpicker
             path: get_last_dir(root)
             filters: root.filters
@@ -322,7 +321,6 @@
     GridLayout:
         cols:1
         FileChooserListView:
-        #FileChooserThumbView:
             id: fpicker
             path: get_last_dir(root)
             filters: ['*.kv']
@@ -505,8 +503,8 @@
         do_default_tab: False
         TabbedPanelItem:
             text: "Source"
-            #FileChooserListView:
-            FileChooserThumbView:
+            FileChooserListView:
+            #FileChooserThumbView:
                 id: fpicker
                 #:import split os.path.split
                 ##path: split(root.dimension[0])[0] if root.dimension[0] else "."
@@ -613,6 +611,7 @@
                             text: "Cancel"
                             on_press: root.dismiss()
                 OverlayField:
+                    fg_color: 0,0,0,0
                     corner_radius: 5
                     designed: True
                     selected: True

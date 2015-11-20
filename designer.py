@@ -1,18 +1,16 @@
-"Template Designer interace"
 __author__ = 'HO.OPOYEN'
-
 
 from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scatterlayout import ScatterLayout
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Line
 from kivy.metrics import cm
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
 from kivy.properties import ListProperty, DictProperty, ObservableList, ObservableReferenceList, ObservableDict
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
-from fields import Field, BaseField
+from fields import BaseField
 from template import BGTemplate, templateList
 from conf import card_format
 from deck import TreeViewField
@@ -129,7 +127,7 @@ class BGDesigner(FloatLayout):
                     _name = ''
                 tmplname = '%s@%s'%(_name, s[0])
                 from template import BGTemplate
-                print '[Designer]Add Template within template'
+                print '[Designer] Add Template within template'
                 tmpl = BGTemplate.FromFile(tmplname).pop()
                 childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
@@ -192,7 +190,7 @@ class BGDesigner(FloatLayout):
             return
 
         SKIP_TMPL_POS = target == self.current_template
-        SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable', 'printed']
+        SKIP_LIST = ['x','y','z','pos_hint','size_hint', 'angle','editable', 'printed', 'name']
         for subNodeName in target.menu:
             subNode = self.ids.params.add_node(TreeViewLabel(text=subNodeName))
             for attr in target.menu[subNodeName]:
@@ -210,7 +208,7 @@ class BGDesigner(FloatLayout):
         #Special case for template: display specific children attribute
         if isinstance(target, BGTemplate) and target != self.current_template:
             tmpl = target
-            node = self.ids.params.add_node(TreeViewLabel(text=tmpl.template_name, color_selected=(.6,.6,.6,.8)))
+            node = self.ids.params.add_node(TreeViewLabel(text=tmpl.template_name, color_selected=(.6, .6, .6, .8)))
             node.is_leaf = False #add the thingy
             #point to the template
             node.template = tmpl
@@ -297,6 +295,7 @@ class BGDesigner(FloatLayout):
             else:
                 PATH = 'Templates/%s.kv'%self.current_template.template_name
                 overwrite = CP.getboolean('Designer','OVERWRITE_SAVED_TMPL')
+                alert('Template Saved in Library as %s.kv'%self.current_template.template_name)
         else:
             overwrite = CP.getboolean('Designer','OVERWRITE_SAVED_TMPL')
         exists = isfile(PATH)
@@ -335,14 +334,12 @@ class BGDesigner(FloatLayout):
             print 'Current template as no name: reverting to default'
             self.current_template.template_name = "TMPL"
         tmpls, imports, directives = self.current_template.export_to_kv(level=1,save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
-        print 'export to kv', imports
+        print 'export these imports to kv: ', imports
         for node in self.ids.fields.root.nodes:
             field = node.target
-            print field, field.pos
             if field == self.current_template: #skip export of the root template: done above
                 continue
             t, i, d = field.export_field(level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
-            print field, t
             tmpls.extend(t)
             imports.extend(i)
             directives.extend(d)

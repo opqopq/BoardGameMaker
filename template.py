@@ -7,7 +7,7 @@ from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, Dic
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
-from editors import editors_map, FileEditor, TemplateFileEditor
+from editors import editors_map, FileEditor, TemplateFileEditor, TextEditor
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.carousel import Carousel
 from conf import path_reader
@@ -17,8 +17,10 @@ class BGTemplate(Field, RelativeLayout):
     Type = "TemplateField"
     template_name = StringProperty('TMPL')
     source = OptionProperty('text', options=['file', 'text'])
-    not_exported = ['ids', 'print_index','template_name', 'src']
+    not_exported = ['ids', 'print_index', 'template_name', 'src']
     src = StringProperty()
+
+    attrs = {'template_name': TextEditor}
 
     #Now for the special attributes only used when printing the objects
     print_index = DictProperty()

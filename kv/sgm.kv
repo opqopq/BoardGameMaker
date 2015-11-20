@@ -294,7 +294,7 @@
 
 <TemplateEditPopup>:
     name: ""
-    title: 'Edition of %s'%split(self.name)[-1]
+    title: 'Edition of %s - (%.2f cmx%.2f cm)'%(split(self.name)[-1], preview.children[0].width/cm(1) if preview.children else 0, preview.children[0].height/cm(1) if preview.children else 0)
     size_hintt: .8,.8
     GridLayout:
         cols:2

@@ -16,10 +16,7 @@ from editors import *
 from conf import gamepath, find_path
 from os.path import relpath
 
-
 Builder.load_file('kv/fields.kv')
-
-
 # Pre-import styles to register them all
 from styles import getStyle
 
@@ -27,33 +24,9 @@ from styles import getStyle
 #        Field                                #
 ###############################################
 
-from kivy.graphics import ClearBuffers, ClearColor
-
-def compare_to_root(rootsize,fieldsize):
-    "Take 2 size or pos tuple and return a string made of b/a ratio as string, rounded to 2 digits float"
-    xa, ya = rootsize
-    xb, yb = fieldsize
-    assert xa and ya
-    xratio = float(xb)/float(xa)
-    yratio = float(yb)/float(ya)
-    rounded_x = round(xratio,2)
-    rounded_y = round(yratio,2)
-    if rounded_y == 1:
-        str_y = 'root.height'
-    elif rounded_y == 0:
-        str_y = '0'
-    else:
-        str_y = '%.2f * root.height' % rounded_y
-    if rounded_x == 1:
-        str_x = 'root.width'
-    elif rounded_x == 0:
-        str_x = '0'
-    else:
-        str_x = '%.2f * root.width' % rounded_x
-    return "%s, %s" % (str_x, str_y)
 
 def get_hint(rootsize, fieldsize, is_pos=False):
-    "Take 2 size or pos tuple and return a tuple made of size_hint of pos_hint"
+    """Take 2 size or pos tuple and return a tuple made of size_hint of pos_hint"""
     xa, ya = rootsize
     xb, yb = fieldsize
     assert xa and ya
@@ -70,13 +43,30 @@ class MetaField(WidgetMetaclass):
     def __new__(meta, name, bases, dct):
         #print bases
         #print dct
+        #Compute menu & params
+        params = OrderedDict()
+        menu = OrderedDict()
+        if 'attrs' in dct:
+            params.update(dct['attrs'])
+        if '_menu' in dct:
+            menu.update(dct['_menu'])
+        for klass in reversed(bases):
+            if not(hasattr(klass, '__metaclass__')) or klass.__metaclass__ != MetaField:
+                continue
+            for k,v in klass.params.items():
+                params[k] = v
+            for k,v in klass.menu.items():
+                menu[k] = v
+        dct['default_attr_values'] = params.keys()
+        dct['params'] = params
+        dct['menu'] = menu
         return super(MetaField, meta).__new__(meta, name, bases, dct)
-
-    def __init__(cls, name, bases, dct):
-        super(MetaField, cls).__init__(name, bases, dct)
 
 class BaseField(FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
+    __metaclass__ = MetaField
+    skip_designer = True
+
     selected = BooleanProperty(False)
     z = NumericProperty(0)
     # Shown is false when we don't want the template params to be showed in the deck panel
@@ -214,19 +204,7 @@ class BaseField(FocusBehavior):
                 self.black_list.add(k)
 
     def derive_infos(self):
-        #Compute menu & params
-        import inspect
-        self.params = OrderedDict()
-        self.menu = OrderedDict()
         self.code_behind = dict()
-        for klass in reversed(inspect.getmro(self.__class__)):
-            if not issubclass(klass, BaseField):
-                continue
-            for k,v in klass.attrs.items():
-                self.params[k] = v
-            for k,v in klass._menu.items():
-                self.menu[k] = v
-        self.default_attr_values = self.params.keys()
 
     def __repr__(self):
         return '<%s-%s>'%(self.Type,  self.id or self.name)
@@ -423,6 +401,7 @@ class BaseField(FocusBehavior):
 
 from kivy.uix.relativelayout import RelativeLayout
 class Field( BaseField, RelativeLayout):
+    skip_designer = True
 
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
@@ -533,6 +512,7 @@ class Field( BaseField, RelativeLayout):
 
 class FloatField(BaseField, FloatLayout):
     skip_designer = True
+
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
         FloatLayout.__init__(self,**kwargs)
