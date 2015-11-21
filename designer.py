@@ -34,6 +34,13 @@ class RuledScatter(ScatterLayout):
             self.htick = [Line(points=(x*cm(1),-10, x*cm(1),+5)) for x in range(2+int(self.width/cm(1)))]
             self.vtick = [Line(points=(-10, y*cm(1),+5, y*cm(1))) for y in range(2+int(self.height/cm(1)))]
 
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            if self == touch.grab_current:
+                self.designer.selections = dict()
+                self.designer.last_selected = None
+
+        return ScatterLayout.on_touch_up(self, touch)
 class TreeFieldEntry(TreeViewNode, BoxLayout):
     target = ObjectProperty(None)
     designer = ObjectProperty()
@@ -43,7 +50,8 @@ class TmplChoicePopup(Popup):
 
 class BGDesigner(FloatLayout):
     current_template = ObjectProperty(BGTemplate(size=card_format.size), rebind= True)
-    selection = ListProperty(rebind=True)
+    selections = DictProperty(rebind=True)
+    last_selected = ObjectProperty(rebind = True, allownone = True)
     nodes = DictProperty()
     #Place Holder when copying size/pos of a widget
     _do_copy = None
@@ -88,14 +96,14 @@ class BGDesigner(FloatLayout):
 
     def add_parent_field(self, field):
         "Just like add field, but this parent field will surround the current selection"
-        if not self.selection:
+        if not self.selections:
             from conf import alert
             alert('Choose a field first', status_color=(1, .43,0.01))
             return
         from fields import fieldDict
         klass = fieldDict.get(field.text, None)
         target = klass()
-        child = self.selection[0]
+        child = self.selections[-1]
         #Remove it from me
         self.ids.content.remove_widget(child)
         child_node = self.nodes[child]
@@ -108,7 +116,7 @@ class BGDesigner(FloatLayout):
         child.pos = 0,0 # move it at parent's origin
         #Now add child back
         target.add_widget(child)
-        self.selection = [target,]
+        self.selections = [target, ]
         print 'here i should insert field info BELOW parent ! '
 
     def add_template(self):
@@ -131,7 +139,7 @@ class BGDesigner(FloatLayout):
                 tmpl = BGTemplate.FromFile(tmplname).pop()
                 childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
-                self.selection = [tmpl]
+                self.selections = [tmpl]
             else:
                 from conf import alert
                 alert('Wrong selection in template:' + s)
@@ -144,7 +152,8 @@ class BGDesigner(FloatLayout):
         target = klass()
         self.insert_field(target)
         #Select the new field
-        self.selection = [target,]
+        self.selections = {target:None}
+        self.last_selected = target
         #Ensure it is put on top of the canvas
 
         # somz add/remove to change layout
@@ -362,29 +371,16 @@ class BGDesigner(FloatLayout):
         print '*'*60
         return linesep.join(tmpls)
 
-    def on_selection(self, instance, selection):
+    def on_last_selected(self, instance, field):
         tasks = self.ids.tasks
         tasks.clear_widgets()
-        if self.selection:
-            #First, check if we are copying a pos/size from an old selection
-            if self._do_copy:
-                field = self.selection[0]
-                typ,unit = self._do_copy
-                setattr(unit,typ,getattr(field,typ))
-                self._do_copy = None
-                #Reselect the old one
-                self.selection = [unit]
-            #Just make sure that the dos are aligned on the widget
-            field = self.selection[0]
-            children = self.ids.content.content.children
-            for widget in children:
-                if widget == field:
-                    if widget.designed:
-                        widget.selected = True
-                    continue
-                if widget.selected and widget.designed:
-                    widget.selected = False
-
+        #Just make sure that the dos are aligned on the widget
+        children = self.ids.content.content.children
+        print 'sel is ', self.selections.keys()
+        for widget in children:
+            widget.selected = widget in self.selections
+            print widget, widget.selected
+        if field:
             #Add some button around me
             from kivy.factory import Factory
             from kivy.uix.label import Label
@@ -413,36 +409,30 @@ class BGDesigner(FloatLayout):
                     _button.designer = self
                     tasks.add_widget(_button)
                 ##self.insertMoveUpDownButton()
-                IMGS = Factory.get('ImageSpinner')
-                img_spinner = IMGS(text='Position')
+                PIMGS = Factory.get('PositionImageSpinner')
+                SIMGS = Factory.get('SizeImageSpinner')
+                img_spinner = PIMGS()
                 img_spinner.bind(text=self.position_selection)
                 tasks.add_widget(img_spinner)
-                img_spinner.values=['Left', 'Right', 'Top', 'Bottom', 'Cent H', 'Cent V', 'Copy']
-                img_spinner = IMGS(text='Size')
+                img_spinner = SIMGS()
                 img_spinner.bind(text = self.align_selection)
                 tasks.add_widget(img_spinner)
-                img_spinner.values=['Max H', 'Max V', 'Copy']
                 #Now load the specific attributes matrix/tree for field 6> activated by a double tap on the field
                 ##self.display_field_attributes(field)
-                #self.ids.fields.select_node(self.nodes[field])
+                self.ids.fields.select_node(self.nodes[field])
 
     def position_selection(self,*args):
         pos= args[1]
         conv ={'Left': 'x', 'Bottom': 'y', 'Cent H': 'center_x', 'Cent V': 'center_y'}
         attr = conv.get(pos, pos.lower())
-        if self.selection:
-            unit = self.selection[0]
-            if attr=='copy':
-                from conf import alert
-                alert('Choose target to copy pos from')
-                self._do_copy =('pos', unit)
-            else:
-                setattr(unit, attr, getattr(unit.parent,attr))
+        if self.selections:
+            unit = self.last_selected
+            setattr(unit, attr, getattr(unit.parent,attr))
 
     def align_selection(self, *args):
         pos = args[1]
-        if self.selection:
-            unit = self.selection[0]
+        if self.selections:
+            unit = self.last_selected
             if pos == 'Max H':
                 unit.width = unit.parent.width
                 unit.x = unit.parent.x
@@ -455,16 +445,16 @@ class BGDesigner(FloatLayout):
                 self._do_copy =('size', unit)
 
     def duplicate_selection(self,*args):
-        if self.selection:
-            unit= self.selection[0]
+        if self.selections:
+            unit= self.last_selected
             copy = unit.Copy()
             self.insert_field(copy)
             #Select the new field
-            self.selection = [copy]
+            self.selections = [copy]
 
     def remove_selection(self,*args):
-        if self.selection:
-            unit = self.selection[0]
+        if self.selections:
+            unit = self.last_selected
             self.ids.content.remove_widget(unit)
             self.ids.fields.remove_node(self.nodes[unit])
             #Also tell the properties tree to update
@@ -475,8 +465,9 @@ class BGDesigner(FloatLayout):
             params.root.nodes = [] # as clear widgets does not works
             params.root.text = ""
 
-
-            del self.selection[0]
+            #unselect all ?
+            self.selections = dict()
+            self.last_selected = None
 
     def write_file_popup(self,title,cb, default='TMPL.kv'):
         from kivy.factory import Factory
@@ -486,12 +477,54 @@ class BGDesigner(FloatLayout):
         p.default_name = default
         p.open()
 
+    def align_group(self, way):
+        if way.startswith('center'):
+            mz = min([getattr(o, way[-1]) for o in self.selections])
+            Mz = max([getattr(o, way[-1]) for o in self.selections])
+            basis = int(mz + (Mz-mz)/2)
+        else:
+            if way in ['x','y']:
+                op = min
+            else:
+                op = max
+            basis = op([getattr(o, way) for o in self.selections])
+        for s in self.selections:
+            setattr(s, way, basis)
+
+    def resize_group(self, dim):
+        print "cur sel", self.selections
+        basis = max([getattr(c, dim) for c in self.selections])
+        for x in self.selections:
+            setattr(c, dim, basis)
+
+    def distribute_group(self, dim):
+        if len(self.selections) < 3:
+            return
+        sorted_phs = sorted(self.selections, key=lambda x: getattr(x, dim))
+        m, M = getattr(sorted_phs[0], dim), getattr(sorted_phs[-1], dim)
+        step = (M-m)/(len(self.selections) - 1)
+        for i, c in enumerate(sorted_phs):
+            setattr(c, dim, m+i*step)
+
+    def stick_group(self, way):
+        sorted_fields = sorted(self.selections, key= lambda x:getattr(x, way))
+        others = dict(x='right',y='top', top='y',right='x')
+        if way in ('top','right'):
+            sorted_fields.reverse()
+        former = None
+        while sorted_fields:
+            base = sorted_fields.pop(0)
+            if former:
+                setattr(base,way,getattr(former, others[way]))
+            former = base
+
 from kivy.uix.treeview import TreeView
 class FieldTreeView(TreeView):
     def on_selected_node(self, instance, selected_node):
         if selected_node:
             if hasattr(selected_node,'target'):
-                self.designer.selection = [selected_node.target]
+                self.designer.selections[selected_node.target] = None
+                self.designer.last_selected = selected_node.target
                 # somz add/remove to change layout
                 parent = selected_node.target.parent
                 parent.remove_widget(selected_node.target)

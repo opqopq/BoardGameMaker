@@ -15,7 +15,6 @@ todos = [
     "bug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
     "auto layout bug: infinite loop between realise/inner and eventloopi lde",
     "learn way to split pdf other than pocket mod for bigger pictures",
-    "add layout tools (distribute, stick,.... to designer. This means allows for multiple selection",
     "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout"
 ]
 

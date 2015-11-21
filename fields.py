@@ -403,6 +403,9 @@ from kivy.uix.relativelayout import RelativeLayout
 class Field( BaseField, RelativeLayout):
     skip_designer = True
 
+    def on_selected(self, instance, selected):
+        print 'I change', instance, selected
+
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
         RelativeLayout.__init__(self,**kwargs)
@@ -442,21 +445,18 @@ class Field( BaseField, RelativeLayout):
                 if touch.is_double_tap and hasattr(self,'designer'):
                     self.designer.display_field_attributes(self)
                 return True
-            else:
-                self.selected = False
-                if hasattr(self, 'designer'):
-                    self.designer.selection = list()
+            #else:
+                #self.selected = False
+                #if hasattr(self, 'designer'):
+                #    if self in self.designer.selection: del self.designer.selection[self.designer.selection.index(self)]
+                #    #self.designer.selection = list()
         return super(Field, self).on_touch_down(touch)
 
     def on_touch_up(self, touch):
         if self.designed and touch.grab_current==self:
-            # Here I should watch if shift is set, then it would be an append.
-            self.selected = True
-            #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
-            if hasattr(self,"designer") and  self.designer.selection and self.designer.selection[0] is not self:
-                self.designer.selection[0].selected = False
             if getattr(self, "designer", False):
-                self.designer.selection = [self]
+                self.designer.selections[self] = None
+                self.designer.last_selected = self
             touch.ungrab(self)
         return super(Field, self).on_touch_up(touch)
 
@@ -483,6 +483,14 @@ class Field( BaseField, RelativeLayout):
                 if self.selected:
                     self.x += touch.dx
                     self.y += touch.dy
+
+                    if self.designed:
+                        if getattr(self, 'designer', False):
+                            for c in self.designer.selections:
+                                if c == self:
+                                    continue
+                                c.x += touch.dx
+                                c.y += touch.dy
         return RelativeLayout.on_touch_move(self,touch)
 
     def add_widget(self, widget, index=0):
@@ -552,21 +560,18 @@ class FloatField(BaseField, FloatLayout):
                 if touch.is_double_tap and hasattr(self, 'designer'):
                     self.designer.display_field_attributes(self)
                 return True
-            else:
-                self.selected = False
-                if hasattr(self, 'designer'):
-                    self.designer.selection = list()
+            # else:
+            #     self.selected = False
+            #     if hasattr(self, 'designer'):
+            #         if self in self.designer.selection: del self.designer.selection[self.designer.selection.index(self)]
+            #     #    self.designer.selection = list()
         return super(FloatField, self).on_touch_down(touch)
 
     def on_touch_up(self, touch):
         if self.designed and touch.grab_current==self:
-            # Here I should watch if shift is set, then it would be an append.
-            self.selected = True
-            #why parent.parent: because ruled scatter is a scatterlayout: floatlayout + scatter (2 levels)
-            if hasattr(self,"designer") and  self.designer.selection and self.designer.selection[0] is not self:
-                self.designer.selection[0].selected = False
             if getattr(self, "designer", False):
-                self.designer.selection = [self]
+                self.designer.selections[self] = None
+                self.designer.last_selected = self
             touch.ungrab(self)
         return super(FloatField, self).on_touch_up(touch)
 
@@ -593,6 +598,13 @@ class FloatField(BaseField, FloatLayout):
                 if self.selected:
                     self.x += touch.dx
                     self.y += touch.dy
+                    if self.designed:
+                        if getattr(self, 'designer', False):
+                            for c in self.designer.selections:
+                                if c == self:
+                                    continue
+                                c.x += touch.dx
+                                c.y += touch.dy
         return FloatLayout.on_touch_move(self,touch)
 
     def add_widget(self, widget, index=0):

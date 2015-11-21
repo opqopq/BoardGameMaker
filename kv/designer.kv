@@ -130,7 +130,6 @@
         shorten: True
 
 
-
 <ImageSpinnerOption@SpinnerOption>:
     size_hint_x: None
     halign: 'right'
@@ -149,6 +148,14 @@
     size_hint_x: None
     width: 80
     background_color: 0,.2,1,.6
+
+<SizeImageSpinner@ImageSpinner>:
+    text: "Size"
+    values: ["Max H","Max V"] #Copy
+
+<PositionImageSpinner@ImageSpinner>:
+    text: "Position"
+    values: ['Left', 'Right', 'Top', 'Bottom', 'Cent H', 'Cent V'] #"Copy
 
 <WrappedLabel@ScrollView>:
     text: ""
@@ -216,13 +223,13 @@
                 width: background.width
                 canvas.before:
                     Color:
-                        rgba: (0,0,1,.6) if root.selection else (0,0,0,0)
+                        rgba: (0,0,1,.6) if root.last_selected else (0,0,0,0)
                     Rectangle:
                         size: self.size
                         pos: self.pos
                 GridLayout:
                     rows: 1
-                    on_minimum_width: self.width= self.minimum_width
+                    on_minimum_width: self.width = self.minimum_width
                     id: tasks
                     size_hint_x:  None
                     #col_default_width: 60
@@ -231,6 +238,7 @@
                 size_hint_y: None
                 height: background.height - 50
                 RuledScatter:
+                    designer: root
                     id: content
                     do_rotation: False
                     do_scale: False
@@ -322,6 +330,210 @@
                                     hide_root: True
                                     #indent_start: 20  #fdefault 24
                                     indent_level: 8 # default 16
+                AccordionItem:
+                    title: 'Group'
+                    ScrollView:
+                        GridLayout:
+                            size_hint_y: None
+                            cols: 1
+                            on_minimum_height: self.height = self.minimum_height
+                            orientation: 'vertical'
+                            canvas.before:
+                                Color:
+                                    rgb: .7,.7,.7
+                                Rectangle:
+                                    size: self.size
+                                    pos: self.pos
+                            Label:
+                                canvas.before:
+                                    Color:
+                                        rgb: .7,.7,.7
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                text: "Align (%d items)"%len(root.selections)
+                                size_hint_y: None
+                                height: 30
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.align_group('top')
+                                    FontIcon:
+                                        icon: 'up-big'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.align_group('y')
+                                    FontIcon:
+                                        icon: 'down-big'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.align_group('x')
+                                    FontIcon:
+                                        icon: 'left-big'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.align_group('right')
+                                    FontIcon:
+                                        icon: 'right-big'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.align_group('center_x')
+                                    FontIcon:
+                                        icon: 'resize-horizontal-1'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.align_group('center_y')
+                                    FontIcon:
+                                        icon: 'resize-vertical-1'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+
+                            Label:
+                                canvas.before:
+                                    Color:
+                                        rgb: .7,.7,.7
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                text: "Resize (%d items)"%len(root.selections)
+                                size_hint_y: None
+                                height: 30
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.resize_group('height')
+                                    FontIcon:
+                                        icon: 'resize-vertical'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.resize_group('width')
+                                    FontIcon:
+                                        icon: 'resize-horizontal'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+
+                            Label:
+                                canvas.before:
+                                    Color:
+                                        rgb: .7,.7,.7
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                text: "Distribute (%d items)"%len(root.selections)
+                                size_hint_y: None
+                                height: 30
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.distribute_group('y')
+                                    FontIcon:
+                                        icon: 'resize-vertical'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.distribute_group('x')
+                                    FontIcon:
+                                        icon: 'resize-horizontal'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                            Label:
+                                canvas.before:
+                                    Color:
+                                        rgb: .7,.7,.7
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                text: "Stick (%d items)"%len(root.selections)
+                                size_hint_y: None
+                                height: 30
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.stick_group('y')
+                                    FontIcon:
+                                        icon: 'down'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.stick_group('x')
+                                    FontIcon:
+                                        icon: 'left'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.stick_group('top')
+                                    FontIcon:
+                                        icon: 'up'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.stick_group('right')
+                                    FontIcon:
+                                        icon: 'right'
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+
                 AccordionItem:
                     title: 'File'
                     GridLayout:

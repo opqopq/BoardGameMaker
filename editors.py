@@ -426,7 +426,7 @@ class SizeHintEditor(Editor):
         t.add_widget(tih)
 
         def cb_w(instance, value):
-            if value is None: return
+            if value is None or value is "": return
             try:
                 sh = getattr(self.target, keyname)
                 if not value:
@@ -438,7 +438,7 @@ class SizeHintEditor(Editor):
                 log(E)
 
         def cb_h(instance, value):
-            #if value is None: return
+            if value is None or value is "": return
             try:
                 sh = getattr(self.target, keyname)
                 if not value:
