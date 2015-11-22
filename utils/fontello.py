@@ -97,6 +97,7 @@ FONTELLO = {
     'icon-script': u'\ue857',
     'icon-Designer': u'\ue858',
     'icon-cw': u'\ue859',
+    'icon-RepeatField': u'\ue859',
     'icon-ccw': u'\ue85a',
     'icon-BorderField':  u'\ue85b',
     'icon-terminal': u'\ue85c',

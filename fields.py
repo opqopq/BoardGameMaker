@@ -726,6 +726,85 @@ class ImageField(Image, FloatField):
         if src and src != source:
             self.source = src
 
+class RepeatField(FloatField):
+    allow_stretch = BooleanProperty(True)
+    keep_ratio = BooleanProperty(False)
+    count = NumericProperty(1)
+    images= DictProperty()
+    orientation = StringProperty('lr-tb')
+    orientation_values = ['lr-tb','tb-lr','bt-lr','lr-bt', 'random']
+    target_ratio = ListProperty([1,1])
+    attrs = OrderedDict([('count',AdvancedIntEditor),('images',ImageChoiceEditor),
+                         ('orientation',ChoiceEditor),('target_ratio',SizeHintEditor),
+                         ('allow_stretch',BooleanEditor), ('keep_ratio',BooleanEditor)
+                         ])
+
+    def on_images(self, instance, value):
+        self.update()
+
+    def on_count(self, instance, value):
+        self.update()
+
+    def on_orientation(self, instance, value):
+        self.update()
+
+    def on_size(self,instance,value):
+        self.update()
+
+    def add_obj(self):
+        from kivy.uix.image import Image
+        obj = Image(allow_stretch = self.allow_stretch, keep_ratio = self.keep_ratio)
+        obj.size_hint = self.target_ratio
+        self.add_widget(obj)
+        return obj
+
+    def on_target_ratio(self,instance,value):
+        self.update()
+
+    def update(self):
+        from kivy.uix.image import Image
+        from itertools import cycle
+        self.clear_widgets()
+        if not self.images:
+            return
+        wr,hr = self.target_ratio
+
+        if self.orientation == 'random':
+            from random import random
+            for index,img in zip(range(self.count),cycle(self.images)):
+                obj = self.add_obj()
+                obj.pos_hint = {'x': random() * (1-wr), 'y': random() * (1-hr)}
+                obj.source = self.images[img]
+        else:
+            num_col = int(round(1/wr))
+            num_row = int(round(1/hr))
+            cyc = cycle(self.images)
+            index = 0
+            if self.orientation.endswith('lr'):
+                for i in range(num_col):
+                    for j in range(num_row):
+                        index+=1
+                        if index>self.count:
+                            break
+                        obj = self.add_obj()
+                        obj.source = self.images[cyc.next()]
+                        if self.orientation.startswith('bt'):
+                            obj.pos_hint = {'x':wr * i , 'y':hr * j}
+                        else:
+                            obj.pos_hint = {'x':wr * i , 'top':(1- hr * j)}
+            else: #col first
+                for j in range(num_row):
+                    for i in range(num_col):
+                        index+=1
+                        if index>self.count:
+                            break
+                        obj = self.add_obj()
+                        obj.source = self.images[cyc.next()]
+                        if self.orientation.endswith('bt'):
+                            obj.pos_hint = {'x':wr * i , 'y':hr * j}
+                        else:
+                            obj.pos_hint = {'x': wr*i , 'top': 1-hr*j}
+
 class ColorField(Field):
     "Display a color on a rectangle"
     rgba=ListProperty((1,1,1,1))
