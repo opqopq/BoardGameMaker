@@ -112,7 +112,10 @@ class BGMApp(App):
             def launcher(*args):
                 if TARGET:
                     root.ids.deck.load_folder(split(TARGET)[0])
-                    root.ids.deck.load_file(TARGET)
+                    if TARGET.endswith('.xlsx'):
+                        root.ids.deck.load_file(TARGET)
+                    elif TARGET.endswith('.csv'):
+                        root.ids.deck.load_file_csv(TARGET)
             Clock.schedule_once(launcher,1)
         return root
 

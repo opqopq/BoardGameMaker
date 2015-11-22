@@ -37,9 +37,13 @@
             size: self.width-page_format.left-page_format.right, self.height-page_format.top-page_format.bottom
             pos: page_format.left, page_format.bottom
     size: page_format.width, page_format.height
+    on_touch_up: if self.collide_point(*args[1].pos) and self == args[1].grab_current: self.designer.selections = dict(); self.designer.selected_ph = None
+
 
 <LayoutPlaceHolder>:
     stack: None
+    designed:  True
+
     text: '#%s'%self.index if self.layout_maker and self.layout_maker.display_index else ""
 
     #:import CARD conf.card_format
@@ -67,13 +71,10 @@
         min_size: 200
         strip_size: '4pt'
         on_width: view.children[0].x = args[1] + 50
-        Accordion:
-            #size_hint_x: None
-            #width: 200
-            orientation: 'vertical'
-            AccordionItem:
-                title: "Images"
-                collapse: False
+        TabbedPanel:
+            do_default_tab: False
+            TabbedPanelItem:
+                text: "Images"
                 BoxLayout:
                     orientation: 'vertical'
                     BoxLayout:
@@ -101,159 +102,167 @@
                             orientation: 'lr-tb'
                             id: pictures
                             spacing: 10
-            AccordionItem:
-                title: "PlaceHolder"
-                GridLayout:
-                    #size_hint_x: .3
-                    #row_default_height: 30
-                    #row_force_default: True
-                    cols: 1
-                    Icon:
-                        text: 'Add PlaceHolder'
-                        icon: 'add'
-                        on_press: root.add_ph()
-                    Icon:
-                        text: 'Fill Page'
-                        icon: 'apply'
-                        on_press: root.auto_fill_page()
-                    Icon:
-                        text: 'Fill Book'
-                        icon: 'EffectField'
-                        on_press: root.magic_fill()
-            AccordionItem:
-                title: "Pages"
-                ScrollView:
-                    GridLayout:
-                        size_hint_y: None
-                        on_minimum_height: self.height = self.minimum_height
-                        cols: 1
-                        Icon:
-                            text: 'Rotate View'
-                            on_press: view.children[0].rotation-=90
-                            icon: 'cw'
-                        Icon:
-                            text: 'Add Page'
-                            icon: 'add'
-                            on_press:  root.add_page()
-                        Icon:
-                            text: 'Remove Page'
-                            on_press:  root.remove_page()
-                            icon: 'cancel'
-                        Icon:
-                            text: 'Add Mirror Page'
-                            on_press:  root.add_mirror_page()
-                            icon: 'Copy'
-                        Icon:
-                            text: 'Clear Current Page'
-                            on_press:  root.clear_page()
-                            icon: 'new'
-                        Label:
-                            text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*view.children[0].scale, 29.7*view.children[0].scale) if view.children else ""
-                            #size: root.width-ph_details.width-main_split.width,30
-                            halign: 'center'
-                            text_size: self.size
-            AccordionItem:
-                title: 'Book'
-                ScrollView:
-                    GridLayout:
-                        size_hint_y: None
-                        on_minimum_height: self.height = self.minimum_height
-                        cols: 1
-                        Icon:
-                            text: 'Reset View'
-                            icon: 'TransfoField'
-                            on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  main_split.right+50 ,80
-                        Icon:
-                            text: 'Toggle #Index'
-                            icon: 'contrast'
-                            on_press: root.display_index = not(root.display_index)
-                        Icon:
-                            text: 'Export Layout'
-                            icon: 'export'
-                            on_press: root.export_phs()
-                        Icon:
-                            text: 'Empty Book'
-                            icon: 'trash'
-                            on_press: root.new_book()
-            AccordionItem:
-                title: 'Custom Layout'
-                GridLayout:
-                    cols: 1
-                    ScrollView:
 
+            TabbedPanelItem:
+                text: "Actions"
+                Accordion:
+                    #size_hint_x: None
+                    #width: 200
+                    orientation: 'vertical'
+                    AccordionItem:
+                        title: "PlaceHolder"
+                        collapse: False
                         GridLayout:
-                            size_hint_y: None
-                            on_minimum_height: self.height = self.minimum_height
-                            row_force_default: True
-                            row_default_height: 30
-                            cols: 2
-                            Label:
-                                text: 'Current'
-                            Label:
-                                text: "Fit Format"
-                            Label:
-                                text: "Card Width:"
-                            TextInput:
-                                id: cw
-                                text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
-                                #on_text_validate: CARD.updateW(self.text, unit.text)
-                                on_focus: if not self.focus: CARD.updateW(self.text, unit.text)
-                                multiline: False
-                            Label:
-                                text: "Card Height:"
-                            TextInput:
-                                id: ch
-                                text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
-                                #on_text_validate: CARD.updateH(self.text, unit.text)
-                                on_focus: if not self.focus: CARD.updateH(self.text, unit.text)
-                                multiline: False
-                            Label:
-                                text: "Unit:"
-                            Spinner:
-                                id: unit
-                                values: ['cm','px']
-                                text: 'cm'
-                            Label:
-                                text: "Keep Ratio:"
-                            CheckBox:
-                                ratio: 1
-                                active: True
-                                id: keep_ratio
-                                on_active: CARD.keep_ratio = self.active
-                            Label:
-                                text: 'H Step (cm)'
-                            TextInput:
-                                id: w_step
-                            Label:
-                                text: 'V Step (cm)'
-                            TextInput:
-                                id: h_step
-                            Label:
-                                text: 'Angle Step'
-                            TextInput:
-                                id: angle_step
-                            Label:
-                                text: "Delta x func"
-                            TextInput:
-                                id: dx_func
-                            Label:
-                                text: "Delta Y Func"
-                            TextInput:
-                                id: dy_func
-                            Label:
-                                text: "Reset Book"
-                            CheckBox:
-                                active: "True"
-                                id: clean_book_first
-                    Button:
-                        size_hint_y: None
-                        height: 30
-                        on_press: root.custom_layout(w_step.text, h_step.text, angle_step.text, dx_func.text, dy_func.text, clean_book_first.active)
-                        FontIcon:
-                            size: self.parent.size
-                            pos: self.parent.pos
-                            font_size: 30
-                            icon: "apply"
+                            #size_hint_x: .3
+                            #row_default_height: 30
+                            #row_force_default: True
+                            cols: 1
+                            Icon:
+                                text: 'Add PlaceHolder'
+                                icon: 'add'
+                                on_press: root.add_ph()
+                            Icon:
+                                text: 'Fill Page'
+                                icon: 'apply'
+                                on_press: root.auto_fill_page()
+                            Icon:
+                                text: 'Fill Book'
+                                icon: 'EffectField'
+                                on_press: root.magic_fill()
+                    AccordionItem:
+                        title: "Pages"
+                        ScrollView:
+                            GridLayout:
+                                size_hint_y: None
+                                on_minimum_height: self.height = self.minimum_height
+                                cols: 1
+                                Icon:
+                                    text: 'Rotate View'
+                                    on_press: view.children[0].rotation-=90
+                                    icon: 'cw'
+                                Icon:
+                                    text: 'Add Page'
+                                    icon: 'add'
+                                    on_press:  root.add_page()
+                                Icon:
+                                    text: 'Remove Page'
+                                    on_press:  root.remove_page()
+                                    icon: 'cancel'
+                                Icon:
+                                    text: 'Add Mirror Page'
+                                    on_press:  root.add_mirror_page()
+                                    icon: 'Copy'
+                                Icon:
+                                    text: 'Clear Current Page'
+                                    on_press:  root.clear_page()
+                                    icon: 'new'
+                                Label:
+                                    text: 'Size on Display: %.2f cm x %.2f cm'%(21.0*view.children[0].scale, 29.7*view.children[0].scale) if view.children else ""
+                                    #size: root.width-ph_details.width-main_split.width,30
+                                    halign: 'center'
+                                    text_size: self.size
+                    AccordionItem:
+                        title: 'Book'
+                        ScrollView:
+                            GridLayout:
+                                size_hint_y: None
+                                on_minimum_height: self.height = self.minimum_height
+                                cols: 1
+                                Icon:
+                                    text: 'Reset View'
+                                    icon: 'TransfoField'
+                                    on_press: p = view.children[0]; p.rotation=0 ; p.scale=.35; p.pos =  main_split.right+50 ,80
+                                Icon:
+                                    text: 'Toggle #Index'
+                                    icon: 'contrast'
+                                    on_press: root.display_index = not(root.display_index)
+                                Icon:
+                                    text: 'Export Layout'
+                                    icon: 'export'
+                                    on_press: root.export_phs()
+                                Icon:
+                                    text: 'Empty Book'
+                                    icon: 'trash'
+                                    on_press: root.new_book()
+                    AccordionItem:
+                        title: 'Custom Layout'
+                        GridLayout:
+                            cols: 1
+                            ScrollView:
+
+                                GridLayout:
+                                    size_hint_y: None
+                                    on_minimum_height: self.height = self.minimum_height
+                                    row_force_default: True
+                                    row_default_height: 30
+                                    cols: 2
+                                    Label:
+                                        text: 'Current'
+                                    Label:
+                                        text: "Fit Format"
+                                    Label:
+                                        text: "Card Width:"
+                                    TextInput:
+                                        id: cw
+                                        text: str((CARD.width)) if unit.text == 'px' else "%.2f"%(CARD.width/cm(1))
+                                        #on_text_validate: CARD.updateW(self.text, unit.text)
+                                        on_focus: if not self.focus: CARD.updateW(self.text, unit.text)
+                                        multiline: False
+                                    Label:
+                                        text: "Card Height:"
+                                    TextInput:
+                                        id: ch
+                                        text: str((CARD.height)) if unit.text == 'px' else "%.2f"%(CARD.height/cm(1))
+                                        #on_text_validate: CARD.updateH(self.text, unit.text)
+                                        on_focus: if not self.focus: CARD.updateH(self.text, unit.text)
+                                        multiline: False
+                                    Label:
+                                        text: "Unit:"
+                                    Spinner:
+                                        id: unit
+                                        values: ['cm','px']
+                                        text: 'cm'
+                                    Label:
+                                        text: "Keep Ratio:"
+                                    CheckBox:
+                                        ratio: 1
+                                        active: True
+                                        id: keep_ratio
+                                        on_active: CARD.keep_ratio = self.active
+                                    Label:
+                                        text: 'H Step (cm)'
+                                    TextInput:
+                                        id: w_step
+                                    Label:
+                                        text: 'V Step (cm)'
+                                    TextInput:
+                                        id: h_step
+                                    Label:
+                                        text: 'Angle Step'
+                                    TextInput:
+                                        id: angle_step
+                                    Label:
+                                        text: "Delta x func"
+                                    TextInput:
+                                        id: dx_func
+                                    Label:
+                                        text: "Delta Y Func"
+                                    TextInput:
+                                        id: dy_func
+                                    Label:
+                                        text: "Reset Book"
+                                    CheckBox:
+                                        active: "True"
+                                        id: clean_book_first
+                            Button:
+                                size_hint_y: None
+                                height: 30
+                                on_press: root.custom_layout(w_step.text, h_step.text, angle_step.text, dx_func.text, dy_func.text, clean_book_first.active)
+                                FontIcon:
+                                    size: self.parent.size
+                                    pos: self.parent.pos
+                                    font_size: 30
+                                    icon: "apply"
     Spinner:
         id: page_index
         pos: main_split.right, 0
@@ -545,7 +554,8 @@
                     on_minimum_height: self.height = self.minimum_height
                     size_hint_y: None
                     id: tmpltree
-                    target: root.selected_ph if root.selected_ph else False
+                    target: None
+                    #target: root.selected_ph if root.selected_ph else False
                     on_disabled: if self.disabled: self.clear_widgets(); self.root.nodes = list()
         AccordionItem:
             title: 'Groups (%d selections)'%(len(root.selections))

@@ -5,9 +5,7 @@ from kivy.logger import Logger
 from kivy.resources import resource_add_path
 from kivy.metrics import cm
 from kivy.event import EventDispatcher
-from kivy.lang import Observable
-from kivy.properties import NumericProperty, StringProperty, ReferenceListProperty, BooleanProperty, DictProperty
-from kivy.app import App
+from kivy.properties import NumericProperty, ReferenceListProperty, BooleanProperty
 
 if platform.startswith('win'):
     fname = 'bgm.ini'
@@ -39,7 +37,7 @@ USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 if USE_PROXY:
     Logger.info('Using Proxy')
 
-FILE_FILTER = ('.jpg','.png','.gif','.kv', '.csv')
+FILE_FILTER = ('.jpg','.png','.gif','.kv', '.csv', '.xlsx')
 
 class CardFormat(EventDispatcher):
     width = NumericProperty(cm(CP.getfloat('Card', 'width')))
@@ -83,6 +81,7 @@ page_format = PageFormat()
 
 
 def log(text, stack=None):
+    from kivy.app import App
     app = App.get_running_app()
     if app:
         try:
@@ -94,6 +93,7 @@ def log(text, stack=None):
         print text, stack
 
 def alert(text, status_color=(0,0,0,1), keep = False):
+    from kivy.app import App
     app = App.get_running_app()
     if app:
         try:
@@ -111,6 +111,7 @@ def start_file(path):
 ENV = dict()
 
 def fill_env(*args):
+    from kivy.app import App
     ENV['app'] = app = App.get_running_app()
     if not app:
         return
@@ -200,3 +201,31 @@ def toImage(self, bg_color=(1,1,1,0)):
         self.parent.canvas.insert(canvas_parent_index, self.canvas)
 
     return cim
+
+def OpenXLDictReader(f):
+    import openpyxl
+    book  = openpyxl.reader.excel.load_workbook(f)
+    sheet = book.active
+
+    rows = sheet.max_row
+    cols = sheet.max_column
+
+    def item(i, j):
+        return (sheet.cell(row=0, column=j).value, sheet.cell(row=i, column=j).value)
+
+    return (dict(item(i,j) for j in range(cols)) for i in range(1, rows))
+
+
+def XLRDDictReader(f, sheet_index=0):
+    import xlrd, mmap
+    book    = xlrd.open_workbook(file_contents=mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ))
+    sheet   = book.sheet_by_index(sheet_index)
+    headers = dict( (i, sheet.cell_value(0, i) ) for i in range(sheet.ncols) )
+
+    return ( dict( (headers[j], sheet.cell_value(i, j)) for j in headers ) for i in range(1, sheet.nrows) )
+
+from csv import excel
+class Excel_Semicolon(excel):
+    delimiter = ";"
+
+

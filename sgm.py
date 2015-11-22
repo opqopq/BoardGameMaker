@@ -17,6 +17,7 @@ import os, os.path
 
 Builder.load_file('kv/sgm.kv')
 
+
 class FolderTreeView(TreeView):
     folder = StringProperty()
     filters = ListProperty()
@@ -101,7 +102,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 for name in [x for x in os.listdir(self.is_all_folder) if x.endswith(FILE_FILTER)]:
                 ##for fiv in self.parent.children:
                     ##if fiv.is_all_folder: continue
-                    if name.endswith('.csv'): continue
+                    if name.endswith(('.csv','.xlsx')):
+                        continue
                     box = StackPart()
                     #box.name = fiv.name
                     box.name = name
@@ -119,6 +121,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                     from kivy.base import EventLoop
                     EventLoop.idle()
             elif self.name.endswith('.csv'):
+                App.get_running_app().root.ids.deck.load_file_csv(self.name)
+            elif self.name.endswith('.xlsx'):
                 App.get_running_app().root.ids.deck.load_file(self.name)
             elif self.name.endswith('.bgp'):
                 self.extract_package()
@@ -188,6 +192,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         pyfs = [m for m in members if m.endswith('.py')]
         kvfs = [m for m in members if m.endswith('.kv')]
         csvfs = [m for m in members if m.endswith('.csv')]
+        xlsfs = [m for m in members if m.endswith('.xlsx')]
         #First python
         for m in pyfs:
             execfile(m)
@@ -199,6 +204,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             templateList.register_file(os.path.join(temp_dir,m))
         #then deck
         for m in csvfs:
+            dm.load_file_csv(os.path.join(temp_dir,m))
+        for m in xlsfs:
             dm.load_file(os.path.join(temp_dir,m))
         from conf import start_file
         start_file(temp_dir)
@@ -402,14 +409,11 @@ class StackPart(ButtonBehavior, BoxLayout):
         self.image = pilimage
 
     def getSize(self):
-        self.realise()
+        #self.realise()
         from conf import FORCE_FIT_FORMAT, card_format
         if self.image:#stack part with computed image
             return self.image.size
         elif self.tmplWidget:
-            return self.tmplWidget.size
-        elif self.template:
-            self.realise()
             return self.tmplWidget.size
         elif FORCE_FIT_FORMAT:
             return card_format.size
@@ -431,7 +435,11 @@ class TemplateEditTree(TreeView):
         self.current_selection = (tmpl, self.selected_node)
 
     def on_tmplPath(self, instance, value):
-        if not value: return
+        self.current_selection = ()
+        self.clear_widgets()
+        self.get_root().nodes = list()
+        if not value:
+            return
         from template import BGTemplate
         #tmplPath is in the form [NAME][@PATH]. If path provided, load all tmpl from there. Without it, take name from library
         name, path = self.tmplPath.split('@')
@@ -442,7 +450,7 @@ class TemplateEditTree(TreeView):
             tmpls = [templateList[name]]
         else:
             print "[SGM] OnTmplPath change:" ,
-            tmpls = BGTemplate.FromFile(path)
+            tmpls = BGTemplate.FromFile(self.tmplPath)
         for tmpl in tmpls:
             tmpl.apply_values(self.values)
             node =self.load_tmpl(tmpl)
@@ -523,8 +531,8 @@ class BGDeckMaker(BoxLayout):
     def prepare_print(self, dst):
         from conf import CP, alert
         if CP.getboolean('Print','AUTOCSV'):
-            alert('Auto saving CSV deck')
-            self.export_file(dst.replace('.pdf','.csv'))
+            alert('Auto saving XLS deck')
+            self.export_file(dst.replace('.pdf','.xlsx'))
         from printer import prepare_pdf
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
@@ -642,11 +650,11 @@ class BGDeckMaker(BoxLayout):
                 if _f.endswith('.kv'): #it is a template:
                     source = 'img/card_template.png'
                     _f = os.path.join(folder, _f)
-                elif _f.endswith('.csv') or _f.endswith('.bgp'):
+                elif _f.endswith(('.csv',".xlsx",".bgp")):
                     _f = os.path.join(folder, _f)
                 else:
                     source = os.path.join(folder,_f)
-                if _f.endswith('.csv'):
+                if _f.endswith(('.csv','.xlsx')):
                     img = SpecialViewItem(source= 'csv', name=_f)
                 elif _f.endswith('.bgp'):
                     img = SpecialViewItem(source = 'cubes', name = _f)
@@ -687,11 +695,11 @@ class BGDeckMaker(BoxLayout):
     def write_file_popup(self,title,cb, default='export.pdf'):
         from conf import CP
         lf = CP.get('Path','last_file')
-        if default.endswith('.csv'): #try to use last file if exsits
+        if default.endswith(('.csv','.xlsx')): #try to use last file if exsits
             default = lf or default
         elif default.endswith('.pdf'):
             if lf:
-                default = lf.replace('.csv','.pdf')
+                default = lf.replace('.xlsx','.pdf').replace('.csv','.pdf')
         p = Factory.get('WriteFilePopup')()
         p.title = title
         p.cb = cb
@@ -709,7 +717,60 @@ class BGDeckMaker(BoxLayout):
         CP.set('Path','last_file',fpath)
         CP.write()
 
-    def load_file(self, filepath='mycsvfile.csv'):
+    def load_file(self, filepath = 'myxlsfile.xlsx'):
+        stack = self.ids['stack']
+        from conf import find_path, XLRDDictReader
+        self.record_last_file(filepath)
+        boxes = list()
+        with open(filepath, 'rb') as XLFile:
+            stds_headers = {'qt','source','template','dual','layout'}
+            for obj in XLRDDictReader(XLFile):
+                qt = int(obj['qt'])
+                dual = obj['dual']
+                box = StackPart()
+                box.qt = qt
+                box.dual = dual
+                values = dict()
+                if "template" in obj and obj['template']:
+                    box.template = obj['template']
+                if 'source' in obj and obj['source']:
+                    box.source = find_path(obj['source'])
+                if 'layout' in obj and obj['layout']:
+                    box.layout = obj['layout']
+                for attr in obj:
+                    if attr in stds_headers: continue
+                    if obj[attr]:
+                        values[attr] = obj[attr]
+                box.values = values
+                stack.add_widget(box)
+                boxes.append(box)
+            boxes.reverse()
+            progress = self.ids['load_progress']
+            progress.value = 0
+            progress.max = len(boxes)
+            #ensure the stop button is reachable
+            self.ids['stop_action'].width = 80
+            self.ids['stop_action'].text = 'Stop'
+            self.cancel_action = False
+
+            def inner(*args):
+                progress.value +=1
+                b= boxes.pop()
+                b.realise(withValue=True)
+                if self.cancel_action or not boxes:
+                    self.cancel_action = False
+                    Clock.unschedule(inner)
+                    self.ids['stop_action'].width = 0
+                    self.ids['stop_action'].text = ''
+                    progress.value = 0
+                    from conf import alert
+                    from os.path import split
+                    alert('Import %s over'%split(filepath)[-1])
+                    return False
+
+            Clock.schedule_interval(inner, .1)
+
+    def load_file_csv(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
         from conf import find_path
@@ -781,12 +842,37 @@ class BGDeckMaker(BoxLayout):
 
             Clock.schedule_interval(inner, .1)
 
-    def export_file(self, filepath='mycsvfile.csv'):
+    def export_file_CSV(self, cards, filepath, HAS_LAYOUT):
+        #Now also CSV export
+        import csv
+        if cards:
+            my_dict = {}
+            #update the dict with all possible 'values' keys
+            for c in cards:
+                if c['values']:
+                    my_dict.update(**c['values'])
+            with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
+                fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
+                if HAS_LAYOUT:
+                    fields_order = ['qt','dual','source', 'layout', 'template'] + my_dict.keys()[:]
+                from conf import Excel_Semicolon
+                w = csv.DictWriter(f, fields_order, dialect=Excel_Semicolon)
+                w.writeheader()
+                for c in cards:
+                    for k in my_dict:
+                        my_dict[k]=None
+                    my_dict.update(c)
+                    del my_dict['values']
+                    my_dict.update(**c['values'])
+                    w.writerow(my_dict)
+
+    def export_file(self, filepath='myxlfile.xlsx'):
         from collections import OrderedDict
         from conf import gamepath
-        from os.path import relpath, isfile
+        from os.path import relpath, isfile, splitext, split
         self.record_last_file(filepath)
-        import json
+        FOLDER, FNAME = split(filepath)
+        FNAME = splitext(FNAME)[0]
         od = OrderedDict()
         cards = list()
         HAS_LAYOUT = False
@@ -797,6 +883,8 @@ class BGDeckMaker(BoxLayout):
             if item.source:
                 if isfile(item.source): #it is a full path. convert it
                     _s = relpath(item.source, gamepath)
+                    if item.source.startswith(FOLDER):
+                        _s = relpath(item.source, FOLDER)
                 else:
                     _s = item.source
                 if item.template and item.source == 'img/card_template.png':
@@ -813,28 +901,38 @@ class BGDeckMaker(BoxLayout):
                 d['layout'] = item.layout
             cards.append(d)
         od['cards'] = cards
-        #json.dump(od, file(filepath,'wb'), indent = 4)
-        #Now also CSV export
-        import csv
-        if cards:
-            my_dict = {}
-            #update the dict with all possible 'values' keys
-            for c in cards:
-                if c['values']:
-                    my_dict.update(**c['values'])
-            with open(filepath, 'wb') as f:  # Just use 'w' mode in 3.x
+        from conf import CP
+        mode = CP.get('Export','format')
+        if mode =='csv':
+            self.export_file_CSV(cards, filepath, HAS_LAYOUT)
+            return
+        elif mode == 'xlsx':
+            #Now also XL export
+            import openpyxl
+            from openpyxl.utils import get_column_letter
+            if cards:
+                my_dict = {}
+                #update the dict with all possible 'values' keys
+                for c in cards:
+                    if c['values']:
+                        my_dict.update(**c['values'])
+                wb= openpyxl.Workbook()
+                ws = wb.active
+                ws.title = FNAME
                 fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
                 if HAS_LAYOUT:
                     fields_order = ['qt','dual','source', 'layout', 'template'] + my_dict.keys()[:]
-                w = csv.DictWriter(f, fields_order)
-                w.writeheader()
-                for c in cards:
+                for colindex,h in enumerate(fields_order):
+                    ws['%s%s'%(get_column_letter(colindex+1),1)] = h
+                for rowindex,c in enumerate(cards):
                     for k in my_dict:
                         my_dict[k]=None
                     my_dict.update(c)
                     del my_dict['values']
                     my_dict.update(**c['values'])
-                    w.writerow(my_dict)
+                    for colindex,h in enumerate(fields_order):
+                        ws['%s%s'%(get_column_letter(colindex+1),rowindex+2)] = my_dict[h]
+            wb.save(filepath)
         from conf import alert
         from os.path import split
         alert('Exporting %s over'%split(filepath)[-1])
@@ -871,6 +969,7 @@ class BGDeckMaker(BoxLayout):
         self.ids.stack.clear_widgets()
         for d in dst:
             self.ids.stack.add_widget(d)
+            d.realise()
 
 class SGMApp(App):
     def compute_stats(self,grid): return self.root.compute_stats(grid)

@@ -403,9 +403,6 @@ from kivy.uix.relativelayout import RelativeLayout
 class Field( BaseField, RelativeLayout):
     skip_designer = True
 
-    def on_selected(self, instance, selected):
-        print 'I change', instance, selected
-
     def __init__(self, **kwargs):
         "Create a subclassable list of attributes to display"
         RelativeLayout.__init__(self,**kwargs)
@@ -572,6 +569,9 @@ class FloatField(BaseField, FloatLayout):
             if getattr(self, "designer", False):
                 self.designer.selections[self] = None
                 self.designer.last_selected = self
+            if getattr(self, "layout_maker", False):
+                self.layout_maker.selections[self] = None
+                self.layout_maker.selected_ph = self
             touch.ungrab(self)
         return super(FloatField, self).on_touch_up(touch)
 

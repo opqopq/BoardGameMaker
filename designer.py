@@ -376,10 +376,8 @@ class BGDesigner(FloatLayout):
         tasks.clear_widgets()
         #Just make sure that the dos are aligned on the widget
         children = self.ids.content.content.children
-        print 'sel is ', self.selections.keys()
         for widget in children:
             widget.selected = widget in self.selections
-            print widget, widget.selected
         if field:
             #Add some button around me
             from kivy.factory import Factory

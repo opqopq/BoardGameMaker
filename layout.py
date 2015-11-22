@@ -48,11 +48,11 @@ class LayoutPlaceHolder(TextField):
     def __repr__(self):
         return '<PH:#%s>'%self.index
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos) and touch.is_double_tap:
-            self.selected = not(self.selected)
-            #touch.ud['status'] = self.selected
-        return TextField.on_touch_down(self, touch)
+    # def on_touch_down(self, touch):
+    #     if self.collide_point(*touch.pos) and touch.is_double_tap:
+    #         self.selected = not(self.selected)
+    #         #touch.ud['status'] = self.selected
+    #     return TextField.on_touch_down(self, touch)
 
     def on_touch_move(self, touch):
         if self.selected and touch.grab_current == self:
@@ -82,10 +82,14 @@ class BGLayoutMaker(FloatLayout):
 
     def __init__(self, *args, **kwargs):
         FloatLayout.__init__(self, *args, **kwargs)
-        p = Factory.Page()
-        self.pages.append(p)
-        self.ids.view.add_widget(p)
-        self.update_images()
+        self.new_book()
+
+    def on_selected_ph(self, instance, value):
+        for ph in self.pages[self.page_index].children:
+            if ph in self.selections:
+                ph.selected = True
+            else:
+                ph.selected = False
 
     def update_images(self,*args):
         #Fill my pictures & bind to the stack
@@ -128,7 +132,8 @@ class BGLayoutMaker(FloatLayout):
         ph.valign = 'middle'
         ph.halign= 'center'
         page.add_widget(ph)
-        ph.designed = True
+        self.selections = {ph:None}
+        self.selected_ph = ph
         return ph
 
     def duplicate_ph(self):
@@ -172,16 +177,16 @@ class BGLayoutMaker(FloatLayout):
         self.set_ph_img(ph, object, use_img_size=True)
 
     def set_ph_img(self, ph, object, use_img_size=False):
+        print 'Calling set img', ph, object, object.stack, object.stack.template, object.stack.tmplWidget.template_name
         #Remove object from list
         object.parent.remove_widget(object)
+        ph.clear_widgets()
         ph.stack = object.stack
         if object.stack.image:#stack part with computed image
             if use_img_size:
                 ph.size = object.stack.image.size
             ph.ids.img.texture = object.texture
         elif object.stack.tmplWidget or object.stack.template:
-            self.ids.tmpltree.root.nodes = list()
-            self.ids.tmpltree.clear_widgets()
             self.ids.tmpltree.tmplPath = ''
             self.ids.tmpltree.values = object.stack.values
             self.ids.tmpltree.tmplPath = object.stack.template
@@ -247,8 +252,6 @@ class BGLayoutMaker(FloatLayout):
                     values = self.get_changes_values(ph)
                     if values:
                         ph.stack.values.update(values)
-                    #In all case, proceed with realize: once linearized, stackpart has lost its preview
-                    ph.stack.realise(withValue = True)
 
     def get_changes_values(self,ph):
         t = ph.children[0]
@@ -266,6 +269,7 @@ class BGLayoutMaker(FloatLayout):
 
     def add_page(self):
         p = Factory.Page()
+        p.designer = self
         self.ids.view.remove_widget(self.pages[-1])
         self.pages.append(p)
         self.ids.view.add_widget(p)
@@ -288,6 +292,10 @@ class BGLayoutMaker(FloatLayout):
             self.ids.page_index.text = 'Page %d'%max(self.page_index-1,1)
 
     def set_page(self, page_index):
+        #remove any current selection
+        self.selections = dict()
+        self.selected_ph = None
+
         page_index = int(page_index.split()[-1])-1
         self.ids.view.remove_widget(self.pages[self.page_index])
         self.page_index = page_index
@@ -500,6 +508,7 @@ class BGLayoutMaker(FloatLayout):
         self.page_index = 0
         self.ids.view.clear_widgets()
         p = Factory.Page()
+        p.designer = self
         self.pages.append(p)
         self.ids.view.add_widget(p)
         self.ids.page_index.values = ['Page 1']
