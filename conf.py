@@ -27,6 +27,8 @@ FORCE_FIT_FORMAT = CP.getboolean('Layout','force_fit_format')
 def set_force_fit_format(force):
     CP.set('Layout','force_fit_format',int(force))
     CP.write()
+    global FORCE_FIT_FORMAT
+    FORCE_FIT_FORMAT = int(force)
 
 def startup_tips(stop):
     CP.set('Startup','startup_tips',stop)

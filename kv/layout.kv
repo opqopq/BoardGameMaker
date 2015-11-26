@@ -61,7 +61,7 @@
 
 <BGLayoutMaker>:
     #:import BGTemplate template.BGTemplate
-    on_selected_ph: if self.selected_ph and isinstance(self.selected_ph.children[0], BGTemplate): tmpltree.load_tmpl(self.selected_ph.children[0])
+    on_selected_ph: if self.selected_ph and self.selected_ph.children and isinstance(self.selected_ph.children[0], BGTemplate): tmpltree.load_tmpl(self.selected_ph.children[0])
     Splitter:
         sizable_from: 'right'
         id: main_split

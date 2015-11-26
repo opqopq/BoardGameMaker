@@ -173,7 +173,6 @@ class CodeWrapper(object):
         for infant in target.designer.nodes:
             if infant.name:
                 self.context[infant.name] = infant
-        print 'Final context', self.context
 
     def execute(self, context=None):
         if context is None:

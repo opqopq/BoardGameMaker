@@ -1,7 +1,6 @@
 __author__ = 'HO.OPOYEN'
 
 from kivy.lang import Builder
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.graphics import Color, Line
 from kivy.metrics import cm
@@ -15,6 +14,8 @@ from template import BGTemplate, templateList
 from conf import card_format
 from deck import TreeViewField
 from os.path import isfile
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.treeview import TreeView
 
 
 class RuledScatter(ScatterLayout):
@@ -41,12 +42,16 @@ class RuledScatter(ScatterLayout):
                 self.designer.last_selected = None
 
         return ScatterLayout.on_touch_up(self, touch)
+
+
 class TreeFieldEntry(TreeViewNode, BoxLayout):
     target = ObjectProperty(None)
     designer = ObjectProperty()
 
+
 class TmplChoicePopup(Popup):
     cb = ObjectProperty()
+
 
 class BGDesigner(FloatLayout):
     current_template = ObjectProperty(BGTemplate(size=card_format.size), rebind= True)
@@ -321,12 +326,13 @@ class BGDesigner(FloatLayout):
         from kivy.app import App
         deck = App.get_running_app().root.ids.deck
         stack = deck.ids['stack']
-        from template import find_template_path
+        from template import find_template_path, templateList
+        templateList.register_file(PATH)
         for child in stack.children:
             if not hasattr(child, 'template'): continue
             _, tpath = find_template_path(getattr(child, 'template'))
             if tpath.endswith(PATH):
-                child.realise()
+                child.realise(use_cache=True)
         print 'todo: how do I save pultiple template on a single KV file ? '
 
     def export_kv(self):
@@ -516,7 +522,6 @@ class BGDesigner(FloatLayout):
                 setattr(base,way,getattr(former, others[way]))
             former = base
 
-from kivy.uix.treeview import TreeView
 class FieldTreeView(TreeView):
     def on_selected_node(self, instance, selected_node):
         if selected_node:
@@ -529,8 +534,11 @@ class FieldTreeView(TreeView):
                 parent.add_widget(selected_node.target)
                 self.designer.display_field_attributes(selected_node.target)
             else:# root is selected: get the info of the tempalte
-                self.designer.selection = [self.designer.current_template]
+                #self.designer.selections = [self.designer.current_template]
+                self.designer.selections = dict()
+                self.designer.last_selected = None
                 self.designer.display_field_attributes(self.designer.current_template)
+
 
 #Need to put it at the end because klass needed in kv
 Builder.load_file('kv/designer.kv')

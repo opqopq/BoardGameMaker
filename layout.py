@@ -177,16 +177,20 @@ class BGLayoutMaker(FloatLayout):
         self.set_ph_img(ph, object, use_img_size=True)
 
     def set_ph_img(self, ph, object, use_img_size=False):
-        print 'Calling set img', ph, object, object.stack, object.stack.template, object.stack.tmplWidget.template_name
+        #print 'Calling set img', ph, object, object.stack, object.stack.template, object.stack.tmplWidget.template_name
         #Remove object from list
+        from conf import FORCE_FIT_FORMAT, card_format
         object.parent.remove_widget(object)
-        ph.clear_widgets()
+        if len(ph.children) == 2:
+            ph.remove_widget(ph.children[0])
         ph.stack = object.stack
         if object.stack.image:#stack part with computed image
             if use_img_size:
                 ph.size = object.stack.image.size
             ph.ids.img.texture = object.texture
-        elif object.stack.tmplWidget or object.stack.template:
+            if FORCE_FIT_FORMAT:
+                ph.size = card_format.size
+        elif object.stack.tmplWidget or object.stack.template:#stack part with rtemplate
             self.ids.tmpltree.tmplPath = ''
             self.ids.tmpltree.values = object.stack.values
             self.ids.tmpltree.tmplPath = object.stack.template
@@ -202,13 +206,15 @@ class BGLayoutMaker(FloatLayout):
             ph.bind(size=refresh, pos=refresh)
             ph.add_widget(img)
             img.pos = ph.pos
-        else:
-            if use_img_size:
-                ph.size = object.texture.size #now, bcause of size_hint 1
+            if FORCE_FIT_FORMAT:
+                ph.size = card_format.size
+        else:#file system image
+            #if use_img_size:
+            #    ph.size = object.texture.size #now, bcause of size_hint 1
             from conf import FORCE_FIT_FORMAT, card_format
             if FORCE_FIT_FORMAT:
                 ph.size = card_format.size
-            ph.ids.img.texture = object.texture
+            ph.ids.img.source = object.stack.source
         return ph
 
     def rotate_ph(self, angle=90):
@@ -238,22 +244,31 @@ class BGLayoutMaker(FloatLayout):
             setattr(self.selected_ph, 'center_%s'%direction,getattr(self.selected_ph.parent,way)/2)
 
     def export_phs(self):
+        from kivy.clock import Clock
         for pindex,page in enumerate(self.pages):
             for ph in page.children:
                 if not ph:
                     continue
                 #Export layout
                 if hasattr(ph, 'layout'):
+                    #print 'exporting ph', ph, ph.layout
                     ph.stack.layout = ph.layout
                 elif ph.stack:
                     ph.stack.layout = ph.x, ph.y, ph.width, ph.height, ph.angle, pindex
+                    #print 'export without layout', ph, ph.stack.layout
                 #For template, export values
                 if ph.stack:
                     values = self.get_changes_values(ph)
                     if values:
                         ph.stack.values.update(values)
+                        def inner(*args):
+                            ph.stack.realise(True)
+                        Clock.schedule_once(inner,0)
 
     def get_changes_values(self,ph):
+        if not ph.children:
+            #it is a normal ph, with an image
+            return
         t = ph.children[0]
         from template import BGTemplate
         values = dict()
@@ -442,10 +457,20 @@ class BGLayoutMaker(FloatLayout):
     def magic_fill(self):
         #alas, I have to linezarise in order to save layout for each widget
         from kivy.app import App
-        App.get_running_app().root.ids.deck.linearize()
+        from kivy.base import EventLoop
+        from kivy.uix.label import Label
+        from conf import alert
+        print 'linearize deck',
+        alert('Linearizing Deck')
+        EventLoop.idle()
+        App.get_running_app().root.ids.deck.linearize(progressbar=self.ids.progress)
+        print 'done'
         init_pi = self.page_index
         from conf import page_format
         SIZE = page_format.width-page_format.left-page_format.right, page_format.height-page_format.top-page_format.bottom
+        print 'calculating stack size'
+        alert('Calculating Size')
+        EventLoop.idle()
         #first create tuple of fg/bg
         fg,bg,dual_dict = self.get_duals()
         #fill current page with what you can
@@ -455,7 +480,12 @@ class BGLayoutMaker(FloatLayout):
         self.ids.progress.max = len(fg)
         self.ids.progress.value = 1
         from kivy.clock import Clock
+        alert('Sorting Layouts by size')
+        EventLoop.idle()
+        print 'sorting layout'
+        fg = sorted(fg, key=skey, reverse=True)
         def inner(*args):
+            from conf import alert
             if not fg:
                 Clock.unschedule(inner)
                 from conf import alert
@@ -467,7 +497,10 @@ class BGLayoutMaker(FloatLayout):
                 except WidgetException,Err:
                     print 'FATAL: Error in Setting page ???',Err
                 return
-            sorted_phs = sorted(fg, key=skey, reverse=True)
+            alert('Organizing Layout on Page %d'%(len(self.pages)))
+            EventLoop.idle()
+            print 'Organizing Layout on Page %d'%(len(self.pages))
+            sorted_phs = fg[:]
             added_ones = list()
             PAGE_LAYOUT = BinCanNode(0, 0, SIZE[0], SIZE[1])
             for f, i in sorted_phs:
@@ -495,6 +528,7 @@ class BGLayoutMaker(FloatLayout):
                 #First page is done, create dual
                 mp = self.add_mirror_page()
                 for ph, b in zip (reversed(mp.children), [dual_dict[f] for f in added_ones]):
+                    #print 'settings back for', ph, b, b.stack.source
                     self.set_ph_img(ph,b, use_img_size= False) # Is it interesting: this will force that front & back have exact same size, depending on front size
             #Add a new page, only if necessay:
             if fg:
@@ -532,13 +566,13 @@ class BGLayoutMaker(FloatLayout):
         h *= cm(1)
         a = 0 if not(a) else float(a)
         if not dxf:
-            xf = lambda r, c, ang: 0
+            xf = lambda r, c, ind: 0
         else:
             def xf(row, col, index):
                 from kivy.metrics import cm
                 return cm(1) * eval(dxf)
         if not dyf:
-            yf = lambda r, c, ang: 0
+            yf = lambda r, c, ind: 0
         else:
             def yf(row, col, index):
                 from kivy.metrics import cm
@@ -551,11 +585,13 @@ class BGLayoutMaker(FloatLayout):
         def inner(*args):
             if not fg:
                 Clock.unschedule(inner)
+                self.export_phs()
                 return
             self.ids.progress.value += 1
             cs, _ = fg.pop()
             vars['cindex'] +=1
             ph = self.add_ph()
+            print 'force fit', FORCE_FIT_FORMAT
             self.set_ph_img(ph, cs, not(FORCE_FIT_FORMAT))
             ph.x = w * vars['col_index'] + page_format.left
             ph.top = page_format.height - page_format.top - h * vars['row_index']
@@ -599,4 +635,6 @@ class BGLayoutMaker(FloatLayout):
         Clock.schedule_interval(inner,.05)
 
 Builder.load_file('kv/layout.kv')
+
+from csv import DictReader
 

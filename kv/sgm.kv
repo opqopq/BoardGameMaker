@@ -445,9 +445,11 @@
                                 Button:
                                     text: 'Templates Library'
                                     on_press: root.load_template_lib()
+                                    size_hint_y: None
                                 Button:
                                     text: 'Re Load Templates Library'
                                     on_press: root.load_template_lib(force_reload = True)
+                                    size_hint_y: None
                         AccordionItem:
                             title: "Scripts"
                             ScrollView:

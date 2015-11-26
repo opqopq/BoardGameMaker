@@ -1,7 +1,6 @@
 "Define the Template class and some template examples"
 __author__ = 'MRS.OPOYEN'
 
-
 from fields import Field
 from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, DictProperty, StringProperty, ObservableList, ListProperty, BooleanProperty
 from fields import ImageField
@@ -44,8 +43,9 @@ class BGTemplate(Field, RelativeLayout):
 #            self.canvas.insert(0,c.canvas)
 
     @classmethod
-    def FromFile(cls, filename):
-        print 'From File with', filename
+    def FromFile(cls, filename, use_cache = False):
+        if not use_cache:
+            print 'From File with', filename, 'without cache'
         from os.path import split
         from kivy.resources import resource_add_path
         resource_add_path(split(filename)[0])
@@ -54,18 +54,23 @@ class BGTemplate(Field, RelativeLayout):
         #Load  & return all templates from a file as a list. Take an optionnal filter
         from kivy.lang import Builder
         # Remove any former trace of the file
-        Builder.unload_file(filename)
-        # Now create a widget
-        try:
-            Builder.load_file(filename)
-            res = cls._process_file_build(filename)
-        except Exception, E:
-            from conf import log, alert
-            import traceback
-            alert(str(E))
-            print '[Error] While trying to import Template ',filename
-            log(E, traceback.print_exc())
-            res = list()
+        if use_cache and filename in templateList.templates:
+            res = templateList[filename]
+            res = [r.blank() for r in res]
+        else:
+            Builder.unload_file(filename)
+            # Now create a widget
+            try:
+                Builder.load_file(filename)
+                res = cls._process_file_build(filename)
+                templateList[filename] = res
+            except Exception, E:
+                from conf import log, alert
+                import traceback
+                alert(str(E))
+                print '[Error] While trying to import Template ',filename
+                log(E, traceback.print_exc())
+                res = list()
         if name:
             return [r for r in res if r.template_name == name ]
         return res
@@ -315,23 +320,21 @@ class TemplateList(EventDispatcher):
         if isinstance(res, basestring):
             #print 'reloading', res
             print '[TemplateList] GetItem: ',
-            return BGTemplate.FromFile(res)[-1]
+            return BGTemplate.FromFile(res)
         return res
 
     def register(self,tmpl):
         self[tmpl.template_name] = tmpl
 
     def register_file(self, filename):
-        print "[Templatelist] RegisterFile: " ,
-        for tmpl in BGTemplate.FromFile(filename):
+        print "[Templatelist] RegisterFile: ", filename
+        res = BGTemplate.FromFile(filename)
+        self[filename] = res
+        for tmpl in res:
             self[tmpl.template_name] = tmpl
             tmpl.src = filename
             tmpl.source = 'file'
 
-    def refresh(self, tmplName):
-        tmpl = self[tmplName]
-        if tmpl.source =='file':
-            self.register_file(tmpl.src)
 templateList = TemplateList()
 
 #Now for some easy example

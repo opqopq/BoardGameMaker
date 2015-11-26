@@ -24,6 +24,8 @@ class FolderTreeView(TreeView):
     rootpath = StringProperty()
 
     def on_rootpath(self, instance, value):
+        from time import clock
+        print 'load filder at', value, clock()
         self.load_folder(value)
 
     def load_folder(self, folder):
@@ -142,7 +144,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                     box.template = "@%s"%fold
                     box.realise()
 
-    def realise(self,*args):
+    def realise(self,use_cache = False, *args):
         if not self.name.endswith('.kv'):
             return
         #Force the creation of an image from self.template, thourhg real display
@@ -151,7 +153,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         from template import BGTemplate
         try:
             print '[SGM] Realise FileItemView: ',
-            tmpl = BGTemplate.FromFile(self.name)[-1]
+            tmpl = BGTemplate.FromFile(self.name, use_cache)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.name
             from conf import alert
@@ -198,9 +200,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
             execfile(m)
         #then template
         for m in kvfs:
-            from template import BGTemplate, templateList
+            from template import templateList
             print '[SGM] Extract Package: loading time: ',
-            t = BGTemplate.FromFile(os.path.join(temp_dir,m))
             templateList.register_file(os.path.join(temp_dir,m))
         #then deck
         for m in csvfs:
@@ -210,8 +211,10 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         from conf import start_file
         start_file(temp_dir)
 
+
 class SpecialViewItem(FileViewItem):
     "FileView for Folder & CSV file. Usable for script ? "
+
 
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
@@ -225,7 +228,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     layout = ObjectProperty(None)
 
 
-    def realise(self,withValue = False):
+    def realise(self,withValue = False, use_cache=False):
         #Force the creation of an image from self.template, thourhg real display
         #Skipt of computed image exists
         if self.image:
@@ -236,8 +239,8 @@ class StackPart(ButtonBehavior, BoxLayout):
         if not self.template:
             return
         try:
-            print '[SGM]Realize StackPart:',
-            tmpl = BGTemplate.FromFile(self.template)[-1]
+            if not use_cache: print '[SGM]Realize StackPart:',
+            tmpl = BGTemplate.FromFile(self.template, use_cache)[-1]
         except IndexError:
             print 'Warning: template file %s contains no Template !!'%self.template
             from conf import alert
@@ -409,16 +412,21 @@ class StackPart(ButtonBehavior, BoxLayout):
         self.image = pilimage
 
     def getSize(self):
-        #self.realise()
         from conf import FORCE_FIT_FORMAT, card_format
         if self.image:#stack part with computed image
             return self.image.size
         elif self.tmplWidget:
             return self.tmplWidget.size
+        elif self.template:
+            self.realise(withValue=True, use_cache=True)
+            return self.tmplWidget.size
         elif FORCE_FIT_FORMAT:
             return card_format.size
         else:
-            return self.ids.img.texture.size
+            if self.ids.img.texture:
+                return self.ids.img.texture.size
+            print 'No size for this one', self, self.source, self.template
+            return card_format.size
 
 class TemplateEditTree(TreeView):
     "Use in Template Edit Popup to display all possible fields"
@@ -449,8 +457,8 @@ class TemplateEditTree(TreeView):
             from template import templateList
             tmpls = [templateList[name]]
         else:
-            print "[SGM] OnTmplPath change:" ,
-            tmpls = BGTemplate.FromFile(self.tmplPath)
+            #print "[SGM] OnTmplPath change:" ,
+            tmpls = BGTemplate.FromFile(self.tmplPath, use_cache=True)
         for tmpl in tmpls:
             tmpl.apply_values(self.values)
             node =self.load_tmpl(tmpl)
@@ -479,6 +487,7 @@ class TemplateEditTree(TreeView):
                     self.add_node(TreeViewField(pre_label=fname, name=_wid.default_attr, editor=w), node)
         self.toggle_node(node)
         return node
+
 
 class TemplateEditPopup(Popup):
 
@@ -518,8 +527,9 @@ class TemplateEditPopup(Popup):
         self.stackpart.ids['img'].texture = cim.texture
         self.stackpart.image = False
 
+
 class BGDeckMaker(BoxLayout):
-    cancel_actio = BooleanProperty(False)
+    cancel_action = BooleanProperty(False)
 
     tmplsLib = ObjectProperty()
 
@@ -529,6 +539,8 @@ class BGDeckMaker(BoxLayout):
         self.record_last_file("")
 
     def prepare_print(self, dst):
+        "Launch PDF preparation. First determine the best method for placing images"
+
         from conf import CP, alert
         if CP.getboolean('Print','AUTOCSV'):
             alert('Auto saving XLS deck')
@@ -536,34 +548,44 @@ class BGDeckMaker(BoxLayout):
         from printer import prepare_pdf
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
-        USE_LAYOUT = True
-        WARNING = False
-        for cs in self.ids.stack.children:
-            if cs.layout:
-                WARNING = True
-            if not cs.layout:
-                USE_LAYOUT = False
-                if WARNING:
-                    from conf import alert
-                    alert('No All Stack Members have Layout value !')
-                break
-        #Do that only if fit format is not forced
-        if not self.ids['force_format'].active:
+        #3 possibilites
+        # If FORCE_FOMART, just use it with auto layout placement
+        if self.ids['force_format'].active:
+            mode = 'FORCED'
+        else:
+            #Loop on all stack & check their size.
+            #IF ALL have layout, launch print with layout
+            #ELSE
+            USE_LAYOUT = True
             sizes = set()
-            for cs in self.ids['stack'].children:
-                if not isinstance(cs, StackPart):
-                    continue
-                if not cs.template:
-                    sizes.add(FFORMAT)
+            WARNING = False
+            for cs in self.ids.stack.children:
+                if cs.layout:
+                    WARNING = True
                 else:
+                    USE_LAYOUT = False
+                    if WARNING:
+                        from conf import alert
+                        alert('Can not have both with and without layout (%s was without)!'%cs)
+                        return
+                if cs.template:
                     if cs.tmplWidget:
                         sizes.add(tuple(cs.tmplWidget.size))
                     else:
                         from template import BGTemplate
-                        print '[SGM] Prepareprint without tmplWidget:' ,
-                        sizes.add(tuple(BGTemplate.FromFile(cs.template)[-1].size))
-            if len(sizes) == 1:
-                FFORMAT = sizes.pop()
+                        #print '[SGM] Prepareprint without tmplWidget:' ,
+                        sizes.add(tuple(BGTemplate.FromFile(cs.template, use_cache=True)[-1].size))
+                elif cs.image:
+                    sizes.add(self.image.size)
+                else:
+                    sizes.add(FFORMAT)
+            if USE_LAYOUT:
+                mode = 'LAYOUT'
+            else:
+                if len(sizes) == 1:
+                    mode = sizes.pop()
+                else:
+                    mode = 'BINCAN'
         #Now add the advancement gauge
         progress = self.ids['load_progress']
         progress.value = 0
@@ -571,15 +593,20 @@ class BGDeckMaker(BoxLayout):
         self.ids['stop_action'].width = 80
         self.ids['stop_action'].text = 'Stop'
         self.cancel_action = False
-
-        size, book = prepare_pdf(stack=self.ids['stack'], fitting_size=FFORMAT, dst=dst, console_mode= False, use_layout=USE_LAYOUT)
+        size, book = prepare_pdf(stack=self.ids['stack'], dst=dst, console_mode= False, mode = mode)
         progress.max = size
         from kivy.clock import Clock
         step_counter = range(size)
 
+        #Now ensure that ALL stackpart from front & back are realized, while re-creating cache
+        from template import templateList
+        templateList.templates = dict()
+        SS = book.stack[0] + book.stack[1]
+
         def inner(*args):
             step_counter.pop()
             progress.value +=1
+
             book.generation_step()
             if (not step_counter) or self.cancel_action:
                 self.cancel_action = False
@@ -592,8 +619,18 @@ class BGDeckMaker(BoxLayout):
                 from conf import alert
                 alert('PDF Export completed')
                 return False
+            else:
+                Clock.schedule_once(inner,0.01)
 
-        Clock.schedule_interval(inner,.1)
+        def realize_inner(*args):
+            s = SS.pop()
+            s.realise(withValue=True, use_cache=True)
+            if SS:
+                Clock.schedule_once(realize_inner, 0.01)
+            else:
+                Clock.schedule_once(inner,.1)
+
+        Clock.schedule_once(inner,.1)
         return True
 
     def load_template_lib(self, force_reload = False, background_mode = False):
@@ -719,26 +756,33 @@ class BGDeckMaker(BoxLayout):
 
     def load_file(self, filepath = 'myxlsfile.xlsx'):
         stack = self.ids['stack']
+        from kivy.resources import resource_add_path
+        from os.path import split
+        resource_add_path(split(filepath)[0])
         from conf import find_path, XLRDDictReader
         self.record_last_file(filepath)
         boxes = list()
         with open(filepath, 'rb') as XLFile:
-            stds_headers = {'qt','source','template','dual','layout'}
+            stds_headers = {'qt', 'source', 'template', 'dual', 'layout_x', 'layout_y',
+                            'layout_w', 'layout_h', 'layout_angle', 'layout_page'
+            }
             for obj in XLRDDictReader(XLFile):
-                qt = int(obj['qt'])
-                dual = obj['dual']
                 box = StackPart()
-                box.qt = qt
-                box.dual = dual
+                box.qt = int(obj.get('qt', 0))
+                box.dual = 'dual' in obj and obj['dual']
                 values = dict()
                 if "template" in obj and obj['template']:
                     box.template = obj['template']
                 if 'source' in obj and obj['source']:
-                    box.source = find_path(obj['source'])
-                if 'layout' in obj and obj['layout']:
-                    box.layout = obj['layout']
+                    _s = find_path(obj['source'])
+                    if _s is None:
+                        _s = obj['source']
+                    box.source = _s
+                if 'layout_x' in obj and 'layout_y' in obj and 'layout_w' in obj and 'layout_h' in obj and 'layout_angle' in obj and 'layout_page' in obj:
+                    box.layout = obj['layout_x'], obj['layout_y'], obj['layout_w'], obj['layout_h'], obj['layout_angle'], obj['layout_page']
                 for attr in obj:
-                    if attr in stds_headers: continue
+                    if attr in stds_headers:
+                        continue
                     if obj[attr]:
                         values[attr] = obj[attr]
                 box.values = values
@@ -756,7 +800,7 @@ class BGDeckMaker(BoxLayout):
             def inner(*args):
                 progress.value +=1
                 b= boxes.pop()
-                b.realise(withValue=True)
+                b.realise(withValue=True, use_cache=True)
                 if self.cancel_action or not boxes:
                     self.cancel_action = False
                     Clock.unschedule(inner)
@@ -898,7 +942,15 @@ class BGDeckMaker(BoxLayout):
             d['values'] = item.values
             if item.layout:
                 HAS_LAYOUT = True
-                d['layout'] = item.layout
+                #d['layout'] = item.layout
+                _x,_y,_w,_h,_a, _p = item.layout
+                d['layout_w'] = _w
+                d['layout_h'] = _h
+                d['layout_y'] = _y
+                d['layout_x'] = _x
+                d['layout_page'] = _p
+                d['layout_angle'] = _a
+
             cards.append(d)
         od['cards'] = cards
         from conf import CP
@@ -919,10 +971,10 @@ class BGDeckMaker(BoxLayout):
                 wb= openpyxl.Workbook()
                 ws = wb.active
                 ws.title = FNAME
-                fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
+                fields_order = ['qt','dual','source','template'] + sorted(my_dict.keys())
                 if HAS_LAYOUT:
-                    fields_order = ['qt','dual','source', 'layout', 'template'] + my_dict.keys()[:]
-                for colindex,h in enumerate(fields_order):
+                    fields_order = ['qt','dual','source', 'layout_x','layout_y','layout_w','layout_h', 'layout_angle','layout_page', 'template'] + sorted(my_dict.keys())
+                for colindex, h in enumerate(fields_order):
                     ws['%s%s'%(get_column_letter(colindex+1),1)] = h
                 for rowindex,c in enumerate(cards):
                     for k in my_dict:
@@ -931,7 +983,8 @@ class BGDeckMaker(BoxLayout):
                     del my_dict['values']
                     my_dict.update(**c['values'])
                     for colindex,h in enumerate(fields_order):
-                        ws['%s%s'%(get_column_letter(colindex+1),rowindex+2)] = my_dict[h]
+                        _v = my_dict[h]
+                        ws['%s%s' % (get_column_letter(colindex+1),rowindex+2)] = _v
             wb.save(filepath)
         from conf import alert
         from os.path import split
@@ -956,20 +1009,31 @@ class BGDeckMaker(BoxLayout):
         label = "Stack made of %s parts / %s Cards: %s Front - %s Back"%(num_part,qt,qt_front,qt_back)
         self.ids['stats'].text = label
 
-    def linearize(self):
+    def linearize(self,progressbar = None):
         #transform all stack with qt>1 to as many stack with qt 1
         cs = self.ids.stack.children[:]
         cs.reverse()
         dst = list()
+        if progressbar:
+            from kivy.base import EventLoop
+            progressbar.value = 0
+            progressbar.max = len(cs) * 2
         for c in cs:
+            if progressbar:
+                progressbar.value+=1
+                EventLoop.idle()
             for _ in range(c.qt):
                 d = c.Copy()
                 d.qt = 1
                 dst.append(d)
         self.ids.stack.clear_widgets()
         for d in dst:
+            if progressbar:
+                progressbar.value += 1
+                EventLoop.idle()
             self.ids.stack.add_widget(d)
-            d.realise()
+            d.realise(use_cache=True)
+
 
 class SGMApp(App):
     def compute_stats(self,grid): return self.root.compute_stats(grid)

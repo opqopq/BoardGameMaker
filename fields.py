@@ -15,10 +15,11 @@ from kivy.uix.effectwidget import EffectWidget
 from editors import *
 from conf import gamepath, find_path
 from os.path import relpath
+from kivy.uix.widget import WidgetMetaclass
+from kivy.uix.relativelayout import RelativeLayout
+from styles import getStyle # Pre-import styles to register them all
 
 Builder.load_file('kv/fields.kv')
-# Pre-import styles to register them all
-from styles import getStyle
 
 ###############################################
 #        Field                                #
@@ -38,7 +39,7 @@ def get_hint(rootsize, fieldsize, is_pos=False):
         return {'x': rounded_x, 'y': rounded_y}
     return rounded_x, rounded_y
 
-from kivy.uix.widget import WidgetMetaclass
+
 class MetaField(WidgetMetaclass):
     def __new__(meta, name, bases, dct):
         #print bases
@@ -61,6 +62,7 @@ class MetaField(WidgetMetaclass):
         dct['params'] = params
         dct['menu'] = menu
         return super(MetaField, meta).__new__(meta, name, bases, dct)
+
 
 class BaseField(FocusBehavior):
     """Element class represent any component of a template (fields, font, transformation....)"""
@@ -188,7 +190,15 @@ class BaseField(FocusBehavior):
                 self.pos = self.pos_hint['x']*self.parent.width, self.pos_hint['y'] * self.parent.height
                 self.pos_hint = {}
             if self.size_hint != [None, None]:
-                self.size =  self.size_hint[0]*self.parent.width, self.size_hint[1]*self.parent.height
+                if self.size_hint[0] is None:
+                    w = 100
+                else:
+                    w = self.size_hint[0]*self.parent.width
+                if self.size_hint[1] is None:
+                    h = 100
+                else:
+                    h = self.size_hint[1]*self.parent.height
+                self.size =  w, h
                 self.size_hint = None, None
 
     def prepare_export(self):
@@ -399,7 +409,7 @@ class BaseField(FocusBehavior):
         tmpls.append('')
         return (tmpls, imports, directives)
 
-from kivy.uix.relativelayout import RelativeLayout
+
 class Field( BaseField, RelativeLayout):
     skip_designer = True
 
@@ -514,6 +524,7 @@ class Field( BaseField, RelativeLayout):
         for cindex, c in enumerate(self.children):
             self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
+
 
 class FloatField(BaseField, FloatLayout):
     skip_designer = True
@@ -632,6 +643,7 @@ class FloatField(BaseField, FloatLayout):
             self.canvas.remove(c.canvas)
             self.canvas.insert(0,c.canvas)
 
+
 class TextField(Label, FloatField):
     autofit = BooleanProperty(False)
     multiline = BooleanProperty(True)
@@ -715,6 +727,7 @@ class TextField(Label, FloatField):
                 if self.font_size != init_fint_size: #do that only if there has been some changed
                     self.font_size-=1
 
+
 class ImageField(Image, FloatField):
     attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
@@ -726,20 +739,33 @@ class ImageField(Image, FloatField):
         if src and src != source:
             self.source = src
 
+
 class RepeatField(FloatField):
+    """x_func & y_func recognize row,col & index variable. They should emit a pos_hint value (between 0 & 1) that will be added to the current pos_hint"""
     allow_stretch = BooleanProperty(True)
     keep_ratio = BooleanProperty(False)
     count = NumericProperty(1)
     images= DictProperty()
     orientation = StringProperty('lr-tb')
     orientation_values = ['lr-tb','tb-lr','bt-lr','lr-bt', 'random']
+    x_func = StringProperty()
+    y_func = StringProperty()
     target_ratio = ListProperty([1,1])
+    angle_step = NumericProperty()
     attrs = OrderedDict([('count',AdvancedIntEditor),('images',ImageChoiceEditor),
                          ('orientation',ChoiceEditor),('target_ratio',SizeHintEditor),
-                         ('allow_stretch',BooleanEditor), ('keep_ratio',BooleanEditor)
+                         ('allow_stretch',BooleanEditor), ('keep_ratio',BooleanEditor),
+                         ('angle_step', AdvancedIntEditor),
+                         ('x_func',AdvancedTextEditor),('y_func',AdvancedTextEditor),
                          ])
 
     def on_images(self, instance, value):
+        self.update()
+
+    def on_x_func(self,instance, value):
+        self.update()
+
+    def on_y_func(self, instance, value):
         self.update()
 
     def on_count(self, instance, value):
@@ -752,28 +778,45 @@ class RepeatField(FloatField):
         self.update()
 
     def add_obj(self):
-        from kivy.uix.image import Image
-        obj = Image(allow_stretch = self.allow_stretch, keep_ratio = self.keep_ratio)
+        obj = ImageField(allow_stretch = self.allow_stretch, keep_ratio = self.keep_ratio)
         obj.size_hint = self.target_ratio
         self.add_widget(obj)
         return obj
+
+    def on_angle_step(self, instance, value):
+        self.update()
 
     def on_target_ratio(self,instance,value):
         self.update()
 
     def update(self):
-        from kivy.uix.image import Image
         from itertools import cycle
         self.clear_widgets()
         if not self.images:
             return
-        wr,hr = self.target_ratio
+        #Create x/y delta func
+        if not self.x_func:
+            xf = lambda r, c, ang: 0
+        else:
+            def xf(row, col, index):
+                from kivy.metrics import cm
+                return eval(self.x_func)
+        if not self.y_func:
+            yf = lambda r, c, ang: 0
+        else:
+            def yf(row, col, index):
+                from kivy.metrics import cm
+                return eval(self.y_func)
 
+        wr,hr = self.target_ratio
+        ANGLE = -self.angle_step # In order to make sure that first pasted image will have an angle of 0
         if self.orientation == 'random':
             from random import random
             for index,img in zip(range(self.count),cycle(self.images)):
                 obj = self.add_obj()
                 obj.pos_hint = {'x': random() * (1-wr), 'y': random() * (1-hr)}
+                ANGLE += self.angle_step
+                obj.angle = ANGLE%360
                 obj.source = self.images[img]
         else:
             num_col = int(round(1/wr))
@@ -783,33 +826,39 @@ class RepeatField(FloatField):
             if self.orientation.endswith('lr'):
                 for i in range(num_col):
                     for j in range(num_row):
-                        index+=1
+                        index += 1
                         if index>self.count:
                             break
                         obj = self.add_obj()
                         obj.source = self.images[cyc.next()]
+                        ANGLE += self.angle_step
+                        obj.angle = ANGLE%360
                         if self.orientation.startswith('bt'):
-                            obj.pos_hint = {'x':wr * i , 'y':hr * j}
+                            obj.pos_hint = {'x': wr * i + xf(i, j, index), 'y': hr * j + yf(i, j, index)}
                         else:
-                            obj.pos_hint = {'x':wr * i , 'top':(1- hr * j)}
+                            obj.pos_hint = {'x': wr * i + xf(i, j, index), 'top': (1 - hr * j) + yf(i, j, index)}
             else: #col first
                 for j in range(num_row):
                     for i in range(num_col):
-                        index+=1
+                        index += 1
                         if index>self.count:
                             break
                         obj = self.add_obj()
                         obj.source = self.images[cyc.next()]
+                        ANGLE += self.angle_step
+                        obj.angle = ANGLE%360
                         if self.orientation.endswith('bt'):
-                            obj.pos_hint = {'x':wr * i , 'y':hr * j}
+                            obj.pos_hint = {'x': wr * i + xf(i, j, index) , 'y': hr * j + yf(i, j, index)}
                         else:
-                            obj.pos_hint = {'x': wr*i , 'top': 1-hr*j}
+                            obj.pos_hint = {'x': wr*i + xf(i, j, index), 'top': 1-hr*j + yf(i, j, index)}
+
 
 class ColorField(Field):
     "Display a color on a rectangle"
     rgba=ListProperty((1,1,1,1))
     attrs={'rgba': ColorEditor}
     default_attr = 'rgba'
+
 
 class BorderField(Field):
     "Draw 4 lines around parent"
@@ -818,6 +867,7 @@ class BorderField(Field):
     border_radius=NumericProperty(0)
     attrs={'border_width': AdvancedIntEditor , 'border_color': ColorEditor, 'border_radius': AdvancedIntEditor}
     default_attr = 'border_color'
+
 
 class ImgChoiceField(Image, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
@@ -847,6 +897,7 @@ class ImgChoiceField(Image, FloatField):
         if src:
             self.source = src
 
+
 class ColorChoiceField(Field):
     "This widget will display an image base on a choice, helds in choices dict"
     choices = DictProperty()
@@ -867,6 +918,7 @@ class ColorChoiceField(Field):
             self.selection = choices.keys()[0]
         else:
             self.on_selection(instance, self.selection)
+
 
 class SymbolField(SymbolLabel, FloatField):
     source=StringProperty()
@@ -913,6 +965,7 @@ class SymbolField(SymbolLabel, FloatField):
         ws.append(t)
         return ws
 
+
 class SubImageField(Field):
     default_attr = 'dimension'
     attrs = {"dimension": SubImageEditor}
@@ -924,10 +977,15 @@ class SubImageField(Field):
     def on_dimension(self, instance, dimension):
         from kivy.core.image import Image
         path = find_path(dimension[0])
-        if not path: raise ValueError('Invalid path for image to take subimage from', dimension[0])
+        if not path:
+            from conf import log
+            log("Invalid path for source of SubImage %s:%s"%(self,dimension[0]))
+            from kivy.graphics.texture import Texture
+            self.texture = Texture()
         IMG = Image(path).texture
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
+
 
 class TransfoField(Field):#, Image):
     "Transform an image file thourgh different methods registered in img_xfos.py"
@@ -989,6 +1047,7 @@ class TransfoField(Field):#, Image):
         if self.src:
             self.update()
 
+
 class SvgField(Field):
     source = StringProperty()
     source_filters = ['*.svg']
@@ -1001,6 +1060,7 @@ class SvgField(Field):
             with self.canvas:
                 from kivy.graphics.svg import Svg
                 Svg(source)
+
 
 class ShapeField(Field):
     dash_length = NumericProperty()
@@ -1023,6 +1083,7 @@ class ShapeField(Field):
     not_exported = ['joint_values','cap_values']
 
     _menu = {'Line':attrs.keys()}
+
 
 class SourceShapeField(ShapeField):
     skip_designer = True
@@ -1055,6 +1116,7 @@ class RectangleField(SourceShapeField):
     corner_radius = NumericProperty(0)
     fg_color = ListProperty([1,1,1,1])
     attrs = {'corner_radius': AdvancedIntEditor, 'fg_color': ColorEditor}
+
 
 class GridField(ShapeField):
     cols = NumericProperty(5)
@@ -1112,16 +1174,19 @@ class GridField(ShapeField):
                 img = imgs.pop()
                 self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img]), size=(self.width/max(self.cols,1),(self.height/max(self.rows,1))), pos=(self.x+i*self.width/max(1, self.cols),self.y+j*self.height/max(1,self.rows)))
 
+
 class EllipseField(SourceShapeField):
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
     fg_color = ListProperty([1,1,1,1])
     attrs = OrderedDict([('fg_color', ColorEditor), ('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
 
+
 class WireField(ShapeField):
     attrs = {'points': PointListEditor}
     default_attr = 'points'
     points = ListProperty()
+
 
 class MeshField(SourceShapeField):
     attrs = {'points': PointListEditor, 'mode': ChoiceEditor}
@@ -1147,6 +1212,7 @@ class MeshField(SourceShapeField):
 
     def on_size(self, instance, size):
         self.on_points(instance, self.points)
+
 
 class PolygonField(SourceShapeField):
     #Mesh field with predefined points for regular polygon
@@ -1184,11 +1250,13 @@ class PolygonField(SourceShapeField):
                 .5-.5*sin(radians(self.angle_start) + i * a),#sin(radians(self.angle_start) + i * a)
             ])
 
+
 class BezierField(ShapeField):
     #Unfilled Bezier
     attrs = {'points': PointListEditor}
     default_attr = 'points'
     points = ListProperty()
+
 
 class LinkedField(Field):
     "Abstrat class used to point out field that have children"
@@ -1286,6 +1354,7 @@ class MaskField(LinkedField):
         self.on_points(self, self.points)
         return ret
 
+
 class EffectField(EffectWidget, LinkedField):
     attrs = {'effects': EffectsEditor}
     default_attr = 'effects'
@@ -1337,6 +1406,7 @@ class Textured(FloatLayout):
 
     def on_alpha(self, instance, value):
         self.fbo_color.rgba = (1, 1, 1, value)
+
 
 def textured(widget):
     res = Textured()

@@ -1,19 +1,14 @@
 'Main Entry point for new KIVY bassed BGM'
 
 todos = [
-    'P3: change virtual screen stack',
+    'P3: change virtual screen stack...',
     "P3: browser v2 - file & links",
-    "P3: bug: when editing a template, then going back to deck & reediting the template, the panel switch is not done",
     "redo styles in designer switching to a popup with all style params",
-    "when loading a deck, ensure taht kv file need not to be reloaded at each line: bummer: it does",
     "add custom klass import in designer ?????: when defining a klasss in kv or py it could nbe loaded in designer",
-    "Bug: why laoding all templates from libray result in double load ? ",
     "P1: repair Z not working anymore",
     "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",
     "when editing kv with forved fit, size change !!!!",
     "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
-    "bug: in between the 2 citites, when putting default.angle = 30 in csv files, it is NOT processed by import file",
-    "auto layout bug: infinite loop between realise/inner and eventloopi lde",
     "learn way to split pdf other than pocket mod for bigger pictures",
     "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout"
 ]
@@ -79,27 +74,25 @@ class RootWidget(BoxLayout):
         self.ids.bgconsole.add(text, stack)
 
 from kivy.app import App
-import cProfile
 
 class BGMApp(App):
     title = "Board Game Maker"
 
     def build(self):
         from conf import CP, gamepath, path_reader
-        import conf
-        from kivy.clock import Clock
         root = RootWidget()
-        if CP.getboolean('Startup','load_tmpl_lib'):
+        if CP.getboolean('Startup', 'load_tmpl_lib'):
             root.ids.deck.load_template_lib(force_reload=True, background_mode=True)
-        if CP.getboolean('Startup','startup_tips'):
+        if CP.getboolean('Startup', 'startup_tips'):
             from kivy.factory import Factory
             p = Factory.StartupPopup()
             from kivy.clock import Clock
             def _inner(*args):
                 p.open()
             Clock.schedule_once(_inner)
-
         if gamepath:
+            from kivy.clock import Clock
+            from time import clock
             #Startup file csv
             fpath = CP.get('Path','last_file')
             from os.path import join, isfile, split
@@ -116,7 +109,7 @@ class BGMApp(App):
                         root.ids.deck.load_file(TARGET)
                     elif TARGET.endswith('.csv'):
                         root.ids.deck.load_file_csv(TARGET)
-            Clock.schedule_once(launcher,1)
+            Clock.schedule_once(launcher,.2)
         return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):
@@ -124,6 +117,8 @@ class BGMApp(App):
         bar = self.root.ids.message_bar
         bar.background_color = status_color
         button.text = str(text)
+        from kivy.base import EventLoop
+        EventLoop.idle()
         if not keep:
             from kivy.clock import Clock
             def cb(*args):
