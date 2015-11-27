@@ -5,7 +5,7 @@ todos = [
     "P3: browser v2 - file & links",
     "redo styles in designer switching to a popup with all style params",
     "add custom klass import in designer ?????: when defining a klasss in kv or py it could nbe loaded in designer",
-    "P1: repair Z not working anymore",
+    "P1: fix SubTemplate Export KV: in here, it is the template content that is put in the KV, not the templat eitself",
     "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",
     "when editing kv with forved fit, size change !!!!",
     "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
@@ -59,18 +59,17 @@ class RootWidget(BoxLayout):
             self.ids.content.set_screen(name)
 
     def log(self, text, stack=None):
-        if not 'bgconsol' in self.ids:
+        if not 'bgconsole' in self.ids:
             try:
                 self.on_screen_name(self, 'Console', False)
             except ValueError:
-                print '[LOG]: ',
-                print text, stack
+                from kivy.logger import Logger
+                Logger.warn(text)
+                print stack
                 return
         if not stack:
             import traceback
             stack = traceback.format_exc()
-        from conf import alert
-        alert(text)
         self.ids.bgconsole.add(text, stack)
 
 from kivy.app import App
@@ -79,7 +78,8 @@ class BGMApp(App):
     title = "Board Game Maker"
 
     def build(self):
-        from conf import CP, gamepath, path_reader
+        from conf import CP, gamepath
+        from utils import path_reader
         root = RootWidget()
         if CP.getboolean('Startup', 'load_tmpl_lib'):
             root.ids.deck.load_template_lib(force_reload=True, background_mode=True)

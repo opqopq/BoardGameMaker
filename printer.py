@@ -4,7 +4,7 @@
 from kivy.metrics import cm
 from kivy.vector import Vector
 from kivy.factory import Factory
-
+from kivy.logger import Logger
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import cm as r_cm
 from reportlab.lib.utils import ImageReader
@@ -33,11 +33,9 @@ class PDFBook:
             self.pdf.save()
 
     def show(self):
-        try:
-            from conf import start_file
-            start_file(self.dst)
-        except ImportError:
-            print 'on a mac: no startfile !'
+        from utils import start_file
+        start_file(self.dst)
+
 
     def __init__(self, dst, mode, deck_front,deck_back):
         self.page_format = None
@@ -116,14 +114,13 @@ class PDFBook:
                 tmplWidget = item.tmplWidget
             else:
                 from template import BGTemplate
-                print '[Printer] Generation Step without tmplWidget'
+                Logger.info( '[Printer] Generation Step without tmplWidget')
                 tmplWidget = BGTemplate.FromFile(item.template)
                 if tmplWidget:
                     #only taking the last one
                     tmplWidget = tmplWidget[-1]
                 else:
                     raise NameError('No such template: '+ item.template)
-                print 'here to be added: adding on realizer, exporting & then removing. more tricky'
                 if item.values:
                     tmplWidget.apply_values(item.values)
                 from kivy.base import EventLoop
@@ -133,7 +130,7 @@ class PDFBook:
             src = ImageReader(pim.rotate(angle))
         else:
             src = item.source
-            from conf import find_path
+            from utils import find_path
             src = find_path(src)
             if angle:
                 src = ImageReader(PILOpen(src).rotate(angle))
@@ -146,7 +143,7 @@ class PDFBook:
             self.AddLines(x,y,self.x,self.y)
 
     def calculate_size(self):
-        from conf import alert
+        from utils import alert
         alert('Calculating Size for mode %s'%self.mode)
         #Create all the necessary steps for while loop in printing
         #populate self.index with line made of i, row, col, face & item
@@ -207,7 +204,7 @@ class PDFBook:
                     self.index.append((INDEX_PAGE, 0, 0, 'F',(x, y, w, h, angle, f)))
                     added_ones.append((f, (x, y, w, h, angle)))
                 if not added_ones: #We could NOT feet any of the pictures: raise error:
-                    print 'Error: not all pictures could be fit inside one page'
+                    Logger.error( 'Error: not all pictures could be fit inside one page')
                     break
                 if dual_dict:
                     #First page is done, create dual
@@ -315,7 +312,7 @@ def prepare_pdf(dst='test.pdf', stack= None, console_mode = True, mode = 'STANDA
             book.generation_step(with_realize=True)
         book.save()
         book.show()
-        from conf import alert
+        from utils import alert
         alert('PDF Export completed')
         return False
     return (size , book)

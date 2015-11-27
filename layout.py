@@ -459,7 +459,7 @@ class BGLayoutMaker(FloatLayout):
         from kivy.app import App
         from kivy.base import EventLoop
         from kivy.uix.label import Label
-        from conf import alert
+        from utils import alert
         print 'linearize deck',
         alert('Linearizing Deck')
         EventLoop.idle()
@@ -485,10 +485,10 @@ class BGLayoutMaker(FloatLayout):
         print 'sorting layout'
         fg = sorted(fg, key=skey, reverse=True)
         def inner(*args):
-            from conf import alert
+            from utils import alert
             if not fg:
                 Clock.unschedule(inner)
-                from conf import alert
+                from utils import alert
                 alert('Book created')
                 self.export_phs()
                 from kivy.uix.widget import WidgetException
@@ -520,7 +520,7 @@ class BGLayoutMaker(FloatLayout):
                 ph.layout = [ph.x,ph.y,ph.width,ph.height,ph.angle, self.page_index]
             if not added_ones: #We could NOT feet any of the pictures: raise error:
                 print 'Error: not pictures could be fit inside one page'
-                from conf import alert
+                from utils import alert
                 alert('No more pictures can fit on page')
                 Clock.unschedule(inner)
                 return

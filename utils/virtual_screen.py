@@ -56,6 +56,7 @@ kv = """
 
 Builder.load_string(kv)
 
+
 class MagicScatter(ScatterLayout):
     manager = ObjectProperty()
     screen_name = StringProperty()
@@ -69,6 +70,7 @@ class MagicScatter(ScatterLayout):
                 self.manager.activated = False #trigger the othrs tuff
                 return True
         return Scatter.on_touch_down(self, touch)
+
 
 class VirtualScreenManagerBase(FloatLayout):
     content = ListProperty()
@@ -162,6 +164,7 @@ class VirtualScreenManagerBase(FloatLayout):
             self.current_screen = self.content[index]
             self.wrappers[self.current_screen].selected = True
         return super(VirtualScreenManagerBase, self).on_touch_down(touch)
+
 
 class VirtualScreenManagerGrid(VirtualScreenManagerBase):
 
@@ -260,6 +263,7 @@ class VirtualScreenManagerGrid(VirtualScreenManagerBase):
             super(VirtualScreenManagerBase, self).add_widget(wrapper, index)
             self.current_screen = widget
 
+
 class MagicLabel(Label):
     target = ObjectProperty()
 
@@ -271,6 +275,7 @@ class MagicLabel(Label):
                 self.target.manager.activated = False #trigger the othrs tuff
                 return True
         return Label.on_touch_down(self, touch)
+
 
 class VirtualScreenManagerStack(VirtualScreenManagerBase):
     "Same as above, but display the virtual screens as a scrollable list"

@@ -8,7 +8,8 @@ from kivy._event import EventDispatcher
 from kivy.properties import *
 from editors import *
 from sgm import StackPart
-from conf import ENV, alert
+from conf import ENV
+from utils import alert, start_file
 from collections import OrderedDict
 from kivy.lang import Observable
 from fields import Field
@@ -71,9 +72,8 @@ class BGScriptEditor(BoxLayout):
         stack = root.ids.deck.ids.stack
         #Filling the env
         import os, os.path
-        from conf import alert, log
+        from utils import log, alert, start_file
         from printer import prepare_pdf
-        from conf import start_file
         self.load_locals(locals())
 
     def load_locals(self, locals):
@@ -117,7 +117,7 @@ class Idle(Script):
     vars = {'tst_param': AdvancedTextEditor, 'num_param': IntEditor}
 
     def execute(self):
-        print 'idel executed'
+        print 'idle executed'
 
 class SplitMaker(Script):
     name = "SplitMaker"
@@ -138,7 +138,7 @@ class SplitMaker(Script):
             if not current_part:
                 raise ValueError()
         except Exception, E:
-            from conf import alert
+            from utils import alert
             alert('Select a Stack Item first')
             return
 

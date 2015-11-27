@@ -1,11 +1,12 @@
 from os.path import isdir
-from kivy.config import ConfigParser
 from sys import platform
-from kivy.logger import Logger
-from kivy.resources import resource_add_path
-from kivy.metrics import cm
+from kivy.config import ConfigParser
 from kivy.event import EventDispatcher
+from kivy.logger import Logger
+from kivy.metrics import cm
 from kivy.properties import NumericProperty, ReferenceListProperty, BooleanProperty
+from kivy.resources import resource_add_path
+
 
 if platform.startswith('win'):
     fname = 'bgm.ini'
@@ -81,40 +82,12 @@ class PageFormat(EventDispatcher):
 
 page_format = PageFormat()
 
-
-def log(text, stack=None):
-    from kivy.app import App
-    app = App.get_running_app()
-    if app:
-        try:
-            app.root.log(text, stack)
-        except AttributeError:
-            print 'WARNING: No Log function found; reverting to print'
-            print '\t', text, stack
-    else:
-        print text, stack
-
-def alert(text, status_color=(0,0,0,1), keep = False):
-    from kivy.app import App
-    app = App.get_running_app()
-    if app:
-        try:
-            app.alert(text, status_color, keep)
-        except AttributeError:
-            print '\t', text, status_color, keep
-
-def start_file(path):
-    import os
-    if hasattr(os, 'startfile'):
-        os.startfile(path)
-    else:
-        os.system('open "%s"'%path)
-
 ENV = dict()
 
 def fill_env(*args):
     from kivy.app import App
     ENV['app'] = app = App.get_running_app()
+    from utils import log, alert
     if not app:
         return
     root = app.root
@@ -138,30 +111,6 @@ def CreateConfigPanel():
 
 #Path Handling functions
 
-from os.path import normpath, join, split, sep
-
-def path_reader(path):
-    #normalize any path to be read according to the current OS
-    not_sep = '/' if sep=='\\' else '\\'
-    if sep in path:
-        return normpath(path)
-    else:
-        return normpath(path.replace(not_sep,sep))
-
-def find_path(path):
-    from os.path import isfile
-    from kivy.resources import resource_find
-    r = resource_find(path)
-    if r:
-        return r
-    if not isfile(path_reader(path)):
-        if isfile(join(gamepath, path_reader(path))):
-            return join(gamepath, path_reader(path))
-        from conf import log
-        log('Source does not exist at path %s'%(path))
-    else:
-        return path_reader(path)
-
 DirCache={'last':gamepath}
 
 def set_last_dir(src,value):
@@ -173,61 +122,4 @@ def get_last_dir(src=None):
     if src is None or not(src in DirCache):
         src = 'last'
     return DirCache[src]
-
-def toImage(self, bg_color=(1,1,1,0)):
-    #create image widget with texture == to a snapshot of me
-    from kivy.graphics import Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale
-    from kivy.core.image import Image as CoreImage
-
-    if self.parent is not None:
-        canvas_parent_index = self.parent.canvas.indexof(self.canvas)
-        self.parent.canvas.remove(self.canvas)
-
-    fbo = Fbo(size=self.size, with_stencilbuffer=True)
-
-    with fbo:
-        ClearColor(*bg_color)
-        ClearBuffers()
-        Scale(1, -1, 1)
-        Translate(-self.x, -self.y - self.height, 0)
-
-    fbo.add(self.canvas)
-    fbo.draw()
-    from kivy.base import EventLoop
-    #EventLoop.idle()
-    cim = CoreImage(fbo.texture, filename = '%s.png'%id(self))
-
-    fbo.remove(self.canvas)
-
-    if self.parent is not None:
-        self.parent.canvas.insert(canvas_parent_index, self.canvas)
-
-    return cim
-
-def OpenXLDictReader(f):
-    import openpyxl
-    book  = openpyxl.reader.excel.load_workbook(f)
-    sheet = book.active
-
-    rows = sheet.max_row
-    cols = sheet.max_column
-
-    def item(i, j):
-        return (sheet.cell(row=0, column=j).value, sheet.cell(row=i, column=j).value)
-
-    return (dict(item(i,j) for j in range(cols)) for i in range(1, rows))
-
-
-def XLRDDictReader(f, sheet_index=0):
-    import xlrd, mmap
-    book    = xlrd.open_workbook(file_contents=mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ))
-    sheet   = book.sheet_by_index(sheet_index)
-    headers = dict( (i, sheet.cell_value(0, i) ) for i in range(sheet.ncols) )
-
-    return ( dict( (headers[j], sheet.cell_value(i, j)) for j in headers ) for i in range(1, sheet.nrows) )
-
-from csv import excel
-class Excel_Semicolon(excel):
-    delimiter = ";"
-
 

@@ -13,13 +13,13 @@ from kivy.graphics.fbo import Fbo
 from utils.symbol_label import SymbolLabel
 from kivy.uix.effectwidget import EffectWidget
 from editors import *
-from conf import gamepath, find_path
+from conf import gamepath
+from utils import find_path, toImage
 from os.path import relpath
 from kivy.uix.widget import WidgetMetaclass
 from kivy.uix.relativelayout import RelativeLayout
 from styles import getStyle # Pre-import styles to register them all
 
-Builder.load_file('kv/fields.kv')
 
 ###############################################
 #        Field                                #
@@ -47,10 +47,6 @@ class MetaField(WidgetMetaclass):
         #Compute menu & params
         params = OrderedDict()
         menu = OrderedDict()
-        if 'attrs' in dct:
-            params.update(dct['attrs'])
-        if '_menu' in dct:
-            menu.update(dct['_menu'])
         for klass in reversed(bases):
             if not(hasattr(klass, '__metaclass__')) or klass.__metaclass__ != MetaField:
                 continue
@@ -58,6 +54,10 @@ class MetaField(WidgetMetaclass):
                 params[k] = v
             for k,v in klass.menu.items():
                 menu[k] = v
+        if 'attrs' in dct:
+            params.update(dct['attrs'])
+        if '_menu' in dct:
+            menu.update(dct['_menu'])
         dct['default_attr_values'] = params.keys()
         dct['params'] = params
         dct['menu'] = menu
@@ -302,7 +302,7 @@ class BaseField(FocusBehavior):
         if self.parent:
             dad = self.parent
             cs = self.parent.children[:]
-            cs.sort(key=lambda x: x.z, reverse=True)
+            cs.sort(key=lambda x: x.z)
             self.parent.clear_widgets()
             for c in cs:
                 dad.add_widget(c)
@@ -330,8 +330,7 @@ class BaseField(FocusBehavior):
         #Include KV file if templateField
         if isinstance(field, BGTemplate):
             tmpls[0] = '%s%s:'%((level-1)*'\t',field.template_name)
-            if field != self:
-                imports.append(field.src.split('@')[-1])
+            imports.append(field.src.split('@')[-1])
         if field.directives:
             directives.extend(field.directives)
         changes_attrs = field.getChangedAttributes(True)
@@ -396,6 +395,27 @@ class BaseField(FocusBehavior):
 
             else:
                 tmpls.append('%s%s: %s'%(prepend, attr, value))
+        # #Special Case: how to handle ids value for BGTemplate, which are both name & subfield
+        # if isinstance(field, BGTemplate):
+        #     b = field.blank()
+        #     for child in self.ids:
+        #         _b,_c = getattr(b.ids,child), getattr(self.ids,child)
+        #         _bv = getattr(_b,_b.default_attr)
+        #         _cv = getattr(_c, _c.default_attr)
+        #         if _bv != _cv:
+        #             if isinstance(_cv, float):
+        #                 _pcv = '%.2f'%_cv
+        #             elif isinstance(_cv, basestring):
+        #                 if isfile(_cv) and save_relpath:
+        #                     _pcv = '"%s"'%relpath(_cv, gamepath)
+        #                 else:
+        #                     _pcv = '"%s"'%_cv
+        #             elif isinstance(_cv, FunctionType): #replace the function by its name without the ""
+        #                 _pcv = '%s'%_cv.func_name
+        #             else:
+        #                 _pcv = str(_cv)
+        #             tmpls.append('%s%s:'%(prepend,child))
+        #             tmpls.append('\t%s%s: %s'%(prepend, _c.default_attr, _pcv))
         if isinstance(field, LinkedField):
             for child in field.children:
                 if getattr(child, 'is_context', False):
@@ -408,7 +428,6 @@ class BaseField(FocusBehavior):
                 directives.extend(d)
         tmpls.append('')
         return (tmpls, imports, directives)
-
 
 class Field( BaseField, RelativeLayout):
     skip_designer = True
@@ -501,29 +520,21 @@ class Field( BaseField, RelativeLayout):
         return RelativeLayout.on_touch_move(self,touch)
 
     def add_widget(self, widget, index=0):
-        #replacing index by z-index
-        RelativeLayout.add_widget(self,widget, getattr(widget,'z',0))
         #Duplicate pointer to template
         widget.template = self.template
         #Re order them according to z elt:
         cs = self.children[:]
-        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
-        self.children = cs
-        #Also reorder canvas
-        for cindex, c in enumerate(self.children):
-            if not self.canvas.indexof(c.canvas) == -1:
-                self.canvas.remove(c.canvas)
-            self.canvas.insert(0,c.canvas)
-
-    def remove_widget(self, widget):
-        super(RelativeLayout,self).remove_widget(widget)
-        cs = self.children[:]
-        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
-        self.children = cs
-        #Also reorder canvas
-        for cindex, c in enumerate(self.children):
-            self.canvas.remove(c.canvas)
-            self.canvas.insert(0,c.canvas)
+        cs.append(widget)
+        cs.sort(key= lambda x: getattr(x,'z',0))
+        self.clear_widgets()
+        for c in cs:
+            RelativeLayout.add_widget(self, c)
+        # self.children = cs
+        # #Also reorder canvas
+        # for cindex, c in enumerate(self.children):
+        #     if not self.canvas.indexof(c.canvas) == -1:
+        #         self.canvas.remove(c.canvas)
+        #     self.canvas.insert(0,c.canvas)
 
 
 class FloatField(BaseField, FloatLayout):
@@ -619,21 +630,24 @@ class FloatField(BaseField, FloatLayout):
         return FloatLayout.on_touch_move(self,touch)
 
     def add_widget(self, widget, index=0):
-        #replacing index by z-index
-        FloatLayout.add_widget(self,widget, getattr(widget,'z',0))
+        ##replacing index by z-index
         #Duplicate pointer to template
         widget.template = self.template
         #Re order them according to z elt:
         cs = self.children[:]
-        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
-        self.children = cs
-        #Also reorder canvas
-        for cindex, c in enumerate(self.children):
-            if not self.canvas.indexof(c.canvas) == -1:
-                self.canvas.remove(c.canvas)
-            self.canvas.insert(0,c.canvas)
+        cs.append(widget)
+        self.clear_widgets()
+        cs.sort(key= lambda x: getattr(x,'z',0))
+        for c in cs:
+            FloatLayout.add_widget(self,widget)
+        #self.children = cs
+        ##Also reorder canvas
+        #for cindex, c in enumerate(self.children):
+        #    if not self.canvas.indexof(c.canvas) == -1:
+        #        self.canvas.remove(c.canvas)
+        #    self.canvas.insert(0,c.canvas)
 
-    def remove_widget(self, widget):
+    def Oremove_widget(self, widget):
         super(FloatLayout,self).remove_widget(widget)
         cs = self.children[:]
         cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
@@ -860,15 +874,6 @@ class ColorField(Field):
     default_attr = 'rgba'
 
 
-class BorderField(Field):
-    "Draw 4 lines around parent"
-    border_width=NumericProperty(1)
-    border_color=ListProperty((1,1,1,1))
-    border_radius=NumericProperty(0)
-    attrs={'border_width': AdvancedIntEditor , 'border_color': ColorEditor, 'border_radius': AdvancedIntEditor}
-    default_attr = 'border_color'
-
-
 class ImgChoiceField(Image, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
     choices = DictProperty()
@@ -978,7 +983,7 @@ class SubImageField(Field):
         from kivy.core.image import Image
         path = find_path(dimension[0])
         if not path:
-            from conf import log
+            from utils import log
             log("Invalid path for source of SubImage %s:%s"%(self,dimension[0]))
             from kivy.graphics.texture import Texture
             self.texture = Texture()
@@ -1027,7 +1032,7 @@ class TransfoField(Field):#, Image):
             elif isinstance(source, BaseField): #widget case
                 from kivy.base import EventLoop
                 EventLoop.idle()
-                from conf import toImage
+                from utils import toImage
                 cim = toImage(source)
                 self.Image = frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA',0,1)
             if self.Image:
@@ -1112,11 +1117,33 @@ class SourceShapeField(ShapeField):
 #    #Just goigng from lower left to upper right. is it even useful ?
 #    pass
 
-class RectangleField(SourceShapeField):
-    corner_radius = NumericProperty(0)
-    fg_color = ListProperty([1,1,1,1])
-    attrs = {'corner_radius': AdvancedIntEditor, 'fg_color': ColorEditor}
 
+class RectangleField(SourceShapeField):
+    #A value of corner radius. Same for all corner. Might evolve to a multiple value later on
+    corner_radius = NumericProperty(0)
+    #inside_border: set to True if you want the border to be drawned inside the rectangle
+    inside_border = BooleanProperty(False)
+    attrs = {'corner_radius': AdvancedIntEditor, 'inside_border': BooleanEditor}
+
+
+class BorderField(RectangleField):
+    "Draw 4 lines around parent"
+
+    #Turn Auto COlor to yes if you want the border to adapt its color to the dominant color of it source image
+    auto_color = BooleanProperty(False)
+    attrs={'auto_color': BooleanEditor}
+
+    def on_source(self,instance, source):
+        super(BorderField,self).on_source(instance,source)
+        self.on_auto_color(self,self.auto_color)
+
+    def on_auto_color(self,instance, value):
+        if value:
+            if self.source:
+                from utils.kmeans import colorz
+                res = colorz(self.source, n=1)
+                from kivy.utils import get_color_from_hex
+                self.line_color = get_color_from_hex(res[0])
 
 class GridField(ShapeField):
     cols = NumericProperty(5)
@@ -1467,3 +1494,6 @@ for klassName in globals().keys()[:]:
             continue
         klass.Type = klassName
         fieldDict[klass.Type] = klass
+
+
+Builder.load_file('kv/fields.kv')

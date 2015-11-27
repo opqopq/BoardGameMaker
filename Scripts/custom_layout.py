@@ -3,7 +3,9 @@ hexagon_height = 6.77 #cm
 h_step = 5.94 # step between 2 hex. With my image, it was less than hex_width
 v_step = 5.04 # same as above
 
-from conf import card_format, alert, ENV
+from conf import card_format, ENV
+from utils import alert
+
 main = ENV['main']
 
 if 'layout' not in main.ids:

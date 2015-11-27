@@ -1,6 +1,7 @@
 #:import resplit re.split
 #:import get_last_dir conf.get_last_dir
 #:import set_last_dir conf.set_last_dir
+#:import get_color utils.get_color
 
 ##############################################################################
 #                            Popups                                          #
@@ -79,7 +80,7 @@
         cols:1
         ColorPicker:
             id: cpicker
-            color: root.color
+            color: get_color(root.color)
         BoxLayout:
             size_hint: 1, None
             height: 30
@@ -436,7 +437,7 @@
 <Point>:
     canvas:
         Color:
-            rgb: self.color
+            rgb: get_color(self.color)
         Point:
             points: self.x, self.y
             pointsize: 5

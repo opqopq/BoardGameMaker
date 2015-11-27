@@ -9,7 +9,8 @@ from collections import OrderedDict
 from editors import editors_map, FileEditor, TemplateFileEditor, TextEditor
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.carousel import Carousel
-from conf import path_reader
+from utils import path_reader, find_path
+from kivy.logger import Logger
 
 class BGTemplate(Field, RelativeLayout):
     """Template class. Made of fields able to render an image"""
@@ -24,17 +25,25 @@ class BGTemplate(Field, RelativeLayout):
     #Now for the special attributes only used when printing the objects
     print_index = DictProperty()
 
+    def __init__(self,**kwargs):
+        super(BGTemplate,self).__init__(**kwargs)
+        self.template_name = self.__class__.__name__
+
     def __repr__(self):
         return '<Template #%s>'%self.template_name
 
     def add_widget(self, widget, index=0):
         #replacing index by z-index
-        a = RelativeLayout.add_widget(self, widget, getattr(widget,'z',0))
+        #a = RelativeLayout.add_widget(self, widget, getattr(widget,'z',0))
         #Duplicate pointer to template
         widget.template = self
         #Re order them according to z elt:
         cs = self.children[:]
-        cs.sort(key= lambda x: getattr(x,'z',0), reverse=True)
+        cs.append(widget)
+        cs.sort(key= lambda x: getattr(x,'z',0))
+        self.clear_widgets()
+        for c in cs:
+            RelativeLayout.add_widget(self,c)
         self.children = cs
 #        #Also reorder canvas
 #        for cindex, c in enumerate(self.children):
@@ -45,7 +54,7 @@ class BGTemplate(Field, RelativeLayout):
     @classmethod
     def FromFile(cls, filename, use_cache = False):
         if not use_cache:
-            print 'From File with', filename, 'without cache'
+            Logger.info('From File with ' + str(filename) + ' without cache')
         from os.path import split
         from kivy.resources import resource_add_path
         resource_add_path(split(filename)[0])
@@ -65,10 +74,11 @@ class BGTemplate(Field, RelativeLayout):
                 res = cls._process_file_build(filename)
                 templateList[filename] = res
             except Exception, E:
-                from conf import log, alert
+                from utils import alert
+                from utils import log
                 import traceback
                 alert(str(E))
-                print '[Error] While trying to import Template ',filename
+                Logger.error('[Error] While trying to import Template %s'%filename)
                 log(E, traceback.print_exc())
                 res = list()
         if name:
@@ -127,7 +137,7 @@ class BGTemplate(Field, RelativeLayout):
                     elif _d.startswith('import'):
                         n,v = _d[7:].split(" ",1)
                     else:
-                        print 'Unkown KV directives skipped',_d
+                        Logger.warn('Unkown KV directives skipped: %s'%_d)
                     eval_context[n] = v
                 class prox:
                         value= 0
@@ -162,7 +172,7 @@ class BGTemplate(Field, RelativeLayout):
                                         #The list or tuple are the same => should not be considered as code.
                                         continue
                                 except Exception, e:
-                                    print 'Trying to guess code behing %s did not work'%p, e
+                                    Logger.warn('[From File] Trying to guess code behing %s did not work: %s'%(p, e))
 
                             tc.code_behind[p] = v.value
                 if isinstance(t, BGTemplate):
@@ -293,7 +303,7 @@ class BGTemplate(Field, RelativeLayout):
                             child.source = v
                         setattr(child, attrName, v)
 
-    def export_to_kv(self, level = 1, save_cm = True, relativ = True, save_relpath = True):
+    def export_to_kv(self, level = 1, save_cm=True, relativ=True, save_relpath=True):
         #Full export, with directives & impacts and bgtemplate
         t,i,d = self.export_field(level, save_cm, relativ, save_relpath)
         #Change the first line
@@ -319,7 +329,6 @@ class TemplateList(EventDispatcher):
         res = self.templates[name]
         if isinstance(res, basestring):
             #print 'reloading', res
-            print '[TemplateList] GetItem: ',
             return BGTemplate.FromFile(res)
         return res
 
@@ -327,7 +336,6 @@ class TemplateList(EventDispatcher):
         self[tmpl.template_name] = tmpl
 
     def register_file(self, filename):
-        print "[Templatelist] RegisterFile: ", filename
         res = BGTemplate.FromFile(filename)
         self[filename] = res
         for tmpl in res:
@@ -391,7 +399,8 @@ if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):
 
 def find_template_path(filename):
     from os.path import abspath, isfile, join
-    from conf import gamepath, find_path
+    from conf import gamepath
+    from utils import find_path
     if "@" in filename: #Only using subone
         name, filename = filename.split('@')
     else:

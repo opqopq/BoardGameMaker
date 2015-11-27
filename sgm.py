@@ -14,7 +14,8 @@ from deck import TreeViewField
 from fields import BaseField
 from conf import gamepath, FILE_FILTER
 import os, os.path
-
+from kivy.logger import Logger
+from kivy.logger import Logger
 Builder.load_file('kv/sgm.kv')
 
 
@@ -24,8 +25,6 @@ class FolderTreeView(TreeView):
     rootpath = StringProperty()
 
     def on_rootpath(self, instance, value):
-        from time import clock
-        print 'load filder at', value, clock()
         self.load_folder(value)
 
     def load_folder(self, folder):
@@ -152,13 +151,12 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
         try:
-            print '[SGM] Realise FileItemView: ',
+            Logger.log('INFO','[SGM] Realise FileItemView calling From File')
             tmpl = BGTemplate.FromFile(self.name, use_cache)[-1]
         except IndexError:
-            print 'Warning: template file %s contains no Template !!'%self.name
-            from conf import alert
+            Logger.warn('Warning: template file %s contains no Template !!'%self.name)
+            from utils import alert
             alert('Error while loading %s template'%self.name)
-
             return
         #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
         self.tmplWidget = tmpl
@@ -178,7 +176,6 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         zip_name = self.name
         zip_path = os.path.abspath(zip_name)
         temp_dir = tempfile.mkdtemp(prefix='BGM_%s'%os.path.split(self.name)[-1])
-        print 'unzipping package into ', temp_dir
         from kivy.resources import resource_add_path
         resource_add_path(temp_dir)
 
@@ -201,14 +198,14 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         #then template
         for m in kvfs:
             from template import templateList
-            print '[SGM] Extract Package: loading time: ',
+            Logger.info('[SGM] Extract Package: registering template file')
             templateList.register_file(os.path.join(temp_dir,m))
         #then deck
         for m in csvfs:
             dm.load_file_csv(os.path.join(temp_dir,m))
         for m in xlsfs:
             dm.load_file(os.path.join(temp_dir,m))
-        from conf import start_file
+        from utils import start_file
         start_file(temp_dir)
 
 
@@ -239,18 +236,17 @@ class StackPart(ButtonBehavior, BoxLayout):
         if not self.template:
             return
         try:
-            if not use_cache: print '[SGM]Realize StackPart:',
+            if not use_cache: Logger.info( '[SGM]Realize StackPart calling from file')
             tmpl = BGTemplate.FromFile(self.template, use_cache)[-1]
         except IndexError:
-            print 'Warning: template file %s contains no Template !!'%self.template
-            from conf import alert
+            Logger.warn( 'Warning: template file %s contains no Template !!'%self.template)
+            from utils import alert
             alert('Error while loading template %s '%self.template)
             return
         #App.get_running_app().root.ids['realizer'].add_widget(tmpl) #force draw of the beast
 
         if withValue:
             tmpl.apply_values(self.values)
-
         self.tmplWidget = tmpl
 
         def inner(*args):
@@ -365,7 +361,7 @@ class StackPart(ButtonBehavior, BoxLayout):
     def img_export(self, dst='export.png'):
         pim = self.toPILImage()
         pim.save(dst)
-        from conf import start_file
+        from utils import start_file
         start_file(dst)
 
     def setImageSize(self, size):
@@ -383,7 +379,7 @@ class StackPart(ButtonBehavior, BoxLayout):
                 tmplWidget = item.tmplWidget
             else:
                 from template import BGTemplate
-                print '[SGM] toPILIMage: ',
+                Logger.info( '[SGM] toPILIMage calling fromfile ')
                 tmplWidget = BGTemplate.FromFile(item.template)
                 if tmplWidget:
                     #only taking the last one
@@ -425,7 +421,6 @@ class StackPart(ButtonBehavior, BoxLayout):
         else:
             if self.ids.img.texture:
                 return self.ids.img.texture.size
-            print 'No size for this one', self, self.source, self.template
             return card_format.size
 
 class TemplateEditTree(TreeView):
@@ -452,12 +447,11 @@ class TemplateEditTree(TreeView):
         #tmplPath is in the form [NAME][@PATH]. If path provided, load all tmpl from there. Without it, take name from library
         name, path = self.tmplPath.split('@')
         if not(name) and not(path):
-            print 'Warning: tmpl Path is empty. stopping template edition'
+            Logger.warn( 'Warning: tmpl Path is empty. stopping template edition')
         if not path:
             from template import templateList
             tmpls = [templateList[name]]
         else:
-            #print "[SGM] OnTmplPath change:" ,
             tmpls = BGTemplate.FromFile(self.tmplPath, use_cache=True)
         for tmpl in tmpls:
             tmpl.apply_values(self.values)
@@ -494,7 +488,7 @@ class TemplateEditPopup(Popup):
     def compute(self):
         tree = self.ids['options']
         if not tree.current_selection:
-            print 'Warning: no template choosen. do nothing'
+            Logger.warn( 'Warning: no template choosen. do nothing')
             return
         tmpl, node = tree.current_selection
         #Here is hould loop on the template to apply them on values
@@ -541,7 +535,8 @@ class BGDeckMaker(BoxLayout):
     def prepare_print(self, dst):
         "Launch PDF preparation. First determine the best method for placing images"
 
-        from conf import CP, alert
+        from conf import CP
+        from utils import alert
         if CP.getboolean('Print','AUTOCSV'):
             alert('Auto saving XLS deck')
             self.export_file(dst.replace('.pdf','.xlsx'))
@@ -565,7 +560,7 @@ class BGDeckMaker(BoxLayout):
                 else:
                     USE_LAYOUT = False
                     if WARNING:
-                        from conf import alert
+                        from utils import alert
                         alert('Can not have both with and without layout (%s was without)!'%cs)
                         return
                 if cs.template:
@@ -573,7 +568,6 @@ class BGDeckMaker(BoxLayout):
                         sizes.add(tuple(cs.tmplWidget.size))
                     else:
                         from template import BGTemplate
-                        #print '[SGM] Prepareprint without tmplWidget:' ,
                         sizes.add(tuple(BGTemplate.FromFile(cs.template, use_cache=True)[-1].size))
                 elif cs.image:
                     sizes.add(self.image.size)
@@ -616,7 +610,7 @@ class BGDeckMaker(BoxLayout):
                 progress.value = 0
                 book.save()
                 book.show()
-                from conf import alert
+                from utils import alert
                 alert('PDF Export completed')
                 return False
             else:
@@ -759,7 +753,8 @@ class BGDeckMaker(BoxLayout):
         from kivy.resources import resource_add_path
         from os.path import split
         resource_add_path(split(filepath)[0])
-        from conf import find_path, XLRDDictReader
+        from utils import XLRDDictReader
+        from utils import find_path
         self.record_last_file(filepath)
         boxes = list()
         with open(filepath, 'rb') as XLFile:
@@ -807,7 +802,7 @@ class BGDeckMaker(BoxLayout):
                     self.ids['stop_action'].width = 0
                     self.ids['stop_action'].text = ''
                     progress.value = 0
-                    from conf import alert
+                    from utils import alert
                     from os.path import split
                     alert('Import %s over'%split(filepath)[-1])
                     return False
@@ -817,7 +812,7 @@ class BGDeckMaker(BoxLayout):
     def load_file_csv(self, filepath='mycsvfile.csv'):
         #Now also CSV export
         import csv
-        from conf import find_path
+        from utils import find_path
         self.record_last_file(filepath)
         with open(filepath, 'rb') as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024), delimiters=";,")
@@ -879,7 +874,7 @@ class BGDeckMaker(BoxLayout):
                     self.ids['stop_action'].width = 0
                     self.ids['stop_action'].text = ''
                     progress.value = 0
-                    from conf import alert
+                    from utils import alert
                     from os.path import split
                     alert('Import %s over'%split(filepath)[-1])
                     return False
@@ -899,7 +894,7 @@ class BGDeckMaker(BoxLayout):
                 fields_order = ['qt','dual','source','template'] + my_dict.keys()[:]
                 if HAS_LAYOUT:
                     fields_order = ['qt','dual','source', 'layout', 'template'] + my_dict.keys()[:]
-                from conf import Excel_Semicolon
+                from utils import Excel_Semicolon
                 w = csv.DictWriter(f, fields_order, dialect=Excel_Semicolon)
                 w.writeheader()
                 for c in cards:
@@ -986,7 +981,7 @@ class BGDeckMaker(BoxLayout):
                         _v = my_dict[h]
                         ws['%s%s' % (get_column_letter(colindex+1),rowindex+2)] = _v
             wb.save(filepath)
-        from conf import alert
+        from utils import alert
         from os.path import split
         alert('Exporting %s over'%split(filepath)[-1])
 

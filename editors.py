@@ -8,7 +8,7 @@ from kivy.properties import *
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from conf import log, alert
+from utils import log, alert, find_path
 
 Builder.load_file('kv/editors.kv')
 
@@ -346,9 +346,10 @@ class FloatEditor(IntEditor):
         #Xross Bind
         def xcb(*args):
             t.text = str(getattr(self.target, keyname))
-        args={keyname:xcb}
+        args = {keyname: xcb}
         self.target.bind(**args)
         return t
+
 
 class MetricEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -410,6 +411,7 @@ class MetricEditor(Editor):
         self.target.bind(**args)
         return t
 
+
 class SizeHintEditor(Editor):
     "Editor for pos_hint & size_hint ediition"
     def getWidgets(self, name, keyname, **kwargs):
@@ -456,6 +458,7 @@ class SizeHintEditor(Editor):
         t.target_attr = name
         return t
 
+
 class PosHintEditor(Editor):
     "Editor for pos_hint & size_hint ediition"
     def getWidgets(self, name, keyname, **kwargs):
@@ -482,6 +485,7 @@ class PosHintEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class FileEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -511,6 +515,7 @@ class FileEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class TemplateFileEditor(Editor):
     #Just like a fileeditor, but tmplPAth are in the form NAME@PATH
@@ -558,6 +563,7 @@ class TemplateFileEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class SubImageEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -618,6 +624,7 @@ class RangeEditor(Editor):
         t.target_attr = name
         return t
 
+
 class AdvancedRangeEditor(RangeEditor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.textinput import TextInput
@@ -644,6 +651,7 @@ class AdvancedRangeEditor(RangeEditor):
         t.target_attr = name
         return t
 
+
 class ChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.spinner import Spinner
@@ -660,6 +668,7 @@ class ChoiceEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class PointListEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -711,6 +720,7 @@ class ColorOption(SpinnerOption):
             Rectangle(pos=wid.pos, size= wid.size)
         self.add_widget(wid)
 
+
 class ColorOptionEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.spinner import Spinner
@@ -737,6 +747,7 @@ class ColorOptionEditor(Editor):
         t.target_attr = name
         return t
 
+
 class ImgOption(SpinnerOption):
 
     def __init__(self, **kwargs):
@@ -752,8 +763,9 @@ class ImgOption(SpinnerOption):
         if self.text not in self.choices:
             return
         from kivy.uix.image import Image
-        from conf import find_path
+        from utils import find_path
         self.add_widget(Image(source=find_path(self.choices[self.text]), size=self.size, pos=(self.x-self.width/4,self.y)))
+
 
 class ImgOptionEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -781,6 +793,7 @@ class ImgOptionEditor(Editor):
         t.target_attr = name
         return t
 
+
 class ImageChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         text = ""
@@ -807,6 +820,7 @@ class ImageChoiceEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class ColorChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -837,6 +851,7 @@ class ColorChoiceEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class FontChoiceEditor(ChoiceEditor):
 
@@ -908,6 +923,7 @@ class FontChoiceEditor(ChoiceEditor):
         t.target_attr = name
         return t
 
+
 class EffectsEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         t=Button(text="Define")
@@ -934,6 +950,7 @@ class EffectsEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class StyleEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -962,6 +979,7 @@ class StyleEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class FieldEditor(ChoiceEditor):
     "List all widgets fields from my parents"
@@ -1000,10 +1018,12 @@ class TextEditorPopup(Popup):
 class RichTextEditorPopup(TextEditorPopup):
     pass
 
+
 class CodeEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
     text = StringProperty()
+
 
 class FontEditorPopup(Popup):
     name = StringProperty()
@@ -1015,11 +1035,13 @@ class FontEditorPopup(Popup):
     font_size = NumericProperty()
     cb = ObjectProperty()
 
+
 class FileEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
     path = StringProperty(".")
     filters = ListProperty()
+
 
 class TemplateFileEditorPopup(Popup):
     name = StringProperty()
@@ -1044,6 +1066,7 @@ class TemplateFileEditorPopup(Popup):
                     spinner.text = tmpl.template_name
                 else:
                     spinner.text = "-"
+
 
 class ColorEditorPopup(Popup):
     name = StringProperty()
@@ -1117,6 +1140,7 @@ class DictChoiceEditorPopup(Popup):
             choices.append(name)
         self.cb([self.items[x] for x in choices])
 
+
 class ImageChoiceEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
@@ -1169,6 +1193,7 @@ class ImageChoiceEditorPopup(Popup):
             path = cs[i*4+6].text
             self.choices[name] = path
         self.cb(self.choices)
+
 
 class ColorChoiceEditorPopup(Popup):
     name = StringProperty()

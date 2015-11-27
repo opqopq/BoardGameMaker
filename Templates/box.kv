@@ -81,7 +81,6 @@
     corner_radius2: 0
     corner_radius3: 0
     corner_radius4: 00
-    fg_color: 0,0,0,0
     canvas:
         Color:
             rgba: self.line_color
@@ -100,6 +99,7 @@
 	mail_depth: cm(1.0)
 
 	#:import fe editors.MetricEditor
+	#:import ie edutors.
 	vars: {'mail_width':fe,'mail_height':fe,'mail_depth':fe}
 
     size: self.mail_width+ 2* self.mail_depth+ 2*0.25*self.mail_width, 2*self.mail_depth+ 2.6* self.mail_height#.6 comes from the more than half rebate

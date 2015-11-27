@@ -3,7 +3,8 @@ __author__ = 'HO.OPOYEN'
 from urllib import quote, unquote
 from kivy.uix.boxlayout import BoxLayout
 from utils.proxy_urlrequest import UrlRequest
-from conf import USE_PROXY, alert
+from conf import USE_PROXY
+from utils import alert, start_file
 from kivy.properties import StringProperty, ListProperty
 from kivy.lang import Builder
 from xml.etree import cElementTree as ET
@@ -38,6 +39,8 @@ def img_download(url, Widget, *args):
     if isfile('cache/%s'%fname):
         Widget.source = dst
         return
+    Widget.source = url
+    return
     if not USE_PROXY:
             Widget.source = url
             return
@@ -373,8 +376,8 @@ class BGGeekBrowser(BoxLayout):
         except UnicodeDecodeError:
             elts['Links'] = ""
         sub = tmpl%elts
-        file(join(path, "expl@ore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
-        from conf import start_file
+        file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
+        from utils import start_file
         start_file(join(path, "explore_%s.html"%self.selected_game))
 
     def create_game_folder(self):
@@ -400,7 +403,7 @@ class BGGeekBrowser(BoxLayout):
         output.write(self.ids.details.ids.description.text)
         output.write('\n\nMore Information:')
         output.write(self.ids.details.ids.information.text.encode('cp1252'))
-        from conf import start_file
+        from utils import start_file
         start_file(path)
 
 if __name__=='__main__':

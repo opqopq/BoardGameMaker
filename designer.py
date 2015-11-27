@@ -102,7 +102,7 @@ class BGDesigner(FloatLayout):
     def add_parent_field(self, field):
         "Just like add field, but this parent field will surround the current selection"
         if not self.selections:
-            from conf import alert
+            from utils import alert
             alert('Choose a field first', status_color=(1, .43,0.01))
             return
         from fields import fieldDict
@@ -144,9 +144,11 @@ class BGDesigner(FloatLayout):
                 tmpl = BGTemplate.FromFile(tmplname).pop()
                 childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
-                self.selections = [tmpl]
+                self.selections = {tmpl:None}
+                self.last_selected = tmpl
+
             else:
-                from conf import alert
+                from utils import alert
                 alert('Wrong selection in template:' + s)
         tcp.cb = cb
         tcp.open()
@@ -255,12 +257,13 @@ class BGDesigner(FloatLayout):
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
+        print 'designer lad', templateName
         #First clean a little
         self.clear()
         if '@' in templateName:
             #load from file:
             from template import BGTemplate
-            print '[Designer] Load Template'
+            print '[Designer] Load Template:',
             template = BGTemplate.FromFile(templateName)[-1]
         else:
             template = templateList[templateName]
@@ -272,14 +275,10 @@ class BGDesigner(FloatLayout):
         print 'loading template', self.current_template.template_name
         #Have to do that, as chilndre is in the wrong way  !
         ordered_child = [c for c in template.children if isinstance(c, BaseField)]
-        ordered_child.sort(key=lambda x:x.z, reverse=True)
+        ordered_child.sort(key=lambda x:x.z)
         for target in ordered_child:
-            if not isinstance(target, BaseField):
-                #Here we do not import kivy widget; should be replaced by a kivy widget field
-                from conf import log
-                log("Not importing kivy element %s"%target)
-                continue
             template.remove_widget(target)
+            print 'inserting field ', target
             self.insert_field(target)
 
     def clear(self):
@@ -317,10 +316,10 @@ class BGDesigner(FloatLayout):
         if overwrite or not exists:
             file(PATH,'wb').write(kv)
         else:
-            from conf import alert
+            from utils import alert
             alert('Template %s already exists !'%PATH)
             return
-        from conf import alert
+        from utils import alert
         alert('Template %s saved'%self.current_template.template_name)
         #Force update on deck widget
         from kivy.app import App
@@ -444,7 +443,7 @@ class BGDesigner(FloatLayout):
                 unit.height= unit.parent.height
                 unit.y= unit.parent.y
             elif pos == 'Copy':
-                from conf import alert
+                from utils import alert
                 alert('Choose target to copy size from')
                 self._do_copy =('size', unit)
 

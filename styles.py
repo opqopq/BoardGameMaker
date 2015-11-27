@@ -3,7 +3,9 @@ __author__ = 'opq'
 
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
+
 from editors import *
+
 
 class Style(EventDispatcher):
     kvname = StringProperty()
@@ -61,7 +63,8 @@ class StyleList(EventDispatcher):
             Builder.load_file(filename)
             res = [x for x in Builder.rules if x[1].ctx.filename == filename]
         except Exception, E:
-            from conf import log, alert
+            from utils import alert
+            from utils import log
             import traceback
             alert(E)
             log(E,traceback.format_exc())

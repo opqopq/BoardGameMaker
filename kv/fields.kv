@@ -4,6 +4,7 @@
 
 #:import CARD conf.card_format
 #:import FontIcon utils.fontello.FontIcon
+#:import get_color utils.get_color
 
 <.designed>
     designed: True
@@ -56,7 +57,8 @@
         icon: root.Type
         size_hint: None, None
         font_size: 24
-        pos: (root.width/2-self.width/2, -self.height/2) if root.Type=='TemplateField' else (root.center_x-self.width/2, root.y-self.height/2)
+        #:import FloatField fields.FloatField
+        pos: (root.width/2-self.width/2, -self.height/2) if not isinstance(root, FloatField) else (root.center_x-self.width/2, root.y-self.height/2)
         opacity: 1 if root.designed else 0
         color: 0,0,0,1
 
@@ -72,7 +74,7 @@
             origin: self.width/2, self.height/2 # self.center if floatlayout
             axis: 0,0,1
         Color:
-            rgba: self.bg_color
+            rgba: get_color(self.bg_color)
         Rectangle:
             size: self.size
             pos: 0,0 #self.pos if floatlayout
@@ -90,7 +92,7 @@
             origin: self.center
             axis: 0,0,1
         Color:
-            rgba: self.bg_color
+            rgba: get_color(self.bg_color)
         Rectangle:
             size: self.size
             pos: self.pos
@@ -130,14 +132,6 @@
             size:(self.width+2*root.border_width,self.height+2*root.border_width)
             pos: root.x-root.border_width,root.y-root.border_width
 
-<BorderField>:
-    canvas.before:
-        Color:
-            rgba: self.border_color
-        Line:
-            #if field is floatlayout: rounded_rectangle: self.x+self.border_width,self.y+self.border_width,self.width-2*self.border_width,self.height-2*self.border_width, self.border_radius
-            rounded_rectangle: self.border_width,self.border_width,self.width-2*self.border_width,self.height-2*self.border_width, self.border_radius
-            width: self.border_width
 
 <ImageChoiceField>:
     source: self.choices[self.selection] if self.selection in self.choices else ""
@@ -158,9 +152,9 @@
             texture: self.texture
 
 <RectangleField>:
-    canvas:
+    canvas.after:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Line:
             width: self.line_width
             joint: self.joint
@@ -168,22 +162,23 @@
             dash_length: self.dash_length
             dash_offset: self.dash_offset
             #if field is floatlayout rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
-            rounded_rectangle: 0,0,self.width, self.height, self.corner_radius
-        Color:
-            rgba: self.fg_color
-        # in 1.9.1 RoundedRectangle:
-            #pos: self.pos
-        Rectangle:
-            size: self.size
-            source: self.source
-            texture: self.texture
-            #in 1.9.1 radius: self.corner_radius
-
+            rounded_rectangle: self.x if not self.inside_border else self.x + self.line_width, self.y if not self.inside_border else self.y + self.line_width,self.width if not self.inside_border else self.width-2*self.line_width, self.height if not self.inside_border else self.height-2*self.line_width, self.corner_radius
+#Front mask: not needed as we already have background color ?
+#    canvas:
+#        Color:
+#            rgba: get_color(self.fg_color)
+#        # in 1.9.1 RoundedRectangle:
+#            #pos: self.pos
+#        Rectangle:
+#            size: self.size
+#            source: self.source
+#            texture: self.texture
+#            #in 1.9.1 radius: self.corner_radius
 
 <GridField>:
     canvas.after:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Line:
             width: self.line_width
             joint: self.joint
@@ -203,7 +198,7 @@
 <EllipseField>:
     canvas:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Line:
             width: self.line_width
             joint: self.joint
@@ -213,7 +208,7 @@
             #if field is floatlayout ellipse: self.x, self.y, self.width, self.height, self.angle_start, self.angle_end
             ellipse: 0,0, self.width, self.height, self.angle_start, self.angle_end
         Color:
-            rgba: self.fg_color
+            rgba: get_color(self.fg_color)
         Ellipse:
             #pos: self.pos
             size: self.size
@@ -239,7 +234,7 @@
 <PolygonField>:
     canvas:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Mesh:
             vertices: self.vertices
             indices: range(self.side)
@@ -251,7 +246,7 @@
 <WireField>:
     canvas:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Line:
             width: self.line_width
             joint: self.joint
@@ -264,7 +259,7 @@
 <BezierField>:
     canvas:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Line:
             width: self.line_width
             joint: self.joint
@@ -277,7 +272,7 @@
 <MeshField>:
     canvas:
         Color:
-            rgba: self.line_color
+            rgba: get_color(self.line_color)
         Mesh:
             vertices: self.vertices
             indices: range(len(self.vertices)/4)
