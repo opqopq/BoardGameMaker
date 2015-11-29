@@ -1,7 +1,7 @@
 "Contains all classes to managed styles, which are KV class added dynamcaly to any fields"
 __author__ = 'opq'
 
-#Now define the cache foundry for all templates
+#Now define the cache foundry for all Templates
 from kivy._event import EventDispatcher
 
 from editors import *

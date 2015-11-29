@@ -77,6 +77,6 @@ class MyFileEventHandler(FileSystemEventHandler):
         self.target.operations.append(event)
 
 if __name__ == "__main__":
-    path = "Templates/"
+    path = "templates/"
     from kivy.base import runTouchApp
     runTouchApp(WatchedFolderTree(path = path))
