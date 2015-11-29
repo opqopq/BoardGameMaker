@@ -10,6 +10,7 @@ def log(text, stack=None):
     if app:
         try:
             app.root.log(text, stack)
+            print text, stack
         except AttributeError:
             Logger.warn('WARNING: No Log function found; reverting to print')
             print '\t', text, stack

@@ -277,7 +277,7 @@ class BGTemplate(Field, RelativeLayout):
         return t
 
     def apply_values(self, values):
-        #print 'appy_values', self, values
+        print 'appy_values', self, values
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:
@@ -386,8 +386,8 @@ class RedSkin(BGTemplate):
 #templateList.register(RedSkin())
 
 
-#Now load all files from the Templates dir to templatelist
-def LoadTemplateFolder(folder="Templates"):
+#Now load all files from the templates dir to templatelist
+def LoadTemplateFolder(folder="templates"):
     from glob import glob
     from os.path import join
     for kv in glob(join(folder, '*.kv')):

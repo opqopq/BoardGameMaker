@@ -163,17 +163,16 @@
             dash_offset: self.dash_offset
             #if field is floatlayout rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
             rounded_rectangle: self.x if not self.inside_border else self.x + self.line_width, self.y if not self.inside_border else self.y + self.line_width,self.width if not self.inside_border else self.width-2*self.line_width, self.height if not self.inside_border else self.height-2*self.line_width, self.corner_radius
-#Front mask: not needed as we already have background color ?
-#    canvas:
-#        Color:
-#            rgba: get_color(self.fg_color)
-#        # in 1.9.1 RoundedRectangle:
-#            #pos: self.pos
-#        Rectangle:
-#            size: self.size
-#            source: self.source
-#            texture: self.texture
-#            #in 1.9.1 radius: self.corner_radius
+    canvas:
+        Color:
+            rgba: get_color(self.fg_color)
+        # in 1.9.1 RoundedRectangle:
+            #pos: self.pos
+        Rectangle:
+            size: self.size
+            source: self.source
+            texture: self.texture
+            #in 1.9.1 radius: self.corner_radius
 
 <GridField>:
     canvas.after:

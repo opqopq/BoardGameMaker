@@ -280,8 +280,7 @@ class IntEditor(TextEditor):
             try:
                 setattr(self.target, keyname, int(value))
                 t.stored_value = int(value)
-            except ValueError,E:
-
+            except ValueError, E:
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
@@ -341,7 +340,7 @@ class FloatEditor(IntEditor):
                 log(E)
         t.bind(text=cb)
         t.target_key = keyname
-        t.stored_value = 0
+        t.stored_value = getattr(self.target, keyname)
         t.target_attr = name
         #Xross Bind
         def xcb(*args):

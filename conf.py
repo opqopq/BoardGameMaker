@@ -118,8 +118,10 @@ def set_last_dir(src,value):
     DirCache['last']  = value
 
 def get_last_dir(src=None):
-    #print 'get_last_dir', src, src in DirCache, DirCache.keys()
+    #print 'get_last_dir', src, src in DirCache, DirCache.keys(), src is None
     if src is None or not(src in DirCache):
         src = 'last'
+    if not DirCache[src]:
+        return '.'
     return DirCache[src]
 

@@ -242,7 +242,7 @@ class Pocketer(Script):
         pockets = self.stack.children[:8]
         imgs = [p.toPILImage() for p in reversed(pockets)]
         from template import BGTemplate
-        tmpl = BGTemplate.FromFile('Templates/pocketmode.kv')[0]
+        tmpl = BGTemplate.FromFile('templates/pocketmode.kv')[0]
         from sgm import StackPart
         pim = tmpl.toPILImage()
         pm = StackPart()

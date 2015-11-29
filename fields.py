@@ -446,9 +446,10 @@ class Field( BaseField, RelativeLayout):
                     VECTOR = Vector(*pos)
                     if self.angle:
                         deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
-                        deltapos =  deltapos.rotate(self.angle)
+                        deltapos = deltapos.rotate(self.angle)
                         VECTOR = deltapos + self.center
                     if origin.distance(VECTOR) <5:
+                        touch.ud['do_move'] = False
                         touch.ud['do_resize'] = True
                         touch.grab(self)
                         #Calculate the mode of resizing
@@ -467,8 +468,9 @@ class Field( BaseField, RelativeLayout):
                 touch.grab(self)
                 #Define if resized is on
                 touch.ud['do_resize'] = False
+                touch.ud['do_move'] = False
                 #Display params if duoble tap
-                if touch.is_double_tap and hasattr(self,'designer'):
+                if touch.is_double_tap and hasattr(self, 'designer'):
                     self.designer.display_field_attributes(self)
                 return True
             #else:
@@ -479,10 +481,15 @@ class Field( BaseField, RelativeLayout):
         return super(Field, self).on_touch_down(touch)
 
     def on_touch_up(self, touch):
-        if self.designed and touch.grab_current==self:
+        if self.designed and touch.grab_current == self:
             if getattr(self, "designer", False):
-                self.designer.selections[self] = None
-                self.designer.last_selected = self
+                if self in self.designer.selections and not(touch.ud['do_resize'] or touch.ud['do_move']):
+                    del self.designer.selections[self]
+                    if self.designer.last_selected == self:
+                        self.designer.last_selected = None
+                else:
+                    self.designer.selections[self] = None
+                    self.designer.last_selected = self
             touch.ungrab(self)
         return super(Field, self).on_touch_up(touch)
 
@@ -506,6 +513,7 @@ class Field( BaseField, RelativeLayout):
                     else:
                         self.width += touch.dx
             else:#Move
+                touch.ud['do_move'] = True
                 if self.selected:
                     self.x += touch.dx
                     self.y += touch.dy
@@ -575,6 +583,7 @@ class FloatField(BaseField, FloatLayout):
                 touch.grab(self)
                 #Define if resized is on
                 touch.ud['do_resize'] = False
+                touch.ud['do_move'] = False
                 #Display params if duoble tap
                 if touch.is_double_tap and hasattr(self, 'designer'):
                     self.designer.display_field_attributes(self)
@@ -589,8 +598,13 @@ class FloatField(BaseField, FloatLayout):
     def on_touch_up(self, touch):
         if self.designed and touch.grab_current==self:
             if getattr(self, "designer", False):
-                self.designer.selections[self] = None
-                self.designer.last_selected = self
+                if self in self.designer.selections and not(touch.ud['do_resize'] or touch.ud['do_move']):
+                    del self.designer.selections[self]
+                    if self.designer.last_selected == self:
+                        self.designer.last_selected = None
+                else:
+                    self.designer.selections[self] = None
+                    self.designer.last_selected = self
             if getattr(self, "layout_maker", False):
                 self.layout_maker.selections[self] = None
                 self.layout_maker.selected_ph = self
@@ -617,6 +631,7 @@ class FloatField(BaseField, FloatLayout):
                     else:
                         self.width += touch.dx
             else:#Move
+                touch.ud['do_move'] = True
                 if self.selected:
                     self.x += touch.dx
                     self.y += touch.dy
@@ -985,8 +1000,9 @@ class SubImageField(Field):
         if not path:
             from utils import log
             log("Invalid path for source of SubImage %s:%s"%(self,dimension[0]))
+            return
             from kivy.graphics.texture import Texture
-            self.texture = Texture()
+            self.texture = Texture.create(size=(100,100))
         IMG = Image(path).texture
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
@@ -1123,7 +1139,8 @@ class RectangleField(SourceShapeField):
     corner_radius = NumericProperty(0)
     #inside_border: set to True if you want the border to be drawned inside the rectangle
     inside_border = BooleanProperty(False)
-    attrs = {'corner_radius': AdvancedIntEditor, 'inside_border': BooleanEditor}
+    attrs = {'corner_radius': AdvancedIntEditor, 'inside_border': BooleanEditor, 'fg_color': ColorEditor}
+    fg_color = ListProperty([1,1,1,1])
 
 
 class BorderField(RectangleField):

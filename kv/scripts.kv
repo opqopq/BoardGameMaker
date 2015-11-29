@@ -7,7 +7,7 @@
     mode: 'In'
     text: ""
     stack: ""
-    on_press: if self.stack: F.Popup(title="Full Traceback",size_hint_y=.7,content=F.Label(text=self.stack)).open()
+    on_touch_down: if args[1].is_double_tap and self.stack: F.Popup(title="Full Traceback",size_hint_y=.7,content=F.Label(text=self.stack)).open()
     canvas.before:
         Color:
             rgb: .1,.1,.1
@@ -46,7 +46,7 @@
             AccordionItem:
                 title: 'Scripts Folder'
                 FileChooserListView:
-                    rootpath:"Scripts"
+                    rootpath:"scripts"
                     on_selection: repl.text = file(self.selection[0], 'rb').read()
             AccordionItem:
                 title: 'Script Globals'

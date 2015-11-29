@@ -63,6 +63,7 @@ class FolderTreeView(TreeView):
 
     load_func = callback
 
+
 class FileViewItem(ToggleButtonBehavior, BoxLayout):
     name = StringProperty()
     source = StringProperty()
@@ -151,7 +152,7 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         #Force the creaiotn of the tmpl miniture for display
         from template import BGTemplate
         try:
-            Logger.log('INFO','[SGM] Realise FileItemView calling From File')
+            Logger.info('[SGM] Realise FileItemView calling From File')
             tmpl = BGTemplate.FromFile(self.name, use_cache)[-1]
         except IndexError:
             Logger.warn('Warning: template file %s contains no Template !!'%self.name)
@@ -297,18 +298,22 @@ class StackPart(ButtonBehavior, BoxLayout):
                         prev = p.ids['preview']
                         tmpl = prev.children[0]
                         TS = tmpl.size
-                        PS = prev.size
+                        PS = prev.parent.size
                         W_ratio = float(.9*PS[0])/TS[0]
                         H_ratio = float(.9*PS[1])/TS[1]
                         ratio = min(W_ratio, H_ratio)
                         x, y = p.ids['FL'].center
                         prev.center = ratio * x, ratio * y
-                        p.ids['preview'].scale = ratio
+                        #p.ids['preview'].scale = ratio
                         #forcing x to 0
                         prev.x = 5
+                        prev.center_y = y
                         from kivy.metrics import cm
                         p.tsize = options.current_selection[0].size[0]/cm(1), options.current_selection[0].size[1]/cm(1)
-
+                        print prev, prev.size, prev.pos
+                        print 'ratio', ratio
+                        print prev.parent, prev.parent.size, prev.parent.pos
+                        print prev.parent.parent
 
                     Clock.schedule_once(_inner, 0)
             else: #edit button for pure image
@@ -423,6 +428,7 @@ class StackPart(ButtonBehavior, BoxLayout):
                 return self.ids.img.texture.size
             return card_format.size
 
+
 class TemplateEditTree(TreeView):
     "Use in Template Edit Popup to display all possible fields"
     tmplPath = StringProperty(allownone=True)
@@ -498,6 +504,7 @@ class TemplateEditPopup(Popup):
                 for child in child_node.walk(restrict=True):
                     key = getattr(child, 'target_key',None)
                     sv = getattr(child, 'stored_value',None)
+                    print key, sv, tmpl.vars
                     if key is not None and sv is not None: # means somthing has changed
                         if child.target_attr in tmpl.vars: #just a tmpl variable
                             values[key] = sv
@@ -628,7 +635,7 @@ class BGDeckMaker(BoxLayout):
         return True
 
     def load_template_lib(self, force_reload = False, background_mode = False):
-        #Same as load_folder('/Templates') but with delay to avoid clash
+        #Same as load_folder('/templates') but with delay to avoid clash
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
         if background_mode:
@@ -641,7 +648,7 @@ class BGDeckMaker(BoxLayout):
                 pictures.add_widget(c)
             return
         from template import templateList
-        tmpls = sorted([x for x in os.listdir('Templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
+        tmpls = sorted([x for x in os.listdir('templates') if x.endswith('.kv')], key=lambda x:x.lower() , reverse=True)
         C = len(tmpls)
         progress.max = C
         progress.value = 1
@@ -651,7 +658,7 @@ class BGDeckMaker(BoxLayout):
                 Clock.unschedule(inner)
                 self.tmplsLib = pictures.children[:]
                 return
-            _f = os.path.join('Templates',tmpls.pop())
+            _f = os.path.join('templates',tmpls.pop())
             templateList.register_file(_f)
             img = FileViewItem(source="", name=_f)
             pictures.add_widget(img)

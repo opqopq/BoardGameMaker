@@ -306,7 +306,7 @@ class BGDesigner(FloatLayout):
                     PATH = PATH.split('@')[-1]
                 overwrite = True
             else:
-                PATH = 'Templates/%s.kv'%self.current_template.template_name
+                PATH = 'templates/%s.kv'%self.current_template.template_name
                 overwrite = CP.getboolean('Designer','OVERWRITE_SAVED_TMPL')
                 alert('Template Saved in Library as %s.kv'%self.current_template.template_name)
         else:
@@ -453,7 +453,9 @@ class BGDesigner(FloatLayout):
             copy = unit.Copy()
             self.insert_field(copy)
             #Select the new field
-            self.selections = [copy]
+            self.selections = dict()
+            self.selections[copy] = None
+            self.last_selected = copy
 
     def remove_selection(self,*args):
         if self.selections:
