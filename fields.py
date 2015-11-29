@@ -678,14 +678,15 @@ class TextField(Label, FloatField):
     multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
     min_font_size = NumericProperty()
+    font_color = ListProperty([1,1,1,1])
     halign_values = ['left','center','right','justify']
     valign_values = ['bottom','middle','top']
     attrs = OrderedDict([
         ('text', RichTextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
-        ('max_font_size', IntEditor), ('min_font_size', IntEditor),
-        ('color', ColorEditor),
+        ('font_color', ColorEditor),
         ('halign',ChoiceEditor), ('valign', ChoiceEditor),
         ('font', FontChoiceEditor) , ('markup', BooleanEditor),
+        ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('padding_x', IntEditor), ('padding_y', IntEditor)
     ])
     # ('font_size', IntEditor), ('font_name', FontChoiceEditor), ('bold', BooleanEditor),  ('italic', BooleanEditor)])

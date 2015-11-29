@@ -335,8 +335,9 @@
                     on_press: root.dismiss()
                 Label:
                     text: "Show Fields"
-                CheckBox:
-                    on_active: root.display_fields(self.active)
+                ToggleButton:
+                    on_state: root.display_fields(self.state)
+                    text: 'Fields Showed'
 
 <BGDeckMaker>:
     #The Left tab with files/templates & values

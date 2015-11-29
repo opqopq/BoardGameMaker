@@ -492,8 +492,17 @@ class TemplateEditTree(TreeView):
 class TemplateEditPopup(Popup):
 
     def display_fields(self,do_display):
-        if do_display:
-            print 'tree tmpl', self.ids.options.tmplDict
+        from kivy.uix.label import Label
+        for tmpl in self.ids.options.tmplDict:
+            for ids in tmpl.ids:
+                wid = getattr(tmpl.ids,ids)
+                if do_display == 'down':
+                    L = Label(text = wid.name)
+                    wid.add(L)
+                    L.center = wid.center
+                else:
+                    wid.remove_widget(wid.children[0])
+
     def compute(self):
         tree = self.ids['options']
         if not tree.current_selection:
