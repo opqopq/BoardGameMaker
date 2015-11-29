@@ -1,0 +1,192 @@
+<Tuckbox@BGTemplate>:
+	card_width: cm(6.35)
+	card_height: cm(8.8)
+	card_depth: cm(5.0)
+
+	size: 3*self.card_depth + 2*self.card_width, 3*self.card_depth + self.card_height
+
+	#:import fe editors.MetricEditor
+	vars: {'card_width':fe,'card_height':fe,'card_depth':fe}
+
+	RectangleField:
+		line_color: 0,0,0,1
+		corner_radius: 50
+		pos: root.card_depth, 2*root.card_depth+root.card_height
+		size: root.card_width, root.card_depth
+
+	RectangleField:
+		line_color: 0,0,0,1
+		corner_radius: 50
+		pos: root.card_depth, 0
+		size: root.card_width, root.card_depth
+
+
+	ImageField:
+		#angle: 90
+		id: Left
+		allow_stretch: True
+		keep_ratio: False
+		pos: 0,3*root.card_depth/2
+		size: root.card_depth, root.card_height
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
+		id: Right
+		pos: root.card_depth+root.card_width, 3*root.card_depth/2
+		size:  root.card_depth, root.card_height
+		source: Left.source
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
+		pos: root.card_depth, 3*root.card_depth/2
+		size: root.card_width,root.card_height
+		id: Back
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
+		pos: root.card_depth, 3*root.card_depth/2 + root.card_height
+		size: root.card_width, root.card_depth
+		id: Top
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
+		pos: root.card_depth, root.card_depth/2
+		size: root.card_width, root.card_depth
+		id: Bottom
+		source: Top.source
+
+
+	ImageField:
+		allow_stretch: True
+		keep_ratio: False
+		id: Front
+		pos: 2*root.card_depth + root.card_width, 3*root.card_depth/2
+		size: root.card_width, root.card_height
+
+
+	RectangleField:
+		pos: 2*root.card_depth+2*root.card_width,3*root.card_depth/2
+		size: .8*root.card_depth, root.card_height
+		bg_color: .8,.8,.8,1
+		line_color: 0,0,0,1
+
+<-MyRectangleField@RectangleField>:
+    size_hint: None, None
+    line_color: 0,0,0,1
+    corner_radius: 0
+    corner_radius2: 0
+    corner_radius3: 0
+    corner_radius4: 00
+    canvas:
+        Color:
+            rgba: self.line_color
+        Line:
+            width: self.line_width
+            joint: self.joint
+            cap: self.cap
+            dash_length: self.dash_length
+            dash_offset: self.dash_offset
+            #if field is floatlayout rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius
+            rounded_rectangle: self.x,self.y,self.width, self.height, self.corner_radius, self.corner_radius2, self.corner_radius3, self.corner_radius4
+
+<Mailer@BGTemplate>:
+	mail_width: cm(13)
+	mail_height: cm(10)
+	mail_depth: cm(1.0)
+
+	#:import fe editors.MetricEditor
+	vars: {'mail_width':fe,'mail_height':fe,'mail_depth':fe}
+
+    size: self.mail_width+ 2* self.mail_depth+ 2*0.25*self.mail_width, 2*self.mail_depth+ 2.6* self.mail_height#.6 comes from the more than half rebate
+
+    MyRectangleField:
+		size: 0.25*root.mail_width, root.mail_height
+		line_color: 0,0,0,1
+		corner_radius4: 50
+        line_width: 2
+
+    MyRectangleField:
+		size: 0.25*root.mail_width, root.mail_height
+        corner_radius3: 50
+        x: .25*root.mail_width + 2*root.mail_depth + root.mail_width
+        line_color: 0,0,0,1
+        line_width: 2
+
+    ImageField:
+        id: right_side
+        source: left_side.source
+        size: root.mail_depth, root.mail_height
+        x: .25*root.mail_width
+        allow_stretch: True
+        keep_ratio: False
+        #dash_length: 3
+        #dash_offset: 3
+
+    ImageField:
+        id: left_side
+        source: right_side.source
+        size: root.mail_depth, root.mail_height
+        x: 1.25*root.mail_width + root.mail_depth
+        allow_stretch: True
+        keep_ratio: False
+        #dash_length: 3
+        #dash_offset: 3
+
+    ImageField:
+        id: back
+        size: root.mail_width, root.mail_height
+        allow_stretch: True
+        keep_ratio: False
+        pos: .25*root.mail_width+ root.mail_depth,0
+
+    ImageField:
+        id: front
+        size: root.mail_width, root.mail_height
+        allow_stretch: True
+        keep_ratio: False
+        pos: .25*root.mail_width+ root.mail_depth, root.mail_depth + root.mail_height
+        angle: 180
+
+    ImageField:
+        id: top
+        size: root.mail_width, root.mail_depth
+        pos: .25*root.mail_width+root.mail_depth, root.mail_height
+        allow_stretch: True
+        keep_ratio: False
+        source: bottom.source
+
+    ImageField:
+        id: bottom
+        size: root.mail_width, root.mail_depth
+        pos: .25*root.mail_width+root.mail_depth, 2* root.mail_height + root.mail_depth
+        allow_stretch: True
+        keep_ratio: False
+        source: top.source
+
+	WireField:
+		points: 1.00, 0.00, 1.00, 0.15, 0.6, 0.90, 0.50, 0.98, 0.4, 0.9, 0.00, 0.15, 0.00, 0.00
+		size: root.mail_width, .6*root.mail_height
+		pos: .25*root.mail_width + root.mail_depth , 2*root.mail_height + 2* root.mail_depth
+		id: back2
+		line_color: 0,0,0,1
+        line_width: 2
+        editable: False
+
+    MeshField:
+        points: back2.points
+        size: back2.size
+        pos: back2.pos
+        id: back_mail
+        line_color: 0,0,0,0
+
+	RectangleField:
+	    line_color: 0,0,0,1
+	    fg_color: 0,0,0,0
+	    size: .25*root.mail_width, 1
+	    center_x: .5*(root.width)
+	    y: root.mail_height/2
+	    z:2

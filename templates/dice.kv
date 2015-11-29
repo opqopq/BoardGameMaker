@@ -1,0 +1,493 @@
+#:import fe editors.FloatEditor
+
+<Origami6@BGTemplate>:
+	dice_side: 113
+	size: 3.33*root.dice_side, 3.33*root.dice_side
+	vars: {'dice_side':fe}
+	ImageField:
+		pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+		angle: -45
+		id: default
+		size: root.dice_side, root.dice_side
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		points: 0.50, 0.75, 1.00, 0.25, 0.50, 0.25, 0.00, 0.00, 0.50, 0.25, 0.00, 0.75, 0.50, 0.75, 0.75, 1.00
+		size: root.size
+
+<Dice6@BGTemplate>:
+	side: cm(2)
+	step: root.side/5
+	size: root.side*3, root.side*4.2
+	vars: {'side':fe}
+
+	WireField:
+		line_color: 0,0,0,1
+		pos: root.side - root.step, root.step
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		size: root.step , root.side
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		angle: 180
+		pos: 2*root.side, root.step
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		size: root.step , root.side
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		angle: 180
+		pos: 2*root.side, root.step + root.side
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		size: root.step , root.side
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		size: root.step , root.side
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		pos: root.side - root.step, root.side + root.step
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		pos: 2*root.side, root.step + 3*root.side
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		size: root.step, root.side
+		angle: 180
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		pos: root.side - root.step, root.step + 3* root.side
+		points: 1.00, 0.00, 0.00, 0.20, 0.00, 0.80, 1.00, 1.00
+		size: root.step, root.side
+		line_width: 2
+
+	WireField:
+		line_color: 0,0,0,1
+		pos: root.side, 0
+		points: 0.80, 0.00, 0.20, 0.00, 0.00, 1.00, 1.00, 1.00, 0.80, 0.00
+		size: root.side, root.step
+		line_width: 2
+
+	RectangleField:
+		id: r6
+		pos: root.side, root.step
+		size: root.side, root.side
+		line_color: 0,0,0,1
+		line_width: 2
+
+	RectangleField:
+		id: r4
+		pos: 0, root.step + 2* root.side
+		size: root.side, root.side
+		line_color: 0,0,0,1
+		line_width: 2
+
+	RectangleField:
+		id: r1
+		pos: root.side, root.step + 2* root.side
+		size: root.side, root.side
+		line_color: 0,0,0,1
+		line_width: 2
+
+	RectangleField:
+		id: r2
+		pos: root.side, root.step + root.side
+		size: root.side, root.side
+		line_color: 0,0,0,1
+		line_width: 2
+
+	RectangleField:
+		line_color: 0,0,0,1
+		line_width: 2
+		id: r3
+		pos: 2*root.side, root.step +2*root.side
+		size: root.side, root.side
+
+	RectangleField:
+		id: r5
+		pos: root.side, root.step + 3*root.side
+		size: root.side, root.side
+		line_color: 0,0,0,1
+		line_width: 2
+
+	TextField:
+		pos: r5.pos
+		size: r5.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "5"
+		halign: "center"
+
+	TextField:
+		pos: r4.pos
+		size: r4.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "4"
+		halign: "center"
+
+	TextField:
+		pos: r3.pos
+		size: r3.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "3"
+		halign: "center"
+
+	TextField:
+		pos: r2.pos
+		size: r2.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "2"
+		halign: "center"
+
+	TextField:
+		pos: r1.pos
+		size: r1.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "1"
+		halign: "center"
+
+	TextField:
+		pos: r6.pos
+		size: r6.size
+		autofit: True
+		color: 0,0,0,1
+		printed: False
+		text: "6"
+		halign: "center"
+
+<Dice12@BGTemplate>:
+	size: 400, 520
+
+	PolygonField:
+		angle_start: 18
+		angle: -72
+		id: face11
+		pos: 0, 201
+		z: 1
+		side: 5
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 216
+		pos: -5, 285
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 252
+		pos: 135, 180
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 216
+		pos: 104, 137
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -72
+		pos: 80, 74
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -72
+		pos: 254, 133
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 36
+		pos: 253, 276
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -36
+		pos: 231, 186
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 72
+		pos: 355, 131
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -72
+		pos: -20, 234
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 180
+		pos: 100, 268
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		pos: 303, 277
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		pos: 305, 96
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		pos: 130, 38
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	PolygonField:
+		angle_start: 18
+		id: face12
+		pos: 109, 52
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: -36
+		id: face10
+		pos: 78, 176
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 36
+		id: face9
+		pos: 157, 119
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 72
+		id: face8
+		pos: 108, 349
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 36
+		id: face7
+		pos: 108, 267
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 72
+		id: face6
+		pos: 282, 292
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 36
+		id: face5
+		pos: 204, 267
+		z: 1
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: -36
+		id: face4
+		pos: 156, 201
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: 72
+		id: face3
+		pos: 283, 110.00
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		angle: -36
+		id: face2
+		pos: 234, 176
+		side: 5
+
+	PolygonField:
+		angle_start: 18
+		id: face
+		pos: 156, 201
+		side: 5
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 144
+		pos: 49.00, 284
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 144
+		pos: 161, 430
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 72
+		pos: 347, 323
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 7
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 72
+		pos: 175, 377
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 11
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 108
+		pos: 174, 326
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 9
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 144
+		pos: 335.00, 372
+		points: 0.00, 1.00, 0.20, 0.00, 0.80, 0.00, 1.00, 1.00
+		size: 57, 23.00
+
+<Dice8@BGTemplate>:
+	size: 240, 378
+
+	MeshField:
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+		id: face
+		pos: 58.00, 179.00
+
+	MeshField:
+		angle: 60
+		id: face2
+		pos: 91.00, 197.00
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+
+	MeshField:
+		angle: -60
+		id: face3
+		pos: 25, 197
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+
+	MeshField:
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+		id: face4
+		pos: 6.45, 266
+
+	MeshField:
+		angle: -60
+		id: face5
+		pos: 76.00, 110.00
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+
+	MeshField:
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+		id: face6
+		pos: 58, 4
+
+	MeshField:
+		angle: 60
+		id: face7
+		pos: 91, 23
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+
+	MeshField:
+		angle: 120
+		id: face8
+		pos: 90.45, 61
+		points: 0.00, 0.00, 0.50, 0.87, 1.00, 0.00
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		pos: 110, 268
+		points: 0.00, 0.00, 0.20, 1.00, 0.80, 1.00, 1.00, 0.00
+		size: 96.55, 18
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 120
+		pos: 24.55, 121
+		points: 0.00, 0.00, 0.20, 1.00, 0.80, 1.00, 1.00, 0.00
+		size: 96.55, 18
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -120
+		pos: 145.00, 33.45
+		points: 0.00, 0.00, 0.20, 1.00, 0.80, 1.00, 1.00, 0.00
+		size: 96.55, 18
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: -120
+		pos: 145, 206.45
+		points: 0.00, 0.00, 0.20, 1.00, 0.80, 1.00, 1.00, 0.00
+		size: 96.55, 18
+
+	WireField:
+		line_color: 0.00, 0.00, 0.00, 1.00
+		line_width: 2
+		angle: 60
+		pos: -22, 306.55
+		points: 0.00, 0.00, 0.20, 1.00, 0.80, 1.00, 1.00, 0.00
+		size: 96, 9
