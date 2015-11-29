@@ -1,0 +1,830 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>os &mdash; BoardGameMaker 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="BoardGameMaker 0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">BoardGameMaker 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for os</h1><div class="highlight"><pre>
+<span class="sd">r&quot;&quot;&quot;OS routines for NT or Posix depending on what system we&#39;re on.</span>
+
+<span class="sd">This exports:</span>
+<span class="sd">  - all functions from posix, nt, os2, or ce, e.g. unlink, stat, etc.</span>
+<span class="sd">  - os.path is one of the modules posixpath, or ntpath</span>
+<span class="sd">  - os.name is &#39;posix&#39;, &#39;nt&#39;, &#39;os2&#39;, &#39;ce&#39; or &#39;riscos&#39;</span>
+<span class="sd">  - os.curdir is a string representing the current directory (&#39;.&#39; or &#39;:&#39;)</span>
+<span class="sd">  - os.pardir is a string representing the parent directory (&#39;..&#39; or &#39;::&#39;)</span>
+<span class="sd">  - os.sep is the (or a most common) pathname separator (&#39;/&#39; or &#39;:&#39; or &#39;\\&#39;)</span>
+<span class="sd">  - os.extsep is the extension separator (&#39;.&#39; or &#39;/&#39;)</span>
+<span class="sd">  - os.altsep is the alternate pathname separator (None or &#39;/&#39;)</span>
+<span class="sd">  - os.pathsep is the component separator used in $PATH etc</span>
+<span class="sd">  - os.linesep is the line separator in text files (&#39;\r&#39; or &#39;\n&#39; or &#39;\r\n&#39;)</span>
+<span class="sd">  - os.defpath is the default search path for executables</span>
+<span class="sd">  - os.devnull is the file path of the null device (&#39;/dev/null&#39;, etc.)</span>
+
+<span class="sd">Programs that import and use &#39;os&#39; stand a better chance of being</span>
+<span class="sd">portable between different platforms.  Of course, they must then</span>
+<span class="sd">only use functions that are defined by all platforms (e.g., unlink</span>
+<span class="sd">and opendir), and leave all pathname manipulation to os.path</span>
+<span class="sd">(e.g., split and join).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c">#&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">errno</span>
+
+<span class="n">_names</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">builtin_module_names</span>
+
+<span class="c"># Note:  more names are added to __all__ later.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;altsep&quot;</span><span class="p">,</span> <span class="s">&quot;curdir&quot;</span><span class="p">,</span> <span class="s">&quot;pardir&quot;</span><span class="p">,</span> <span class="s">&quot;sep&quot;</span><span class="p">,</span> <span class="s">&quot;extsep&quot;</span><span class="p">,</span> <span class="s">&quot;pathsep&quot;</span><span class="p">,</span> <span class="s">&quot;linesep&quot;</span><span class="p">,</span>
+           <span class="s">&quot;defpath&quot;</span><span class="p">,</span> <span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;path&quot;</span><span class="p">,</span> <span class="s">&quot;devnull&quot;</span><span class="p">,</span>
+           <span class="s">&quot;SEEK_SET&quot;</span><span class="p">,</span> <span class="s">&quot;SEEK_CUR&quot;</span><span class="p">,</span> <span class="s">&quot;SEEK_END&quot;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_get_exports_list</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">__all__</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">module</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;_&#39;</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="s">&#39;posix&#39;</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;posix&#39;</span>
+    <span class="n">linesep</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="kn">from</span> <span class="nn">posix</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">posix</span> <span class="kn">import</span> <span class="n">_exit</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="kn">import</span> <span class="nn">posixpath</span> <span class="kn">as</span> <span class="nn">path</span>
+
+    <span class="kn">import</span> <span class="nn">posix</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_get_exports_list</span><span class="p">(</span><span class="n">posix</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">posix</span>
+
+<span class="k">elif</span> <span class="s">&#39;nt&#39;</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;nt&#39;</span>
+    <span class="n">linesep</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span>
+    <span class="kn">from</span> <span class="nn">nt</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">nt</span> <span class="kn">import</span> <span class="n">_exit</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="kn">import</span> <span class="nn">ntpath</span> <span class="kn">as</span> <span class="nn">path</span>
+
+    <span class="kn">import</span> <span class="nn">nt</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_get_exports_list</span><span class="p">(</span><span class="n">nt</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">nt</span>
+
+<span class="k">elif</span> <span class="s">&#39;os2&#39;</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;os2&#39;</span>
+    <span class="n">linesep</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span>
+    <span class="kn">from</span> <span class="nn">os2</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">os2</span> <span class="kn">import</span> <span class="n">_exit</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;EMX GCC&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">ntpath</span> <span class="kn">as</span> <span class="nn">path</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">os2emxpath</span> <span class="kn">as</span> <span class="nn">path</span>
+        <span class="kn">from</span> <span class="nn">_emx_link</span> <span class="kn">import</span> <span class="n">link</span>
+
+    <span class="kn">import</span> <span class="nn">os2</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_get_exports_list</span><span class="p">(</span><span class="n">os2</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">os2</span>
+
+<span class="k">elif</span> <span class="s">&#39;ce&#39;</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;ce&#39;</span>
+    <span class="n">linesep</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span>
+    <span class="kn">from</span> <span class="nn">ce</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ce</span> <span class="kn">import</span> <span class="n">_exit</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="c"># We can use the standard Windows path.</span>
+    <span class="kn">import</span> <span class="nn">ntpath</span> <span class="kn">as</span> <span class="nn">path</span>
+
+    <span class="kn">import</span> <span class="nn">ce</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_get_exports_list</span><span class="p">(</span><span class="n">ce</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">ce</span>
+
+<span class="k">elif</span> <span class="s">&#39;riscos&#39;</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;riscos&#39;</span>
+    <span class="n">linesep</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="kn">from</span> <span class="nn">riscos</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">riscos</span> <span class="kn">import</span> <span class="n">_exit</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="kn">import</span> <span class="nn">riscospath</span> <span class="kn">as</span> <span class="nn">path</span>
+
+    <span class="kn">import</span> <span class="nn">riscos</span>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_get_exports_list</span><span class="p">(</span><span class="n">riscos</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">riscos</span>
+
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">,</span> <span class="s">&#39;no os specific module found&#39;</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;os.path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="p">(</span><span class="n">curdir</span><span class="p">,</span> <span class="n">pardir</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">pathsep</span><span class="p">,</span> <span class="n">defpath</span><span class="p">,</span> <span class="n">extsep</span><span class="p">,</span> <span class="n">altsep</span><span class="p">,</span>
+    <span class="n">devnull</span><span class="p">)</span>
+
+<span class="k">del</span> <span class="n">_names</span>
+
+<span class="c"># Python uses fixed values for the SEEK_ constants; they are mapped</span>
+<span class="c"># to native constants if necessary in posixmodule.c</span>
+<span class="n">SEEK_SET</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">SEEK_CUR</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">SEEK_END</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="c">#&#39;</span>
+
+<span class="c"># Super directory utilities.</span>
+<span class="c"># (Inspired by Eric Raymond; the doc strings are mostly his)</span>
+
+<div class="viewcode-block" id="makedirs"><a class="viewcode-back" href="../intro.html#os.makedirs">[docs]</a><span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="mo">0777</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;makedirs(path [, mode=0777])</span>
+
+<span class="sd">    Super-mkdir; create a leaf directory and all intermediate ones.</span>
+<span class="sd">    Works like mkdir, except that any intermediate path segment (not</span>
+<span class="sd">    just the rightmost) will be created if it does not exist.  This is</span>
+<span class="sd">    recursive.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tail</span><span class="p">:</span>
+        <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">head</span> <span class="ow">and</span> <span class="n">tail</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">head</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">makedirs</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c"># be happy if someone already created the path</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">if</span> <span class="n">tail</span> <span class="o">==</span> <span class="n">curdir</span><span class="p">:</span>           <span class="c"># xxx/newdir/. exists if xxx/newdir exists</span>
+            <span class="k">return</span>
+    <span class="n">mkdir</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="removedirs"><a class="viewcode-back" href="../intro.html#os.removedirs">[docs]</a><span class="k">def</span> <span class="nf">removedirs</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;removedirs(path)</span>
+
+<span class="sd">    Super-rmdir; remove a leaf directory and all empty intermediate</span>
+<span class="sd">    ones.  Works like rmdir except that, if the leaf directory is</span>
+<span class="sd">    successfully removed, directories corresponding to rightmost path</span>
+<span class="sd">    segments will be pruned away until either the whole path is</span>
+<span class="sd">    consumed or an error occurs.  Errors during this latter phase are</span>
+<span class="sd">    ignored -- they generally mean that a directory was not empty.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rmdir</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tail</span><span class="p">:</span>
+        <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">head</span> <span class="ow">and</span> <span class="n">tail</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rmdir</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="renames"><a class="viewcode-back" href="../intro.html#os.renames">[docs]</a><span class="k">def</span> <span class="nf">renames</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;renames(old, new)</span>
+
+<span class="sd">    Super-rename; create directories as necessary and delete any left</span>
+<span class="sd">    empty.  Works like rename, except creation of any intermediate</span>
+<span class="sd">    directories needed to make the new pathname good is attempted</span>
+<span class="sd">    first.  After the rename, directories corresponding to rightmost</span>
+<span class="sd">    path segments of the old name will be pruned way until either the</span>
+<span class="sd">    whole path is consumed or a nonempty directory is found.</span>
+
+<span class="sd">    Note: this function can fail with the new directory structure made</span>
+<span class="sd">    if you lack permissions needed to unlink the leaf directory or</span>
+<span class="sd">    file.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">head</span> <span class="ow">and</span> <span class="n">tail</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">head</span><span class="p">):</span>
+        <span class="n">makedirs</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+    <span class="n">rename</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">old</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">head</span> <span class="ow">and</span> <span class="n">tail</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">removedirs</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">pass</span>
+</div>
+<span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&quot;makedirs&quot;</span><span class="p">,</span> <span class="s">&quot;removedirs&quot;</span><span class="p">,</span> <span class="s">&quot;renames&quot;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="walk"><a class="viewcode-back" href="../intro.html#os.walk">[docs]</a><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">onerror</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Directory tree generator.</span>
+
+<span class="sd">    For each directory in the directory tree rooted at top (including top</span>
+<span class="sd">    itself, but excluding &#39;.&#39; and &#39;..&#39;), yields a 3-tuple</span>
+
+<span class="sd">        dirpath, dirnames, filenames</span>
+
+<span class="sd">    dirpath is a string, the path to the directory.  dirnames is a list of</span>
+<span class="sd">    the names of the subdirectories in dirpath (excluding &#39;.&#39; and &#39;..&#39;).</span>
+<span class="sd">    filenames is a list of the names of the non-directory files in dirpath.</span>
+<span class="sd">    Note that the names in the lists are just names, with no path components.</span>
+<span class="sd">    To get a full path (which begins with top) to a file or directory in</span>
+<span class="sd">    dirpath, do os.path.join(dirpath, name).</span>
+
+<span class="sd">    If optional arg &#39;topdown&#39; is true or not specified, the triple for a</span>
+<span class="sd">    directory is generated before the triples for any of its subdirectories</span>
+<span class="sd">    (directories are generated top down).  If topdown is false, the triple</span>
+<span class="sd">    for a directory is generated after the triples for all of its</span>
+<span class="sd">    subdirectories (directories are generated bottom up).</span>
+
+<span class="sd">    When topdown is true, the caller can modify the dirnames list in-place</span>
+<span class="sd">    (e.g., via del or slice assignment), and walk will only recurse into the</span>
+<span class="sd">    subdirectories whose names remain in dirnames; this can be used to prune the</span>
+<span class="sd">    search, or to impose a specific order of visiting.  Modifying dirnames when</span>
+<span class="sd">    topdown is false is ineffective, since the directories in dirnames have</span>
+<span class="sd">    already been generated by the time dirnames itself is generated. No matter</span>
+<span class="sd">    the value of topdown, the list of subdirectories is retrieved before the</span>
+<span class="sd">    tuples for the directory and its subdirectories are generated.</span>
+
+<span class="sd">    By default errors from the os.listdir() call are ignored.  If</span>
+<span class="sd">    optional arg &#39;onerror&#39; is specified, it should be a function; it</span>
+<span class="sd">    will be called with one argument, an os.error instance.  It can</span>
+<span class="sd">    report the error to continue with the walk, or raise the exception</span>
+<span class="sd">    to abort the walk.  Note that the filename is available as the</span>
+<span class="sd">    filename attribute of the exception object.</span>
+
+<span class="sd">    By default, os.walk does not follow symbolic links to subdirectories on</span>
+<span class="sd">    systems that support them.  In order to get this functionality, set the</span>
+<span class="sd">    optional argument &#39;followlinks&#39; to true.</span>
+
+<span class="sd">    Caution:  if you pass a relative pathname for top, don&#39;t change the</span>
+<span class="sd">    current working directory between resumptions of walk.  walk never</span>
+<span class="sd">    changes the current directory, and assumes that the client doesn&#39;t</span>
+<span class="sd">    either.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    import os</span>
+<span class="sd">    from os.path import join, getsize</span>
+<span class="sd">    for root, dirs, files in os.walk(&#39;python/Lib/email&#39;):</span>
+<span class="sd">        print root, &quot;consumes&quot;,</span>
+<span class="sd">        print sum([getsize(join(root, name)) for name in files]),</span>
+<span class="sd">        print &quot;bytes in&quot;, len(files), &quot;non-directory files&quot;</span>
+<span class="sd">        if &#39;CVS&#39; in dirs:</span>
+<span class="sd">            dirs.remove(&#39;CVS&#39;)  # don&#39;t visit CVS directories</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">islink</span><span class="p">,</span> <span class="n">join</span><span class="p">,</span> <span class="n">isdir</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">islink</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">isdir</span>
+
+    <span class="c"># We may not have read permission for top, in which case we can&#39;t</span>
+    <span class="c"># get a list of the files the directory contains.  os.path.walk</span>
+    <span class="c"># always suppressed the exception then, rather than blow up for a</span>
+    <span class="c"># minor reason when (say) a thousand readable directories are still</span>
+    <span class="c"># left to visit.  That logic is copied here.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># Note that listdir and error are globals in this module due</span>
+        <span class="c"># to earlier import-*.</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">listdir</span><span class="p">(</span><span class="n">top</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">error</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">onerror</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">onerror</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">dirs</span><span class="p">,</span> <span class="n">nondirs</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">isdir</span><span class="p">(</span><span class="n">join</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">name</span><span class="p">)):</span>
+            <span class="n">dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nondirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">topdown</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">top</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">nondirs</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
+        <span class="n">new_path</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">followlinks</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">islink</span><span class="p">(</span><span class="n">new_path</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">walk</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">topdown</span><span class="p">,</span> <span class="n">onerror</span><span class="p">,</span> <span class="n">followlinks</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">x</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">topdown</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">top</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">nondirs</span>
+</div>
+<span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;walk&quot;</span><span class="p">)</span>
+
+<span class="c"># Make sure os.environ exists, at least</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">environ</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="n">environ</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="execl"><a class="viewcode-back" href="../intro.html#os.execl">[docs]</a><span class="k">def</span> <span class="nf">execl</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execl(file, *args)</span>
+
+<span class="sd">    Execute the executable file with argument list args, replacing the</span>
+<span class="sd">    current process. &quot;&quot;&quot;</span>
+    <span class="n">execv</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="execle"><a class="viewcode-back" href="../intro.html#os.execle">[docs]</a><span class="k">def</span> <span class="nf">execle</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execle(file, *args, env)</span>
+
+<span class="sd">    Execute the executable file with argument list args and</span>
+<span class="sd">    environment env, replacing the current process. &quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">execve</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">env</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="execlp"><a class="viewcode-back" href="../intro.html#os.execlp">[docs]</a><span class="k">def</span> <span class="nf">execlp</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execlp(file, *args)</span>
+
+<span class="sd">    Execute the executable file (which is searched for along $PATH)</span>
+<span class="sd">    with argument list args, replacing the current process. &quot;&quot;&quot;</span>
+    <span class="n">execvp</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="execlpe"><a class="viewcode-back" href="../intro.html#os.execlpe">[docs]</a><span class="k">def</span> <span class="nf">execlpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execlpe(file, *args, env)</span>
+
+<span class="sd">    Execute the executable file (which is searched for along $PATH)</span>
+<span class="sd">    with argument list args and environment env, replacing the current</span>
+<span class="sd">    process. &quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">execvpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">env</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="execvp"><a class="viewcode-back" href="../intro.html#os.execvp">[docs]</a><span class="k">def</span> <span class="nf">execvp</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execvp(file, args)</span>
+
+<span class="sd">    Execute the executable file (which is searched for along $PATH)</span>
+<span class="sd">    with argument list args, replacing the current process.</span>
+<span class="sd">    args may be a list or tuple of strings. &quot;&quot;&quot;</span>
+    <span class="n">_execvpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="execvpe"><a class="viewcode-back" href="../intro.html#os.execvpe">[docs]</a><span class="k">def</span> <span class="nf">execvpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;execvpe(file, args, env)</span>
+
+<span class="sd">    Execute the executable file (which is searched for along $PATH)</span>
+<span class="sd">    with argument list args and environment env , replacing the</span>
+<span class="sd">    current process.</span>
+<span class="sd">    args may be a list or tuple of strings. &quot;&quot;&quot;</span>
+    <span class="n">_execvpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+</div>
+<span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&quot;execl&quot;</span><span class="p">,</span><span class="s">&quot;execle&quot;</span><span class="p">,</span><span class="s">&quot;execlp&quot;</span><span class="p">,</span><span class="s">&quot;execlpe&quot;</span><span class="p">,</span><span class="s">&quot;execvp&quot;</span><span class="p">,</span><span class="s">&quot;execvpe&quot;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">_execvpe</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">execve</span>
+        <span class="n">argrest</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">execv</span>
+        <span class="n">argrest</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,)</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">environ</span>
+
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">head</span><span class="p">:</span>
+        <span class="n">func</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">argrest</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="s">&#39;PATH&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+        <span class="n">envpath</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;PATH&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">envpath</span> <span class="o">=</span> <span class="n">defpath</span>
+    <span class="n">PATH</span> <span class="o">=</span> <span class="n">envpath</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pathsep</span><span class="p">)</span>
+    <span class="n">saved_exc</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">saved_tb</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="n">PATH</span><span class="p">:</span>
+        <span class="n">fullname</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="nb">file</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">func</span><span class="p">(</span><span class="n">fullname</span><span class="p">,</span> <span class="o">*</span><span class="n">argrest</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">error</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOTDIR</span>
+                <span class="ow">and</span> <span class="n">saved_exc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+                <span class="n">saved_exc</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="n">saved_tb</span> <span class="o">=</span> <span class="n">tb</span>
+    <span class="k">if</span> <span class="n">saved_exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">error</span><span class="p">,</span> <span class="n">saved_exc</span><span class="p">,</span> <span class="n">saved_tb</span>
+    <span class="k">raise</span> <span class="n">error</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">tb</span>
+
+<span class="c"># Change environ to automatically call putenv() if it exists</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># This will fail if there&#39;s no putenv</span>
+    <span class="n">putenv</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">UserDict</span>
+
+    <span class="c"># Fake unsetenv() for Windows</span>
+    <span class="c"># not sure about os2 here but</span>
+    <span class="c"># I&#39;m guessing they are the same.</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;os2&#39;</span><span class="p">,</span> <span class="s">&#39;nt&#39;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+            <span class="n">putenv</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s">&quot;riscos&quot;</span><span class="p">:</span>
+        <span class="c"># On RISC OS, all env access goes through getenv and putenv</span>
+        <span class="kn">from</span> <span class="nn">riscosenviron</span> <span class="kn">import</span> <span class="n">_Environ</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;os2&#39;</span><span class="p">,</span> <span class="s">&#39;nt&#39;</span><span class="p">):</span>  <span class="c"># Where Env Var Names Must Be UPPERCASE</span>
+        <span class="c"># But we store them as upper case</span>
+        <span class="k">class</span> <span class="nc">_Environ</span><span class="p">(</span><span class="n">UserDict</span><span class="o">.</span><span class="n">IterableUserDict</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">environ</span><span class="p">):</span>
+                <span class="n">UserDict</span><span class="o">.</span><span class="n">UserDict</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">environ</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+                <span class="n">putenv</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">unsetenv</span>
+            <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                    <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+                <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+                    <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">has_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">failobj</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">failobj</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">dict</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">dict</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="c"># List of (key, value)</span>
+                        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># got keys</span>
+                        <span class="c"># cannot use items(), since mappings</span>
+                        <span class="c"># may not have them.</span>
+                        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c"># Where Env Var Names Can Be Mixed Case</span>
+        <span class="k">class</span> <span class="nc">_Environ</span><span class="p">(</span><span class="n">UserDict</span><span class="o">.</span><span class="n">IterableUserDict</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">environ</span><span class="p">):</span>
+                <span class="n">UserDict</span><span class="o">.</span><span class="n">UserDict</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">environ</span>
+            <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+                <span class="n">putenv</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="nb">dict</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">dict</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="c"># List of (key, value)</span>
+                        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># got keys</span>
+                        <span class="c"># cannot use items(), since mappings</span>
+                        <span class="c"># may not have them.</span>
+                        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">unsetenv</span>
+            <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                    <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+                    <span class="n">unsetenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+    <span class="n">environ</span> <span class="o">=</span> <span class="n">_Environ</span><span class="p">(</span><span class="n">environ</span><span class="p">)</span>
+
+<div class="viewcode-block" id="getenv"><a class="viewcode-back" href="../intro.html#os.getenv">[docs]</a><span class="k">def</span> <span class="nf">getenv</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get an environment variable, return None if it doesn&#39;t exist.</span>
+<span class="sd">    The optional second argument can specify an alternate default.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+<span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;getenv&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_exists</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span>
+
+<span class="c"># Supply spawn*() (probably only for Unix)</span>
+<span class="k">if</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;fork&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;spawnv&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;execv&quot;</span><span class="p">):</span>
+
+    <span class="n">P_WAIT</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">P_NOWAIT</span> <span class="o">=</span> <span class="n">P_NOWAITO</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c"># XXX Should we support P_DETACH?  I suppose it could fork()**2</span>
+    <span class="c"># and close the std I/O streams.  Also, P_OVERLAY is the same</span>
+    <span class="c"># as execv*()?</span>
+
+    <span class="k">def</span> <span class="nf">_spawnvef</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="c"># Internal helper; func is the exec*() function to use</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pid</span><span class="p">:</span>
+            <span class="c"># Child</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">env</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">func</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">func</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">_exit</span><span class="p">(</span><span class="mi">127</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Parent</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">P_NOWAIT</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pid</span> <span class="c"># Caller is responsible for waiting!</span>
+            <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">wpid</span><span class="p">,</span> <span class="n">sts</span> <span class="o">=</span> <span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">WIFSTOPPED</span><span class="p">(</span><span class="n">sts</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">WIFSIGNALED</span><span class="p">(</span><span class="n">sts</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="o">-</span><span class="n">WTERMSIG</span><span class="p">(</span><span class="n">sts</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">WIFEXITED</span><span class="p">(</span><span class="n">sts</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">WEXITSTATUS</span><span class="p">(</span><span class="n">sts</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">error</span><span class="p">,</span> <span class="s">&quot;Not stopped, signaled or exited???&quot;</span>
+
+    <span class="k">def</span> <span class="nf">spawnv</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnv(mode, file, args) -&gt; integer</span>
+
+<span class="sd">Execute file with arguments from args in a subprocess.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_spawnvef</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">execv</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spawnve</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnve(mode, file, args, env) -&gt; integer</span>
+
+<span class="sd">Execute file with arguments from args in a subprocess with the</span>
+<span class="sd">specified environment.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_spawnvef</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">execve</span><span class="p">)</span>
+
+    <span class="c"># Note: spawnvp[e] is&#39;t currently supported on Windows</span>
+
+    <span class="k">def</span> <span class="nf">spawnvp</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnvp(mode, file, args) -&gt; integer</span>
+
+<span class="sd">Execute file (which is looked for along $PATH) with arguments from</span>
+<span class="sd">args in a subprocess.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_spawnvef</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">execvp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spawnvpe</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnvpe(mode, file, args, env) -&gt; integer</span>
+
+<span class="sd">Execute file (which is looked for along $PATH) with arguments from</span>
+<span class="sd">args in a subprocess with the supplied environment.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_spawnvef</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">execvpe</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;spawnv&quot;</span><span class="p">):</span>
+    <span class="c"># These aren&#39;t supplied by the basic Windows code</span>
+    <span class="c"># but can be easily implemented in Python</span>
+
+<div class="viewcode-block" id="spawnl"><a class="viewcode-back" href="../intro.html#os.spawnl">[docs]</a>    <span class="k">def</span> <span class="nf">spawnl</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnl(mode, file, *args) -&gt; integer</span>
+
+<span class="sd">Execute file with arguments from args in a subprocess.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">spawnv</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="spawnle"><a class="viewcode-back" href="../intro.html#os.spawnle">[docs]</a>    <span class="k">def</span> <span class="nf">spawnle</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnle(mode, file, *args, env) -&gt; integer</span>
+
+<span class="sd">Execute file with arguments from args in a subprocess with the</span>
+<span class="sd">supplied environment.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">spawnve</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">env</span><span class="p">)</span>
+
+</div>
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&quot;spawnv&quot;</span><span class="p">,</span> <span class="s">&quot;spawnve&quot;</span><span class="p">,</span> <span class="s">&quot;spawnl&quot;</span><span class="p">,</span> <span class="s">&quot;spawnle&quot;</span><span class="p">,])</span>
+
+
+<span class="k">if</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;spawnvp&quot;</span><span class="p">):</span>
+    <span class="c"># At the moment, Windows doesn&#39;t implement spawnvp[e],</span>
+    <span class="c"># so it won&#39;t have spawnlp[e] either.</span>
+    <span class="k">def</span> <span class="nf">spawnlp</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnlp(mode, file, *args) -&gt; integer</span>
+
+<span class="sd">Execute file (which is looked for along $PATH) with arguments from</span>
+<span class="sd">args in a subprocess with the supplied environment.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">spawnvp</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spawnlpe</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;spawnlpe(mode, file, *args, env) -&gt; integer</span>
+
+<span class="sd">Execute file (which is looked for along $PATH) with arguments from</span>
+<span class="sd">args in a subprocess with the supplied environment.</span>
+<span class="sd">If mode == P_NOWAIT return the pid of the process.</span>
+<span class="sd">If mode == P_WAIT return the process&#39;s exit code if it exits normally;</span>
+<span class="sd">otherwise return -SIG, where SIG is the signal that killed it. &quot;&quot;&quot;</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">spawnvpe</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">env</span><span class="p">)</span>
+
+
+    <span class="n">__all__</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&quot;spawnvp&quot;</span><span class="p">,</span> <span class="s">&quot;spawnvpe&quot;</span><span class="p">,</span> <span class="s">&quot;spawnlp&quot;</span><span class="p">,</span> <span class="s">&quot;spawnlpe&quot;</span><span class="p">,])</span>
+
+
+<span class="c"># Supply popen2 etc. (for Unix)</span>
+<span class="k">if</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;fork&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;popen2&quot;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">popen2</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;t&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Execute the shell command &#39;cmd&#39; in a sub-process.  On UNIX, &#39;cmd&#39;</span>
+<span class="sd">            may be a sequence, in which case arguments will be passed directly to</span>
+<span class="sd">            the program without shell intervention (as with os.spawnv()).  If &#39;cmd&#39;</span>
+<span class="sd">            is a string it will be passed to the shell (as with os.system()). If</span>
+<span class="sd">            &#39;bufsize&#39; is specified, it sets the buffer size for the I/O pipes.  The</span>
+<span class="sd">            file objects (child_stdin, child_stdout) are returned.&quot;&quot;&quot;</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;os.popen2 is deprecated.  Use the subprocess module.&quot;</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="kn">import</span> <span class="nn">subprocess</span>
+            <span class="n">PIPE</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">),</span>
+                                 <span class="n">bufsize</span><span class="o">=</span><span class="n">bufsize</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span>
+                                 <span class="n">close_fds</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">p</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;popen2&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;popen3&quot;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">popen3</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;t&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Execute the shell command &#39;cmd&#39; in a sub-process.  On UNIX, &#39;cmd&#39;</span>
+<span class="sd">            may be a sequence, in which case arguments will be passed directly to</span>
+<span class="sd">            the program without shell intervention (as with os.spawnv()).  If &#39;cmd&#39;</span>
+<span class="sd">            is a string it will be passed to the shell (as with os.system()). If</span>
+<span class="sd">            &#39;bufsize&#39; is specified, it sets the buffer size for the I/O pipes.  The</span>
+<span class="sd">            file objects (child_stdin, child_stdout, child_stderr) are returned.&quot;&quot;&quot;</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;os.popen3 is deprecated.  Use the subprocess module.&quot;</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="kn">import</span> <span class="nn">subprocess</span>
+            <span class="n">PIPE</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">),</span>
+                                 <span class="n">bufsize</span><span class="o">=</span><span class="n">bufsize</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span>
+                                 <span class="n">stderr</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">close_fds</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">p</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;popen3&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_exists</span><span class="p">(</span><span class="s">&quot;popen4&quot;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">popen4</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;t&quot;</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Execute the shell command &#39;cmd&#39; in a sub-process.  On UNIX, &#39;cmd&#39;</span>
+<span class="sd">            may be a sequence, in which case arguments will be passed directly to</span>
+<span class="sd">            the program without shell intervention (as with os.spawnv()).  If &#39;cmd&#39;</span>
+<span class="sd">            is a string it will be passed to the shell (as with os.system()). If</span>
+<span class="sd">            &#39;bufsize&#39; is specified, it sets the buffer size for the I/O pipes.  The</span>
+<span class="sd">            file objects (child_stdin, child_stdout_stderr) are returned.&quot;&quot;&quot;</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;os.popen4 is deprecated.  Use the subprocess module.&quot;</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="kn">import</span> <span class="nn">subprocess</span>
+            <span class="n">PIPE</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">),</span>
+                                 <span class="n">bufsize</span><span class="o">=</span><span class="n">bufsize</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span>
+                                 <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span> <span class="n">close_fds</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">p</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;popen4&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">copy_reg</span> <span class="kn">as</span> <span class="nn">_copy_reg</span>
+
+<span class="k">def</span> <span class="nf">_make_stat_result</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">stat_result</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_pickle_stat_result</span><span class="p">(</span><span class="n">sr</span><span class="p">):</span>
+    <span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">__reduce__</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_make_stat_result</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">_copy_reg</span><span class="o">.</span><span class="n">pickle</span><span class="p">(</span><span class="n">stat_result</span><span class="p">,</span> <span class="n">_pickle_stat_result</span><span class="p">,</span> <span class="n">_make_stat_result</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span> <span class="c"># stat_result may not exist</span>
+    <span class="k">pass</span>
+
+<span class="k">def</span> <span class="nf">_make_statvfs_result</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">statvfs_result</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_pickle_statvfs_result</span><span class="p">(</span><span class="n">sr</span><span class="p">):</span>
+    <span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">__reduce__</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_make_statvfs_result</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">_copy_reg</span><span class="o">.</span><span class="n">pickle</span><span class="p">(</span><span class="n">statvfs_result</span><span class="p">,</span> <span class="n">_pickle_statvfs_result</span><span class="p">,</span>
+                     <span class="n">_make_statvfs_result</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span> <span class="c"># statvfs_result may not exist</span>
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, O. Poyen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
