@@ -10,7 +10,8 @@ todos = [
     "when editing kv with forved fit, size change !!!!",
     "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
     "learn way to split pdf other than pocket mod for bigger pictures",
-    "Bug: why should there be include in the list for kv themselved (like include kv in kv file)"
+    "Bug: why should there be include in the list for kv themselved (like include kv in kv file)",
+    "add a checkbox for displaying name of each ids ",
     "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout"
 ]
 
