@@ -333,6 +333,11 @@
                 Button:
                     text: "Cancel"
                     on_press: root.dismiss()
+                Label:
+                    text: "Show Fields"
+                CheckBox:
+                    on_active: root.display_fields(self.active)
+
 <BGDeckMaker>:
     #The Left tab with files/templates & values
     file_chooser: file_chooser

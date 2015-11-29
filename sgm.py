@@ -491,6 +491,9 @@ class TemplateEditTree(TreeView):
 
 class TemplateEditPopup(Popup):
 
+    def display_fields(self,do_display):
+        if do_display:
+            print 'tree tmpl', self.ids.options.tmplDict
     def compute(self):
         tree = self.ids['options']
         if not tree.current_selection:
