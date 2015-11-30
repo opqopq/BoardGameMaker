@@ -30,4 +30,4 @@ If you don't, the software will ask you to do so & to restart it.
 1. Creation of ready to print Dual Page with automatic layout & automatic resizing
 1. Simple Image Transformation thourgh scripts
 1. Creation of Image Template - equivalent to Magic Set Editor mecanism
-1. Custom Layout of Images 
+1. Custom Layout of Images
