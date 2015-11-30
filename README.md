@@ -22,7 +22,9 @@ http://opqopq.github.io/BoardGameMaker
 ![Main Screen](https://raw.githubusercontent.com/opqopq/BoardGameMaker/master/img/main_screen.png)
 
 
-### Installation tips: Prior to launch, edit file bgm.ini and change the gamepath folder to an existing folder containings your pictures & projects.
+### Installation tips:
+
+Prior to launch, edit file bgm.ini and change the gamepath folder to an existing folder containings your pictures & projects.
 If you don't, the software will ask you to do so & to restart it.
 
 ## Main Features
