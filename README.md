@@ -11,7 +11,7 @@ Software requirement:
 
 
 ##Documentation
-Documentation can be found in Repository's wiki: (https://github.com/opqopq/BoardGameMaker/wiki)[Wiki]
+Documentation can be found in Repository's wiki: [Wiki](https://github.com/opqopq/BoardGameMaker/wiki)
 
 ##Website
 
