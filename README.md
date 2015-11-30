@@ -3,10 +3,10 @@
 License: LGPL
 FontIcon made with Fontello
 Software requirement:
-- Kivy 1.9 (kivy.org) Kivy 1.9 minimum,
-- Reportlab (pip installable in kivy environnement)
-- Pillow (pip installable in kivy environnement)
-- openpyxl & xlrd for XLSX read/write
+* Kivy 1.9 (kivy.org) Kivy 1.9 minimum,
+* Reportlab (pip installable in kivy environnement)
+* Pillow (pip installable in kivy environnement)
+* openpyxl & xlrd for XLSX read/write
 
 
 
