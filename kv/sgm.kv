@@ -333,11 +333,9 @@
                 Button:
                     text: "Cancel"
                     on_press: root.dismiss()
-                Label:
-                    text: "Show Fields"
                 ToggleButton:
                     on_state: root.display_fields(self.state)
-                    text: 'Fields Showed'
+                    text: 'Fields Showed' if self.state == 'down' else 'Fields Hidden'
 
 <BGDeckMaker>:
     #The Left tab with files/templates & values

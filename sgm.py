@@ -497,11 +497,28 @@ class TemplateEditPopup(Popup):
             for ids in tmpl.ids:
                 wid = getattr(tmpl.ids,ids)
                 if do_display == 'down':
-                    L = Label(text = wid.name)
-                    wid.add(L)
+                    wid.designed = True
+                    L = Label(text = '*'*100, color = (0,1,0))
+                    self.ids.FL.add_widget(L)
                     L.center = wid.center
+                    def update(*args):
+                        L.pos = wid.pos
+                        L.size = wid.size
+
+                    #wid.bind(pos=update, size=update)
+                    L.z = 100
+                    L.pos = (0,0)
+                    print tmpl, id(tmpl), ids, wid,  L, L.pos, L.size, 'the L'
+                    from  kivy.graphics import InstructionGroup, Color, Line
+                    wid._df = InstructionGroup()
+                    wid._df.add(Color(rgb=(1,0,0)))
+                    wid._df.add(Line(rectangle =(wid.x, wid.y, wid.width, wid.height), width=4))
+                    wid.canvas.after.add(wid._df)
+
                 else:
-                    wid.remove_widget(wid.children[0])
+                    wid.designed = False
+                    wid.remove_widget(self.ids.FL.children[0])
+                    wid.canvas.after.remove(wid._df)
 
     def compute(self):
         tree = self.ids['options']

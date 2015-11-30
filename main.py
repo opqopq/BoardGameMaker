@@ -12,7 +12,8 @@ todos = [
     "learn way to split pdf other than pocket mod for bigger pictures",
     "Bug: why should there be include in the list for kv themselved (like include kv in kv file)",
     "add a checkbox for displaying name of each ids ",
-    "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout"
+    "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout",
+    "P1 Feature: thumbnail preview of images"
 ]
 
 for i, todo in enumerate(todos):

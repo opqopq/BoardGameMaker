@@ -112,7 +112,7 @@
 <ColorField>:
     canvas:
         Color:
-            rgba:self.rgba
+            rgba: get_color(self.rgba)
         Rectangle:
             #pos: self.pos
             size: self.size
@@ -120,7 +120,7 @@
 <ColorChoiceField>:
     canvas:
         Color:
-            rgba:self.rgba
+            rgba: get_color(self.rgba)
         Rectangle:
             #pos: self.pos
             size: self.size
