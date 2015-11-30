@@ -52,15 +52,15 @@
             angle: -self.angle
             origin: self.center # if scatter self.width/2, self.height/2
             axis: 0,0,1
-    FontIcon:
-        is_context: True
-        icon: root.Type
-        size_hint: None, None
-        font_size: 24
-        #:import FloatField fields.FloatField
-        pos: (root.width/2-self.width/2, -self.height/2) if not isinstance(root, FloatField) else (root.center_x-self.width/2, root.y-self.height/2)
-        opacity: 1 if root.designed else 0
-        color: 0,0,0,1
+#    FontIcon:
+#        is_context: True
+#        icon: root.Type
+#        size_hint: None, None
+#        font_size: 24
+#        #:import FloatField fields.FloatField
+#        pos: (root.width/2-self.width/2, -self.height/2) if not isinstance(root, FloatField) else (root.center_x-self.width/2, root.y-self.height/2)
+#        opacity: 1 if root.designed else 0
+#        color: 0,0,0,1
 
 
 <Field>:
@@ -104,10 +104,19 @@
 
 <TextField>:
     color: get_color(self.font_color)
+    mipmap: True
 
 <ImageField>:
     allow_stretch: True
     keep_ratio: False
+    mipmap: True
+
+
+<ImageChoiceField>:
+    source: self.choices[self.selection] if self.selection in self.choices else ""
+    allow_stretch: True
+    keep_ratio: False
+    mipmap: True
 
 <ColorField>:
     canvas:
@@ -134,10 +143,6 @@
             border: (root.border_width,root.border_width,root.border_width,root.border_width)
             size:(self.width+2*root.border_width,self.height+2*root.border_width)
             pos: root.x-root.border_width,root.y-root.border_width
-
-
-<ImageChoiceField>:
-    source: self.choices[self.selection] if self.selection in self.choices else ""
 
 <TransfoField>:
     canvas.before:

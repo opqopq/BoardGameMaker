@@ -204,7 +204,7 @@ class BGLayoutMaker(FloatLayout):
                 img.pos = ph.pos
                 img.size = ph.size
             ph.bind(size=refresh, pos=refresh)
-            ph.add_widget(img)
+            FloatLayout.add_widget(ph, img)
             img.pos = ph.pos
             if FORCE_FIT_FORMAT:
                 ph.size = card_format.size

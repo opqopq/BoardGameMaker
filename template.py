@@ -277,7 +277,7 @@ class BGTemplate(Field, RelativeLayout):
         return t
 
     def apply_values(self, values):
-        print 'appy_values', self, values
+        #print 'appy_values', self, values
         childrens = self.ids.values()
         for k,v in values.items():
             if '.' not in k:

@@ -429,6 +429,7 @@ class BaseField(FocusBehavior):
         tmpls.append('')
         return (tmpls, imports, directives)
 
+
 class Field( BaseField, RelativeLayout):
     skip_designer = True
 
@@ -770,6 +771,36 @@ class ImageField(Image, FloatField):
             self.source = src
 
 
+class ImgChoiceField(Image, FloatField):
+    "This widget will display an image base on a choice, helds in choices dict"
+    choices = DictProperty()
+    attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
+    default_attr = 'selection'
+    not_exported = ['image_ratio','texture', 'norm_image_size', 'scale','selection_values','source']
+    selection = StringProperty()
+    selection_values= ListProperty()
+
+    def on_selection(self, instance, selection):
+        if self.choices:
+            self.source = find_path(self.choices[selection])
+
+    def on_choices(self, instance, choices):
+        self.selection_values = choices.keys()
+        if choices and not self.selection:
+            self.selection = choices.keys()[0]
+        else:
+            #force selection
+            if not self.selection in choices:
+                self.selection = choices.keys()[0]
+            self.on_selection(self, self.selection)
+
+    def on_source(self, instance, source):
+        src = find_path(source)
+        if src:
+            self.source = src
+
+
+
 class RepeatField(FloatField):
     """x_func & y_func recognize row,col & index variable. They should emit a pos_hint value (between 0 & 1) that will be added to the current pos_hint"""
     allow_stretch = BooleanProperty(True)
@@ -888,36 +919,6 @@ class ColorField(Field):
     rgba=ListProperty((1,1,1,1))
     attrs={'rgba': ColorEditor}
     default_attr = 'rgba'
-
-
-class ImgChoiceField(Image, FloatField):
-    "This widget will display an image base on a choice, helds in choices dict"
-    choices = DictProperty()
-    attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
-    default_attr = 'selection'
-    not_exported = ['image_ratio','texture', 'norm_image_size', 'scale','selection_values','source']
-    selection = StringProperty()
-    selection_values= ListProperty()
-
-    def on_selection(self, instance, selection):
-        if self.choices:
-            self.source = find_path(self.choices[selection])
-
-    def on_choices(self, instance, choices):
-        self.selection_values = choices.keys()
-        if choices and not self.selection:
-            self.selection = choices.keys()[0]
-        else:
-            #force selection
-            if not self.selection in choices:
-                self.selection = choices.keys()[0]
-            self.on_selection(self, self.selection)
-
-    def on_source(self, instance, source):
-        src = find_path(source)
-        if src:
-            self.source = src
-
 
 class ColorChoiceField(Field):
     "This widget will display an image base on a choice, helds in choices dict"

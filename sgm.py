@@ -635,8 +635,8 @@ class BGDeckMaker(BoxLayout):
 
         def inner(*args):
             step_counter.pop()
-            progress.value +=1
-
+            progress.value += 1
+            #print 'remaninig index', len(book.index)
             book.generation_step()
             if (not step_counter) or self.cancel_action:
                 self.cancel_action = False
