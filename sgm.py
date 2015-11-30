@@ -310,10 +310,10 @@ class StackPart(ButtonBehavior, BoxLayout):
                         prev.center_y = y
                         from kivy.metrics import cm
                         p.tsize = options.current_selection[0].size[0]/cm(1), options.current_selection[0].size[1]/cm(1)
-                        print prev, prev.size, prev.pos
-                        print 'ratio', ratio
-                        print prev.parent, prev.parent.size, prev.parent.pos
-                        print prev.parent.parent
+                        #print prev, prev.size, prev.pos
+                        #print 'ratio', ratio
+                        #print prev.parent, prev.parent.size, prev.parent.pos
+                        #print prev.parent.parent
 
                     Clock.schedule_once(_inner, 0)
             else: #edit button for pure image
@@ -497,27 +497,21 @@ class TemplateEditPopup(Popup):
             for ids in tmpl.ids:
                 wid = getattr(tmpl.ids,ids)
                 if do_display == 'down':
-                    wid.designed = True
-                    L = Label(text = '*'*100, color = (0,1,0))
-                    self.ids.FL.add_widget(L)
+                    L = Label(text = str(ids), color = (1,0,0), font_size=30)
+                    wid.add_widget(L)
                     L.center = wid.center
                     def update(*args):
-                        L.pos = wid.pos
-                        L.size = wid.size
-
-                    #wid.bind(pos=update, size=update)
+                        L.center = wid.center
+                    wid.bind(pos=update, size=update)
                     L.z = 100
-                    L.pos = (0,0)
-                    print tmpl, id(tmpl), ids, wid,  L, L.pos, L.size, 'the L'
-                    from  kivy.graphics import InstructionGroup, Color, Line
+                    from kivy.graphics import InstructionGroup, Color, Line
                     wid._df = InstructionGroup()
                     wid._df.add(Color(rgb=(1,0,0)))
                     wid._df.add(Line(rectangle =(wid.x, wid.y, wid.width, wid.height), width=4))
                     wid.canvas.after.add(wid._df)
 
                 else:
-                    wid.designed = False
-                    wid.remove_widget(self.ids.FL.children[0])
+                    wid.remove_widget(wid.children[0])
                     wid.canvas.after.remove(wid._df)
 
     def compute(self):
