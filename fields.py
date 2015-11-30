@@ -1217,7 +1217,7 @@ class GridField(ShapeField):
                 if not imgs:
                     return
                 img = imgs.pop()
-                self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img]), size=(self.width/max(self.cols,1),(self.height/max(self.rows,1))), pos=(self.x+i*self.width/max(1, self.cols),self.y+j*self.height/max(1,self.rows)))
+                self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img], size=(self.width/max(self.cols,1),(self.height/max(self.rows,1))), pos=(self.x+i*self.width/max(1, self.cols),self.y+j*self.height/max(1,self.rows))))
 
 
 class EllipseField(SourceShapeField):
