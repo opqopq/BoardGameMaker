@@ -15,8 +15,7 @@ from fields import BaseField
 from conf import gamepath, FILE_FILTER
 import os, os.path
 from kivy.logger import Logger
-from kivy.logger import Logger
-Builder.load_file('kv/sgm.kv')
+from kivy.uix.gridlayout import GridLayout
 
 
 class FolderTreeView(TreeView):
@@ -212,6 +211,28 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
 
 class SpecialViewItem(FileViewItem):
     "FileView for Folder & CSV file. Usable for script ? "
+
+
+class Stack(GridLayout):
+
+    def add_part(self, widget, index=0):
+        if not isinstance(widget, StackPart):
+            raise TypeError('You can only add StackPart to Stack. %s received'%widget)
+
+        GridLayout.add_widget(self, widget,index)
+
+    def refresh(self, boxes = None, msg=""):
+        if boxes is None:
+            boxes = self.children[:]
+        def inner(*args):
+            b = boxes.pop()
+            b.realise(withValue=True, use_cache=True)
+            if not boxes:
+                Clock.unschedule(inner)
+                from utils import alert
+                alert(msg)
+                return False
+        Clock.schedule_interval(inner, .1)
 
 
 class StackPart(ButtonBehavior, BoxLayout):
@@ -814,30 +835,36 @@ class BGDeckMaker(BoxLayout):
                 stack.add_widget(box)
                 boxes.append(box)
             boxes.reverse()
-            progress = self.ids['load_progress']
-            progress.value = 0
-            progress.max = len(boxes)
-            #ensure the stop button is reachable
-            self.ids['stop_action'].width = 80
-            self.ids['stop_action'].text = 'Stop'
-            self.cancel_action = False
 
-            def inner(*args):
-                progress.value +=1
-                b= boxes.pop()
-                b.realise(withValue=True, use_cache=True)
-                if self.cancel_action or not boxes:
-                    self.cancel_action = False
-                    Clock.unschedule(inner)
-                    self.ids['stop_action'].width = 0
-                    self.ids['stop_action'].text = ''
-                    progress.value = 0
-                    from utils import alert
-                    from os.path import split
-                    alert('Import %s over'%split(filepath)[-1])
-                    return False
+            self.refresh(boxes, msg='Import %s over'%split(filepath)[-1])
 
-            Clock.schedule_interval(inner, .1)
+    def refresh(self, boxes=None, msg=""):
+        if boxes is None:
+            boxes = self.ids.stack.children[:]
+        progress = self.ids['load_progress']
+        progress.value = 0
+        progress.max = len(boxes)
+        #ensure the stop button is reachable
+        self.ids['stop_action'].width = 80
+        self.ids['stop_action'].text = 'Stop'
+        self.cancel_action = False
+
+        def inner(*args):
+            progress.value += 1
+            b= boxes.pop()
+            b.realise(withValue=True, use_cache=True)
+            if self.cancel_action or not boxes:
+                self.cancel_action = False
+                Clock.unschedule(inner)
+                self.ids['stop_action'].width = 0
+                self.ids['stop_action'].text = ''
+                progress.value = 0
+                from utils import alert
+                from os.path import split
+                alert(msg)
+                return False
+
+        Clock.schedule_interval(inner, .1)
 
     def load_file_csv(self, filepath='mycsvfile.csv'):
         #Now also CSV export
@@ -1059,6 +1086,8 @@ class BGDeckMaker(BoxLayout):
             self.ids.stack.add_widget(d)
             d.realise(use_cache=True)
 
+
+Builder.load_file('kv/sgm.kv')
 
 class SGMApp(App):
     def compute_stats(self,grid): return self.root.compute_stats(grid)

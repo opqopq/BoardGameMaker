@@ -96,8 +96,12 @@ def fill_env(*args):
         ENV[_id] = root.ids[_id]
     ENV['log'] = log
     ENV['alert'] = alert
+    ENV['stack'] = root.ids.deck.ids.stack
+    from sgm import StackPart
+    ENV['StackPart'] = StackPart
     #from printer import prepare_pdf
     #ENV['prepare_pdf'] = prepare_pdf
+
 
 from kivy.clock import Clock
 Clock.schedule_once(fill_env,1)

@@ -1,5 +1,7 @@
 'Main Entry point for new KIVY bassed BGM'
 
+VERSION = 0,2
+
 todos = [
     'P3: change virtual screen stack...',
     "P3: browser v2 - file & links",
