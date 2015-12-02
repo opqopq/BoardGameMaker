@@ -9,12 +9,18 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from utils import log, alert, find_path
+from kivy.uix.widget import Widget
+from kivy.vector import Vector
+from kivy.uix.treeview import TreeView
+
+from kivy.uix.spinner import SpinnerOption
 
 Builder.load_file('kv/editors.kv')
 
 ###############################################
 #        Editor                               #
 ###############################################
+
 
 class Editor:
     widget = ObjectProperty(None)
@@ -28,6 +34,7 @@ class Editor:
     def create(self, name, keyname, **kwargs):
         self.widget = self.getWidgets(name, keyname, **kwargs)
         return self.widget
+
 
 class ColorEditor(Editor):
     def getWidgets(self,name, keyname, **kwargs):
@@ -59,6 +66,7 @@ class ColorEditor(Editor):
         t.target_attr = name
         return t
 
+
 class BooleanEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.checkbox import CheckBox
@@ -74,6 +82,7 @@ class BooleanEditor(Editor):
         t.target_attr = name
         return t
 
+
 class TextEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         #can not use getattr with kivy property
@@ -87,6 +96,7 @@ class TextEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class AdvancedTextEditor(TextEditor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -106,7 +116,7 @@ class AdvancedTextEditor(TextEditor):
             setattr(self.target,keyname, args[0].text)
             t.stored_value = args[0].text
             ti.text = args[0].text
-            print 'setting text', '\n' in args[0].text
+            #print 'setting text', '\n' in args[0].text
 
         #Create callback for button that would start a modal
         def button_callback():
@@ -114,7 +124,7 @@ class AdvancedTextEditor(TextEditor):
             cp_width = min(Window.size)
             size = Vector(Window.size)*.9
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-            print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
+            #print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
             popup = TextEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = str(getattr(self.target,keyname)), multiline = True)
             popup.open()
 
@@ -142,7 +152,7 @@ class RichTextEditor(TextEditor):
             setattr(self.target,keyname, args[0].text)
             t.stored_value = args[0].text
             ti.text = args[0].text
-            print 'setting text', '\n' in args[0].text
+            #print 'setting text', '\n' in args[0].text
 
         #Create callback for button that would start a modal
         def button_callback():
@@ -150,7 +160,7 @@ class RichTextEditor(TextEditor):
             cp_width = min(Window.size)
             size = Vector(Window.size)*.9
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-            print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
+            #print 'starting editor', '\n' in str(getattr(self.target,keyname)), '\n' in getattr(self.target,keyname)
             popup = RichTextEditorPopup(name=name, size=size, pos=(0,0), cb=cbtxt, text = str(getattr(self.target,keyname)), multiline = True)
             popup.open()
 
@@ -159,6 +169,7 @@ class RichTextEditor(TextEditor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class CodeWrapper(object):
     def __init__(self, code, target):
@@ -179,6 +190,7 @@ class CodeWrapper(object):
             context = self.context
         if self.code:
             return eval(self.code, context)
+
 
 class AdvancedCodeEditor(AdvancedTextEditor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -232,6 +244,7 @@ class AdvancedCodeEditor(AdvancedTextEditor):
         t.target_attr = name
         return t
 
+
 class ListEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         #can not use getattr with kivy property
@@ -244,6 +257,7 @@ class ListEditor(Editor):
         t.stored_value = None
         t.target_attr = name
         return t
+
 
 class TransfoListEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -273,6 +287,7 @@ class TransfoListEditor(Editor):
         t.target_attr = name
         return t
 
+
 class IntEditor(TextEditor):
     def getWidgets(self, name, keyname, **kwargs):
         t=TextInput(text=str(getattr(self.target, keyname)))
@@ -292,6 +307,7 @@ class IntEditor(TextEditor):
         args={keyname:xcb}
         self.target.bind(**args)
         return t
+
 
 class AdvancedIntEditor(IntEditor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -328,6 +344,7 @@ class AdvancedIntEditor(IntEditor):
         t.stored_value = 0
         t.target_attr = name
         return t
+
 
 class FloatEditor(IntEditor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -605,6 +622,7 @@ class SubImageEditor(Editor):
         t.target_attr = name
         return t
 
+
 class RangeEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.slider import Slider
@@ -695,7 +713,6 @@ class PointListEditor(Editor):
         t.target_attr = name
         return t
 
-from kivy.uix.spinner import SpinnerOption
 
 class ColorOption(SpinnerOption):
 
@@ -795,10 +812,9 @@ class ImgOptionEditor(Editor):
 
 class ImageChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
-        text = ""
-        if getattr(self.target, keyname):
-            text= self.target.selection or self.target.choices.keys()[0]
-        t=Button(text = "Define")
+
+        t = Button(text="Define")
+
         def cbimg(value):
             try:
                 setattr(self.target, keyname, value)
@@ -807,19 +823,18 @@ class ImageChoiceEditor(Editor):
 
                 log(E)
         t.bind(text=cbimg)
+
         def button_callback(instance):
             from kivy.core.window import Window
-            cp_width = min(Window.size)
             size = Vector(Window.size)*.9
-            popup = ImageChoiceEditorPopup(name=name, size=size, pos=(0,0), cb=cbimg, keyname = getattr(self.target, keyname))
-            popup.load_choices(getattr(self.target,keyname))
+            popup = ImageChoiceEditorPopup(name=name, size=size, pos=(0, 0), cb=cbimg, keyname=getattr(self.target, keyname))
+            popup.load_choices(getattr(self.target, keyname))
             popup.open()
-        t.bind(on_press= button_callback)
+        t.bind(on_press=button_callback)
         t.target_key = keyname
         t.stored_value = None
         t.target_attr = name
         return t
-
 
 class ColorChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -1014,6 +1029,7 @@ class TextEditorPopup(Popup):
     cb = ObjectProperty()
     text = StringProperty()
 
+
 class RichTextEditorPopup(TextEditorPopup):
     pass
 
@@ -1072,7 +1088,6 @@ class ColorEditorPopup(Popup):
     color = ObjectProperty()
     cb = ObjectProperty()
 
-from kivy.uix.treeview import TreeView
 
 class SubmitTreeView(TreeView):
     target= ObjectProperty()
@@ -1081,6 +1096,7 @@ class SubmitTreeView(TreeView):
         if touch.is_double_tap:
             self.target.add_item()
         return super(SubmitTreeView, self).on_touch_down(touch)
+
 
 class DictChoiceEditorPopup(Popup):
     name = StringProperty()
@@ -1259,9 +1275,6 @@ class ColorChoiceEditorPopup(Popup):
             self.choices[txt] = color
         self.cb(self.choices)
 
-from kivy.uix.widget import Widget
-from kivy.uix.behaviors import DragBehavior
-from kivy.vector import Vector
 
 class Point(Widget):
     color = ListProperty([1,0,0,1])
@@ -1289,6 +1302,7 @@ class Point(Widget):
             touch.ungrab(self)
             self.color=[1,0,0,1]
         return super(Point, self).on_touch_up(touch)
+
 
 class PointListEditorPopup(Popup):
     name = StringProperty()
@@ -1400,6 +1414,7 @@ class PointListEditorPopup(Popup):
             y = float(cs[3*i+2+3].text)
             self.points.extend([x, y])
 
+
 class PosHintChoiceEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
@@ -1459,6 +1474,7 @@ class PosHintChoiceEditorPopup(Popup):
                 log(E,'while converting to float')
         print 'new poshint is', self.choices
         #self.cb(self.choices)
+
 
 class SubImageEditorPopup(Popup):
     name = StringProperty()

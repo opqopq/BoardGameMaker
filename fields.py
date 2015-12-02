@@ -699,6 +699,8 @@ class TextField(Label, FloatField):
     not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text', 'max_lines']
     font = ListProperty(['DroidSans.ttf', 8,False, False])
 
+    _menu = {'Font': ['font', 'font_color', 'autofit', 'max_font_size', 'min_font_size', 'padding_x', 'padding_y']}
+
     def on_size(self,instance, size):
         self.text_size = size
         self.on_text(instance,self.text)
@@ -759,6 +761,10 @@ class TextField(Label, FloatField):
                     self.font_size-=1
 
 
+class SymbolField(SymbolLabel, TextField):
+    attrs = {'symbols': ImageChoiceEditor}
+
+
 class ImageField(Image, FloatField):
     attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
@@ -798,7 +804,6 @@ class ImgChoiceField(Image, FloatField):
         src = find_path(source)
         if src:
             self.source = src
-
 
 
 class RepeatField(FloatField):
@@ -940,52 +945,6 @@ class ColorChoiceField(Field):
             self.selection = choices.keys()[0]
         else:
             self.on_selection(instance, self.selection)
-
-
-class SymbolField(SymbolLabel, FloatField):
-    source=StringProperty()
-    default_attr = 'text'
-
-    def __init__(self,**kwargs):
-        SymbolLabel.__init__(self,**kwargs)
-        #Auto read any symbol file that would tell me what to do
-
-    def _postProcess(self):
-        "Post Processing: auto load data file"
-        from json import load
-        import os.path
-        if self.source:
-
-            if os.path.isfile(self.source):
-                #print "Loading source provided file"
-                self.symbol_dict=load(file(self.source,'rb'))
-        else:
-            if  hasattr(self,'symbol_dict') and self.symbol_dict:
-                #Auto load any json file save with my id
-                #print  os.path.isfile('%s_source.json'%self._name)
-                if hasattr(self,'_name') and os.path.isfile('%s_source.json'%self._name):
-                    #print "Auto loading symbol file"
-                    self.symbol_dict=load(file('%s_source.json'%self._name,'rb'))
-
-    def GetValueWidgets(self,name):
-        ws=list()
-        ws.append(Label(text=name))
-        t=Button(text='Edit')
-        #Create a callback for the modal frame
-        def cb(instance):
-            self.text=instance.content.text
-        #Create callback for button that would start a modal
-        def button_callback(instance):
-            from kivy.core.window import Window
-            cp_width = min(Window.size)*.5
-            cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
-            popup = Popup(title='Edit Content for %s'%name, content=TextInput(text=self.text,multiline=True),auto_dismiss=True,pos = cp_pos, size=(cp_width,cp_width), size_hint=(None,None))
-            popup.bind(on_dismiss=cb)
-            popup.open()
-        #Assign it
-        t.bind(on_press=button_callback)
-        ws.append(t)
-        return ws
 
 
 class SubImageField(Field):
