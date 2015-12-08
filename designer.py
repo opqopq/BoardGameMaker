@@ -484,19 +484,24 @@ class BGDesigner(FloatLayout):
             mz = min([getattr(o, way[-1]) for o in self.selections])
             Mz = max([getattr(o, way[-1]) for o in self.selections])
             basis = int(mz + (Mz-mz)/2)
+            for s in self.selections:
+                setattr(s, way[-1], basis)
         else:
             if way in ['x','y']:
                 op = min
             else:
                 op = max
             basis = op([getattr(o, way) for o in self.selections])
-        for s in self.selections:
-            setattr(s, way, basis)
+            for s in self.selections:
+                setattr(s, way, basis)
 
     def resize_group(self, dim):
-        print "cur sel", self.selections
-        basis = max([getattr(c, dim) for c in self.selections])
-        for x in self.selections:
+        order = max
+        if dim.startswith('-'):
+            dim = dim[1:]
+            order = min
+        basis = order([getattr(c, dim) for c in self.selections])
+        for c in self.selections:
             setattr(c, dim, basis)
 
     def distribute_group(self, dim):

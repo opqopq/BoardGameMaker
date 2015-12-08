@@ -105,6 +105,8 @@ FONTELLO = {
     'icon-saveas2': u'\ue85e',
     'icon-library': u'\ue85f',
     'icon-saveas': u'\ue860',
+    'icon-shrink-vertical': u'\ue861',
+    'icon-shrink-horizontal' :u'\ue862',
 }
 from kivy.uix.label import Label
 from kivy.properties import StringProperty

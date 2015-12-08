@@ -161,7 +161,7 @@
 #:import ScrollLabel kivy.garden.scrolllabel.ScrollLabel
 
 <KVPreview@Popup>:
-    title: 'Template Text Preview'
+    title: 'Template Texret Preview'
     size_hint: .9,.9
     BoxLayout:
         orientation: 'vertical'
@@ -425,12 +425,14 @@
                                     on_press: root.align_group('center_x')
                                     FontIcon:
                                         icon: 'resize-horizontal-1'
+                                        font_size: 24
                                         pos: self.parent.pos
                                         size: self.parent.size
                                 Button:
                                     on_press: root.align_group('center_y')
                                     FontIcon:
                                         icon: 'resize-vertical-1'
+                                        font_size: 25
                                         pos: self.parent.pos
                                         size: self.parent.size
 
@@ -456,13 +458,38 @@
                                 Button:
                                     on_press: root.resize_group('height')
                                     FontIcon:
-                                        icon: 'resize-vertical'
+                                        icon: 'resize-vertical-1'
+                                        font_size: 23
                                         pos: self.parent.pos
                                         size: self.parent.size
                                 Button:
                                     on_press: root.resize_group('width')
                                     FontIcon:
-                                        icon: 'resize-horizontal'
+                                        icon: 'resize-horizontal-1'
+                                        font_size: 25
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                            BoxLayout:
+                                size_hint_y: None
+                                height: 30
+                                canvas.before:
+                                    Color:
+                                        rgb: 0,0,1
+                                    Rectangle:
+                                        size: self.size
+                                        pos: self.pos
+                                Button:
+                                    on_press: root.resize_group('-height')
+                                    FontIcon:
+                                        icon: 'shrink-vertical'
+                                        font_size: 23
+                                        pos: self.parent.pos
+                                        size: self.parent.size
+                                Button:
+                                    on_press: root.resize_group('-width')
+                                    FontIcon:
+                                        icon: 'shrink-horizontal'
+                                        font_size: 25
                                         pos: self.parent.pos
                                         size: self.parent.size
 
