@@ -29,7 +29,11 @@ bgg_img_url = "http://www.boardgamegeek.com/geekimagemodule.php?action=imagemodu
 bgg_file_url = "http://boardgamegeek.com/geekfile.php?objecttype=thing&objectid=%d&pageid=%d&action=module&ajax=1&showcount=30&rowsize=30"
 bgg_link_url = "http://boardgamegeek.com/geekitem.php?objectid=%d&subtype=boardgame&pageid=%d&view=weblinks&modulename=weblinks&showcount=30&action=linkeditems&ajax=1"
 
-GAME_CACHE={}
+GAME_CACHE = {}
+
+
+###########################################
+#Here we define some helper function for interaction with BGG
 
 
 def img_download(url, Widget, *args):
@@ -59,7 +63,7 @@ class BGGeekBrowser(BoxLayout):
 
     def search_game(self, name):
         "Search a game. Callback to insert_games"
-        self.ids.results.root_options={'text':'Results: %s'%name}
+        self.ids.results.root_options = {'text':'Results: %s'%name}
         self.ids.results.nodes = list()
         self.ids.results.remove_node(self.ids.results.root)
         url = bgg_search_url

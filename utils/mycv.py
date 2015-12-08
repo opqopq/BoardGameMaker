@@ -11,28 +11,26 @@ BORDER_OPTIONS = {
 
 }
 
-def wrapper(obj):
+def imgwrapper(obj):
     "If I am a pure cv2 img, then wrap me around Image class"
     if hasattr(obj,'_ocvimg'):
         return obj
     return Image.fromobj(obj)
 
-def unwrap(obj):
+def imgunwrap(obj):
     if hasattr(obj,'_ocvimg'):
         return obj._ocvimg
     return obj
 
-def inplace(func):
+def imginplace(func):
     def wrapped(self, inplace= False, *args, **kwargs):
         res = func(self, *args, **kwargs)
         if inplace:
             self._ocvimg = res
             return self
         else:
-            return wrapper(res)
+            return imgwrapper(res)
     return wrapped
-
-
 
 class Image(object):
     _ocvimg = None
@@ -78,14 +76,14 @@ class Image(object):
 
     def blend(self, other, w1,w2, inplace = False):
         "Similar to cv2.addWeighted (img1,w1,img2,w2)"
-        img = cv2.addWeighted(self._ocvimg,w1,wrapper(other),w2)
+        img = cv2.addWeighted(self._ocvimg, w1, imgwrapper(other), w2)
         if inplace:
             self._ocvimg = img
             return self
         return Image.fromobj(img)
 
     def convert(self,mode):
-        return wrapper(cv2.cvtColor(self._ocvimg, mode))
+        return imgwrapper(cv2.cvtColor(self._ocvimg, mode))
 
     def colorconvert(self, dstmode, srcmode=None, inplace = False):
         if srcmode is None:
@@ -102,21 +100,20 @@ class Image(object):
             IMG.color_mode = dstmode
             return IMG
 
-
     def threshold(self, thresh, maxval, mode):
-        return wrapper(cv2.threshold(self._ocvimg,thresh, maxval, mode))
+        return imgwrapper(cv2.threshold(self._ocvimg, thresh, maxval, mode))
 
     def __and__(self, other,**kwargs):
-        return wrapper(cv2.bitwise_and(self._ocvimg,unwrap(other), **kwargs))
+        return imgwrapper(cv2.bitwise_and(self._ocvimg, imgunwrap(other), **kwargs))
 
     def __or__(self, other,**kwargs):
-        return wrapper(cv2.bitwise_or(self._ocvimg, unwrap(other),**kwargs))
+        return imgwrapper(cv2.bitwise_or(self._ocvimg, imgunwrap(other), **kwargs))
 
     def __not__(self,**kwargs):
-        return wrapper(cv2.bitwise_not(self._ocvimg),**kwargs)
+        return imgwrapper(cv2.bitwise_not(self._ocvimg), **kwargs)
 
     def __add__(self, other):
-        return wrapper(cv2.add(self._ocvimg, unwrap(other)))
+        return imgwrapper(cv2.add(self._ocvimg, imgunwrap(other)))
 
     def range_filter(self, low,up, inplace=False):
         "Equivalent to cv2.Inrange"
@@ -124,7 +121,99 @@ class Image(object):
         if inplace:
             self._ocvimg = img
             return self
-        return wrapper(img)
+        return imgwrapper(img)
+
+    def show(self, displayname = 'image'):
+        cv2.imshow(displayname,self._ocvimg)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    def findContours(self,return_type = cv2.RETR_TREE, method = cv2.CHAIN_APPROX_SIMPLE):
+        contours, hierarchy = cv2.findContours(self._ocvimg, return_type, method)
+        return [Contour.fromobj(c) for c in contours], hierarchy
+
+    def drawContours(self, contoursList, color=(0,255,0), width=3):
+        clist = [Contour.unwrap(c) for c in contoursList]
+        cv2.drawContours(self._ocvimg, clist, -1, color, width)
+
+    def drawContour(self, contour, color, width):
+        self.drawContours(self,[contour], color, width)
+
+class Contour:
+    _ocvcontour = None
+
+    @classmethod
+    def wrapper(cls, obj):
+        if hasattr(obj, '_ocvcontour'):
+            return obj
+        return Contour.fromobj(obj)
+
+    @classmethod
+    def unwrap(cls,obj):
+        if hasattr(obj, '_ocvcontour'):
+            return obj._ocvcontour
+        return obj
+
+    @classmethod
+    def fromobj(cls, cvc):
+        c= Contour()
+        c._ocvcontour = cvc
+
+    @property
+    def moments(self):
+        return cv2.moments(self._ocvcontour)
+
+    @property
+    def area(self):
+        return cv2.contourArea(self._ocvcontour)
+
+    @property
+    def perimeter(self):
+        return cv2.arcLeength(self._ocvcontour,True)
+
+    def approx(self, epsilon_ratio):
+        eps = epsilon_ratio * self.perimeter
+        return cv2.approxPolyDP(self._ocvcontour,eps,True)
+
+    @property
+    def convex(self):
+        return cv2.isContourConvex(self._ocvcontour)
+
+    @property
+    def bounding_rect(self):
+        return cv2.boundingRect(self._ocvcontour)
+
+    @property
+    def bounding_rotated_rect(self):
+        return cv2.minAreaRecf(self._ocvcontour)
+
+    @property
+    def enclosing_circle(self):
+        return cv2.minEnclosingCircle(self._ocvcontour)
+
+    @property
+    def fit_ellipse(self):
+        return cv2.fitEllipse(self._ocvcontour)
+
+    @property
+    def aspect_ratio(self):
+        x,y,w,h = self.bounding_rect
+        return float(w)/h
+
+    @property
+    def extent(self):
+        x,y,w,h = self.bounding_rect
+        return float(self.area) / w*h
+
+    @property
+    def extremum(self):
+        "Return leftmost, rightmost, topmost & bottommost point in contours"
+        cnt = self._ocvcontour
+        leftmost = tuple(cnt[cnt[:,:,0].argmin()][0])
+        rightmost = tuple(cnt[cnt[:,:,0].argmax()][0])
+        topmost = tuple(cnt[cnt[:,:,1].argmin()][0])
+        bottommost = tuple(cnt[cnt[:,:,1].argmax()][0])
+        return (leftmost, rightmost, topmost, bottommost)
 
 
 class Video(Image):

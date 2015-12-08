@@ -156,7 +156,7 @@ class BGDesigner(FloatLayout):
     def add_field(self, field):
         from fields import fieldDict
         klass = fieldDict.get(field.text, None)
-        target = klass()
+        target = klass(size=(100,100))
         self.insert_field(target)
         #Select the new field
         self.selections = {target:None}
@@ -335,6 +335,7 @@ class BGDesigner(FloatLayout):
         print 'todo: how do I save pultiple template on a single KV file ? '
 
     def export_kv(self):
+        from kivy.logger import Logger
         #print " -- EXPORT KV  -- "*10
         from conf import CP
         relativ = CP.getboolean('Designer', 'TMPL_RELATIVE_SIZE_POS')
@@ -348,7 +349,7 @@ class BGDesigner(FloatLayout):
             print 'Current template as no name: reverting to default'
             self.current_template.template_name = "TMPL"
         tmpls, imports, directives = self.current_template.export_to_kv(level=1,save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
-        print 'export these imports to kv: ', imports
+        Logger.debug('export these imports to kv: ' + str(imports))
         for node in self.ids.fields.root.nodes:
             field = node.target
             if field == self.current_template: #skip export of the root template: done above
@@ -363,17 +364,13 @@ class BGDesigner(FloatLayout):
             for imp in imports:
                 if imp:
                     tmpls.insert(0,"#:include %s"%imp)
-        print "directives at the end" , directives
+        Logger.debug("directives at the end" + str(directives))
         if directives:
             tmpls.insert(0,"")
             for directive in directives:
                 tmpls.insert(0, "#:%s"%directive)
 
         from os import linesep
-        print '*'*60
-        print "Export KV"
-        print linesep.join(tmpls)
-        print '*'*60
         return linesep.join(tmpls)
 
     def on_last_selected(self, instance, field):

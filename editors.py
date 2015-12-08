@@ -134,6 +134,7 @@ class AdvancedTextEditor(TextEditor):
         t.target_attr = name
         return t
 
+
 class RichTextEditor(TextEditor):
     def getWidgets(self, name, keyname, **kwargs):
         from kivy.uix.boxlayout import BoxLayout
@@ -372,10 +373,21 @@ class MetricEditor(Editor):
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.spinner import Spinner
         t = BoxLayout(orientation='horizontal')
-        ti = TextInput(text=str(getattr(self.target, keyname)))
+        ti = TextInput()
         ts = Spinner(text='px', values=('cm','px'), size_hint_x=None, width=40)
         t.add_widget(ti)
         t.add_widget(ts)
+
+        #Xross Bind
+        def xcb(*args):
+            #print 'scb called', ti.text, getattr(self.target, keyname)
+            res = getattr(self.target, keyname)
+            if ts.text != 'px':
+                res = "%.2f"%(res/cm(1))
+            else:
+                res = "%.2f"%res
+            ti.text = res
+
         def cb(instance, value):
             try:
                 # First remove the binding to avoid update loop
@@ -394,7 +406,9 @@ class MetricEditor(Editor):
 
                 log(E)
                 print E
+        #First bind text change, then set value
         ti.bind(text=cb)
+        ti.text = str(getattr(self.target, keyname))
         def cbs(instance, theText):
             try:
                 #Now we convert
@@ -414,15 +428,6 @@ class MetricEditor(Editor):
         t.target_key = keyname
         t.stored_value = None
         t.target_attr = name
-        #Xross Bind
-        def xcb(*args):
-            #print 'scb called', ti.text, getattr(self.target, keyname)
-            res= getattr(self.target, keyname)
-            if ts.text != 'px':
-                res = "%.2f"%(res/cm(1))
-            else:
-                res = "%.2f"%res
-            ti.text = res
         args={keyname:xcb}
         self.target.bind(**args)
         return t
@@ -509,18 +514,18 @@ class FileEditor(Editor):
         t=Button(text="...", **kwargs)
         #Create a callback for the modal frame
         def cbimg(instance):
-            s = instance.ids.fpicker.selection
+            s = instance.selection
             if len(s) and isfile(s[0]):
                 setattr(self.target, keyname, s[0])
-                t.stored_value = instance.ids.fpicker.selection[0]
+                t.stored_value = s[0]
                 t.text = split(s[0])[-1]
             else:
-                t.text="..."
+                t.text = "..."
         #Create callback for button that would start a modal
         def button_callback(instance):
             from kivy.core.window import Window
             cp_width = min(Window.size)
-            size = Vector(Window.size)*.9
+            size = Vector(Window.size)
             cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
             filters = getattr(self.target, '%s_filters'%keyname, [])
             #filters= ['*.jpg', '*.png','*.jpeg','*.gif']
@@ -836,6 +841,7 @@ class ImageChoiceEditor(Editor):
         t.target_attr = name
         return t
 
+
 class ColorChoiceEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         text = ""
@@ -888,7 +894,7 @@ class FontChoiceEditor(ChoiceEditor):
             fdirs = ['/system/fonts']
         from glob import glob
         fonts =  dict()
-        fonts['DroidSans.ttf'] = 'DroidSans.ttf'
+        fonts['default'] = 'Roboto'
         for folder in fdirs:
             path = join(folder, '*.ttf')
             for x in glob(path):
@@ -925,13 +931,6 @@ class FontChoiceEditor(ChoiceEditor):
             popup.choices = fonts.keys()
             popup.open()
         t.bind(on_press=button_callback)
-        t.target_key = keyname
-        t.stored_value = None
-        t.target_attr = name
-        return t
-
-
-        t.bind(text=cb)
         t.target_key = keyname
         t.stored_value = None
         t.target_attr = name

@@ -45,9 +45,12 @@
                     pos: self.pos
             AccordionItem:
                 title: 'Scripts Folder'
-                FileChooserListView:
-                    rootpath:"scripts"
-                    on_selection: repl.text = file(self.selection[0], 'rb').read()
+                TreeView:
+                    id: script_tree
+                    #:import join os.path.join
+                    on_selected_node: repl.text = file(join('scripts',self.selected_node.text), 'rb').read()
+                    hide_root: True
+
             AccordionItem:
                 title: 'Script Globals'
                 Label:

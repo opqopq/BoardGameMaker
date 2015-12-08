@@ -23,7 +23,7 @@ class SymbolCoreLabel(MarkupLabel):
         src = find_path(src)
         image = Image.open(src)
         mode = image.mode
-        W, H =self.get_extents("_")
+        W, H =self.get_extents("__")
         image = image.resize((W, H))
         #print W,H
         self.texture.blit_buffer(image.tobytes(), colorfmt=img_modes[mode], size = (W,H), pos = (x,y))
@@ -200,7 +200,7 @@ class SymbolCoreLabel(MarkupLabel):
                 if item in self.guiLabel.symbols:
                     options['symbol_src'] = self.guiLabel.symbols[item]
                     # Create a single CHAR item, which will be replaced by the picture
-                    item="_"
+                    item="__"
                     opts = copy(options)
                     extents = self.get_cached_extents()
                     opts['space_width'] = extents(' ')[0]

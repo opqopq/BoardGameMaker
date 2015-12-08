@@ -10,11 +10,11 @@ todos = [
     "P1: fix SubTemplate Export KV: in here, it is the template content that is put in the KV, not the templat eitself",
     "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",
     "when editing kv with forved fit, size change !!!!",
-    "when printing, respect the same rule as layout: respect the size of template, of self.image. Use card.fitting size for pure image. When using forced fit, do this for all. Change layout to fit that",
     "learn way to split pdf other than pocket mod for bigger pictures",
-    "Bug: why should there be include in the list for kv themselved (like include kv in kv file)",
     "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout",
-    "P1 Feature: thumbnail preview of images"
+    'P2: change font edit popup',
+    "repair subimgafield",
+    "how to record that a script has been pushed on an image? like splitter, or "
 ]
 
 for i, todo in enumerate(todos):

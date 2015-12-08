@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from kivy.uix.label import Label
-from kivy.uix.image import Image
+from kivy.uix.image import AsyncImage, Image
 from kivy.factory import Factory
 from kivy.properties import ObservableDict, ObservableList, ObservableReferenceList
 from kivy.uix.floatlayout import FloatLayout
@@ -20,6 +20,51 @@ from kivy.uix.widget import WidgetMetaclass
 from kivy.uix.relativelayout import RelativeLayout
 from styles import getStyle # Pre-import styles to register them all
 
+
+####################################################################
+# Enhance AsyncImage to capture the file path of the cached image  #
+####################################################################
+
+class MyAsyncImage(AsyncImage):
+    url = StringProperty()
+
+    def __init__(self, **kwargs):
+        super(MyAsyncImage,self).__init__(**kwargs)
+        self.bind(url= self._load_source)
+        if self.url:
+            self._load_source()
+
+    def on_url(self, instance, value):
+
+        print 'on url', instance, value,
+        #self._load_source()
+        print 'done'
+
+    def _load_source(self, *args):
+        from kivy.resources import resource_find
+        from kivy.uix.image import Loader
+        from kivy.network.urlrequest import UrlRequest
+        from tempfile import mktemp
+
+        source = self.url
+        if not source:
+            if self._coreimage is not None:
+                self._coreimage.unbind(on_texture=self._on_tex_change)
+            self.texture = None
+            self._coreimage = None
+        else:
+            if not self.is_uri(source):
+                self.source = resource_find(source)
+            else:
+                #downlaod file to temp file then save source
+                source = mktemp()
+                UrlRequest(self.url,file_path = source, on_success = self._on_source_load)
+                print 'creating source', source
+                self._source = source
+
+    def _on_source_load(self, *args):
+        print '_onsrouce called', self, self.source, args
+        self.source = self._source
 
 ###############################################
 #        Field                                #
@@ -429,7 +474,6 @@ class BaseField(FocusBehavior):
         tmpls.append('')
         return (tmpls, imports, directives)
 
-
 class Field( BaseField, RelativeLayout):
     skip_designer = True
 
@@ -697,7 +741,7 @@ class TextField(Label, FloatField):
     _single_line_text = StringProperty()
 
     not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text', 'max_lines']
-    font = ListProperty(['DroidSans.ttf', 8,False, False])
+    font = ListProperty(['default', 8,False, False])
 
     _menu = {'Font': ['font', 'font_color', 'autofit', 'max_font_size', 'min_font_size', 'padding_x', 'padding_y']}
 
@@ -777,7 +821,7 @@ class ImageField(Image, FloatField):
             self.source = src
 
 
-class ImgChoiceField(Image, FloatField):
+class ImgChoiceField(AsyncImage, FloatField):
     "This widget will display an image base on a choice, helds in choices dict"
     choices = DictProperty()
     attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])

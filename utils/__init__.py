@@ -18,7 +18,7 @@ def log(text, stack=None):
         print text, stack
 
 
-def alert(text, status_color=(0,0,0,1), keep = False):
+def alert(text, status_color=(0, 0, 0, 1), keep=False):
     from kivy.app import App
     app = App.get_running_app()
     if app:
@@ -49,6 +49,8 @@ def find_path(path):
     from os.path import isfile
     from kivy.resources import resource_find
     from conf import gamepath
+    if path.startswith('http'):
+        return path
     r = resource_find(path)
     if r:
         return r

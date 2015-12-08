@@ -221,7 +221,7 @@ class Stack(GridLayout):
 
         GridLayout.add_widget(self, widget,index)
 
-    def refresh(self, boxes = None, msg=""):
+    def refresh(self, boxes=None, msg="Resfresh Done"):
         if boxes is None:
             boxes = self.children[:]
         def inner(*args):
@@ -548,7 +548,7 @@ class TemplateEditPopup(Popup):
                 for child in child_node.walk(restrict=True):
                     key = getattr(child, 'target_key',None)
                     sv = getattr(child, 'stored_value',None)
-                    print key, sv, tmpl.vars
+                    #print 'computing value for tree popup', key, sv, tmpl.vars
                     if key is not None and sv is not None: # means somthing has changed
                         if child.target_attr in tmpl.vars: #just a tmpl variable
                             values[key] = sv
@@ -621,7 +621,7 @@ class BGDeckMaker(BoxLayout):
                         from template import BGTemplate
                         sizes.add(tuple(BGTemplate.FromFile(cs.template, use_cache=True)[-1].size))
                 elif cs.image:
-                    sizes.add(self.image.size)
+                    sizes.add(cs.image.size)
                 else:
                     sizes.add(FFORMAT)
             if USE_LAYOUT:
@@ -651,7 +651,7 @@ class BGDeckMaker(BoxLayout):
         def inner(*args):
             step_counter.pop()
             progress.value += 1
-            #print 'remaninig index', len(book.index)
+            print 'remaninig index', len(book.index)
             book.generation_step()
             if (not step_counter) or self.cancel_action:
                 self.cancel_action = False
@@ -754,25 +754,6 @@ class BGDeckMaker(BoxLayout):
                 progress.value = 0
                 return False
         Clock.schedule_interval(inner,.025)
-
-    def choose_file_popup(self,title, cb):
-        from kivy.uix.popup import Popup
-        from kivy.uix.filechooser import FileChooserListView
-        from conf import get_last_dir, set_last_dir
-        f = FileChooserListView(path =get_last_dir(self))
-        def valid(*args):
-            p.dismiss()
-        f.bind(on_submit= valid)
-        p = Popup(content=f)
-        p.title = title
-        def inner(*args):
-            if p.content.selection:
-                selection = p.content.selection[0]
-                from os.path import split
-                set_last_dir(self,split(selection)[0])
-                cb(selection)
-        p.on_dismiss = inner
-        p.open()
 
     def write_file_popup(self,title,cb, default='export.pdf'):
         from conf import CP
@@ -972,11 +953,14 @@ class BGDeckMaker(BoxLayout):
         od = OrderedDict()
         cards = list()
         HAS_LAYOUT = False
+        HAS_TEMPLATE = False
+        HAS_SOURCE = False
         for item in reversed(self.ids['stack'].children):
             if not isinstance(item, Factory.get('StackPart')): continue
             d = dict()
             d['qt'] = item.qt
             if item.source:
+                HAS_SOURCE = True
                 if isfile(item.source): #it is a full path. convert it
                     _s = relpath(item.source, gamepath)
                     if item.source.startswith(FOLDER):
@@ -989,6 +973,7 @@ class BGDeckMaker(BoxLayout):
             else:
                 d['source'] = ""
             if item.template:
+                HAS_TEMPLATE = True
                 d['template'] = item.template
             d['dual'] = not(item.verso == 'normal')
             d['values'] = item.values
@@ -1023,9 +1008,14 @@ class BGDeckMaker(BoxLayout):
                 wb= openpyxl.Workbook()
                 ws = wb.active
                 ws.title = FNAME
-                fields_order = ['qt','dual','source','template'] + sorted(my_dict.keys())
+                fields_order = ['qt','dual']
+                if HAS_TEMPLATE:
+                    fields_order.append('template')
+                if HAS_SOURCE:
+                    fields_order.append('source')
                 if HAS_LAYOUT:
-                    fields_order = ['qt','dual','source', 'layout_x','layout_y','layout_w','layout_h', 'layout_angle','layout_page', 'template'] + sorted(my_dict.keys())
+                    fields_order.extend([ 'layout_x','layout_y','layout_w','layout_h', 'layout_angle','layout_page'])
+                fields_order.extend(sorted(my_dict.keys()))
                 for colindex, h in enumerate(fields_order):
                     ws['%s%s'%(get_column_letter(colindex+1),1)] = h
                 for rowindex,c in enumerate(cards):

@@ -53,8 +53,24 @@ class BGScriptEditor(BoxLayout):
     env = ObjectProperty()
     locals = DictProperty()
 
+    def __init__(self,**kwargs):
+        super(BGScriptEditor,self).__init__(**kwargs)
+        self.build_dir()
+
+    def build_dir(self):
+        self.ids.script_tree.clear_widgets()
+        self.ids.script_tree.nodes = list()
+        from kivy.uix.treeview import TreeViewLabel
+        from glob import glob
+        from os.path import join,split
+        for script in glob(join('scripts','*.py')):
+            self.ids.script_tree.add_node(TreeViewLabel(text=split(script)[-1]))
+
+
     def exec_code(self, code):
         from kivy.factory import Factory
+        from time import clock
+        start = clock()
         rl = Factory.get('Repl_line')()
         try:
             exec code in self.locals
@@ -63,7 +79,7 @@ class BGScriptEditor(BoxLayout):
             rl.text = str(e)
         else:
             rl.mode = 'Out'
-            rl.text = 'Execution done'
+            rl.text = 'Execution done in %.2f second(s)'%(clock()-start)
         self.ids.historic.add_widget(rl)
 
     def on_env(self,*args):

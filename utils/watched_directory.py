@@ -1,9 +1,8 @@
 __author__ = 'HO.OPOYEN'
 
 
-from kivy.uix.filechooser import FileChooserListView
-from kivy.uix.treeview import TreeView, TreeViewNode, TreeViewLabel
-from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, ListProperty
+from kivy.uix.treeview import TreeView, TreeViewLabel
+from kivy.properties import StringProperty, BooleanProperty, ListProperty
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler

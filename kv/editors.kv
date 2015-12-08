@@ -146,17 +146,19 @@
 <ImageChoiceEditorPopup>:
     size_hint: None, None
     title: 'Choose Img for %s'%self.name
-    GridLayout:
-        cols:2
-        FileChooserListView:
-            size_hint_x: .33
-            id: imgchooser
-            path: get_last_dir(self)
-            filters: ['*.png','*.jpg','*.jpeg','*.gif']
-            on_submit: set_last_dir(root,self.path); root.add_image()
+    img_row_height: 30
+    on_img_row_height: for c in imgpicker.children: c.height = root.img_row_height
+    BoxLayout:
+        Splitter:
+            sizable_from: 'right'
+            FileChooserListView:
+                size_hint_x: .33
+                id: imgchooser
+                path: get_last_dir(self)
+                filters: ['*.png','*.jpg','*.jpeg','*.gif']
+                on_submit: set_last_dir(root,self.path); root.add_image()
         BoxLayout:
             orientation: 'vertical'
-            size_hint_x: .67
             ScrollView:
                 GridLayout:
                     size_hint_y: None
@@ -179,6 +181,13 @@
                         text: "Preview"
                         size_hint: .3, None
                         height: 30
+            Slider:
+                min: 20
+                max: 150
+                value: root.img_row_height
+                on_value: root.img_row_height = args[1]
+                size_hint_y: None
+                height: 30
             BoxLayout:
                 size_hint: 1, None
                 height: 30
@@ -295,21 +304,40 @@
 <FileEditorPopup@Popup>:
     size_hint: None, None
     title: 'Choose src for %s'%self.name
+    path: get_last_dir(root)
+    selection: []
     GridLayout:
         cols:1
-        FileChooserListView:
-            id: fpicker
-            path: get_last_dir(root)
-            filters: root.filters
-            #on_success: root.dismiss() ; root.cb(root)
-            #on_canceled: root.dismiss()
+        TabbedPanel:
+            do_default_tab: False
+            TabbedPanelItem:
+                text: 'File'
+                FileChooserListView:
+                    id: fpicker
+                    path: root.path
+                    on_path: root.path = args[1]
+                    filters: root.filters
+                    on_selection: root.selection = args[1]
+                    selection: root.selection
+
+                    #on_success: root.dismiss() ; root.cb(root)
+                    #on_canceled: root.dismiss()
+            TabbedPanelItem:
+                text: 'Icon'
+                #:import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
+                FileChooserThumbView:
+                    id: vpicker
+                    path: root.path
+                    on_path: root.path = args[1]
+                    on_selection: root.selection = args[1]
+                    selection: root.selection
         BoxLayout:
             size_hint: 1, None
             height: 30
             orientation: "horizontal"
             Button:
                 text: "Apply"
-                on_press: set_last_dir(root, fpicker.path); root.dismiss(); root.cb(root)
+                on_press: set_last_dir(root, root.path); root.dismiss(); root.cb(root)
             Button:
                 text: "Cancel"
                 on_press: root.dismiss()
@@ -508,8 +536,8 @@
         do_default_tab: False
         TabbedPanelItem:
             text: "Source"
-            FileChooserListView:
-            #FileChooserThumbView:
+            #FileChooserListView:
+            FileChooserThumbView:
                 id: fpicker
                 #:import split os.path.split
                 ##path: split(root.dimension[0])[0] if root.dimension[0] else "."

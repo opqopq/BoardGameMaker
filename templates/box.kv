@@ -20,9 +20,7 @@
 		pos: root.card_depth, 0
 		size: root.card_width, root.card_depth
 
-
 	ImageField:
-		#angle: 90
 		id: Left
 		allow_stretch: True
 		keep_ratio: False
@@ -36,6 +34,7 @@
 		pos: root.card_depth+root.card_width, 3*root.card_depth/2
 		size:  root.card_depth, root.card_height
 		source: Left.source
+		angle: 180
 
 	ImageField:
 		allow_stretch: True
@@ -73,6 +72,18 @@
 		size: .8*root.card_depth, root.card_height
 		bg_color: .8,.8,.8,1
 		line_color: 0,0,0,1
+
+	RectangleField:
+		pos_hint: {'y': 0.58, 'x': 0.0}
+		corner_radius: 92
+		z: -1
+		size_hint: (0.59, 0.21)
+
+	RectangleField:
+		pos_hint: {'y': 0.21, 'x': 0.0}
+		corner_radius: 92
+		z: -1
+		size_hint: (0.59, 0.21)
 
 <-MyRectangleField@RectangleField>:
     size_hint: None, None

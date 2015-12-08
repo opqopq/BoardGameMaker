@@ -52,16 +52,6 @@
             angle: -self.angle
             origin: self.center # if scatter self.width/2, self.height/2
             axis: 0,0,1
-#    FontIcon:
-#        is_context: True
-#        icon: root.Type
-#        size_hint: None, None
-#        font_size: 24
-#        #:import FloatField fields.FloatField
-#        pos: (root.width/2-self.width/2, -self.height/2) if not isinstance(root, FloatField) else (root.center_x-self.width/2, root.y-self.height/2)
-#        opacity: 1 if root.designed else 0
-#        color: 0,0,0,1
-
 
 <Field>:
     size_hint: None, None
@@ -113,7 +103,6 @@
     allow_stretch: True
     keep_ratio: False
     mipmap: True
-
 
 <ImageChoiceField>:
     source: self.choices[self.selection] if self.selection in self.choices else ""
@@ -177,13 +166,12 @@
     canvas:
         Color:
             rgba: get_color(self.fg_color)
-        # in 1.9.1 RoundedRectangle:
+        RoundedRectangle:
             #pos: self.pos
-        Rectangle:
             size: self.size
             source: self.source
             texture: self.texture
-            #in 1.9.1 radius: self.corner_radius
+            radius: [self.corner_radius]
 
 <GridField>:
     canvas.after:

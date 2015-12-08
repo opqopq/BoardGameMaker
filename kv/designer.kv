@@ -158,12 +158,27 @@
     text: "Position"
     values: ['Left', 'Right', 'Top', 'Bottom', 'Cent H', 'Cent V'] #"Copy
 
-<WrappedLabel@ScrollView>:
-    text: ""
-    Label:
-        text_size: self.size
-        valign: 'top'
-        text: root.text
+#:import ScrollLabel kivy.garden.scrolllabel.ScrollLabel
+
+<KVPreview@Popup>:
+    title: 'Template Text Preview'
+    size_hint: .9,.9
+    BoxLayout:
+        orientation: 'vertical'
+        ScrollLabel:
+            id: preview
+            halign: 'left'
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: 'Copy Text'
+                on_press: from kivy.core.clipboard._clipboard_sdl2 import _set_text ;  _set_text (preview.text)
+            Button:
+                text: 'Cancel'
+                on_press: root.dismiss()
+
+
 
 <BGDesigner>:
     BoxLayout:
@@ -549,7 +564,7 @@
                             text: "Tmpl Preview"
                             icon: 'print'
                             #:import F kivy.factory.Factory
-                            on_press: C = F.WrappedLabel(size=(.8*root.width,.8*root.height)) ; C.text=root.export_kv().replace('\t','  ').replace('\r\n','\n'); F.Popup(title='Template Text Preview', size_hint=(None,None), width=.9*root.width, height=.9*root.height, pos=(.1*root.width,.1*root.height), content=C).open()
+                            on_press: text = root.export_kv().replace('\t','    ').replace('\r\n','\n'); p = F.KVPreview(); p.ids.preview.text = text; p.open()
                         Icon:
                             icon: 'save'
                             on_press: root.save()

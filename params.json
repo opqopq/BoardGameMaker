@@ -27,7 +27,7 @@
     "desc": "Export format for Deck file, between CSV, JSON & XSLX",
     "section": "Export",
     "key": "format",
-    "options": ["xslx","csv"]
+    "options": ["xlsx","csv"]
     },
 
     {

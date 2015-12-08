@@ -308,7 +308,10 @@ class BGTemplate(Field, RelativeLayout):
         t,i,d = self.export_field(level, save_cm, relativ, save_relpath)
         #Change the first line
         t[0] =  "%s<%s@BGTemplate>:"%((level-1)*'\t',self.template_name)
-        return t,i,d
+        if len(i):
+            Logger.debug('Removing first Import to avoid doublie include: ' + i[0])
+            i.pop(0)
+        return t, i, d
 
 #Now define the cache foundry for all templates
 from kivy._event import EventDispatcher
@@ -396,6 +399,7 @@ def LoadTemplateFolder(folder="templates"):
 from conf import CP
 if CP.getboolean('Startup', 'LOAD_TMPL_LIB'):
     LoadTemplateFolder()
+
 
 def find_template_path(filename):
     from os.path import abspath, isfile, join
