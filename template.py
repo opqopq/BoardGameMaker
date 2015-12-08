@@ -6,9 +6,8 @@ from kivy.properties import NumericProperty, OptionProperty, ObjectProperty, Dic
 from fields import ImageField
 from kivy.factory import Factory
 from collections import OrderedDict
-from editors import editors_map, FileEditor, TemplateFileEditor, TextEditor
+from editors import editors_map, FileEditor, TemplateFileEditor, TextEditor, DirectivesEditor
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.carousel import Carousel
 from utils import path_reader, find_path
 from kivy.logger import Logger
 
@@ -20,7 +19,9 @@ class BGTemplate(Field, RelativeLayout):
     not_exported = ['ids', 'print_index', 'template_name', 'src']
     src = StringProperty()
 
-    attrs = {'template_name': TextEditor}
+    attrs = {'template_name': TextEditor, 'directives': DirectivesEditor}
+
+
 
     #Now for the special attributes only used when printing the objects
     print_index = DictProperty()
@@ -164,7 +165,7 @@ class BGTemplate(Field, RelativeLayout):
                                     _res = 0
                                     theval = eval(v.value, eval_context)
                                     if len(getattr(tc,p)) != len(theval):
-                                        raise ValueError('Compared iterables do not have the same list size')
+                                        raise ValueError('Compared iterables do not have the same list size: %s - %s '%(getattr(tc,p), theval))
                                     for _v,_cv in zip(getattr(tc,p), theval):
                                         if _v!=_cv:
                                             _res+=1

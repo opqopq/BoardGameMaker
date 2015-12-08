@@ -111,9 +111,9 @@
                     size_hint_y: None
                     on_minimum_height: self.height = self.minimum_height
                     id: picker
-                    cols: 2
+                    cols: root.num_cols
                     Label:
-                        text: "Selection"
+                        text: "#"
                         size_hint: .1, None
                         height: 30
                         canvas.before:
@@ -166,7 +166,7 @@
                     id: imgpicker
                     cols: 4
                     Label:
-                        text: "Selection"
+                        text: "#"
                         size_hint: .15, None
                         height: 30
                     Label:
@@ -224,7 +224,7 @@
                     id: imgpicker
                     cols: 3
                     Label:
-                        text: "Selection"
+                        text: "#"
                         size_hint: .15, None
                         height: 30
                     Label:
@@ -272,7 +272,7 @@
                     id: colorpicker
                     cols: 3
                     Label:
-                        text: "Selection"
+                        text: "#"
                         size_hint: .3, None
                         height: 30
                     Label:
@@ -490,7 +490,7 @@
                     id: point_grid
                     cols: 3
                     Label:
-                        text: "Selection"
+                        text: "#"
                         size_hint: .3, None
                         height: 30
                     Label:

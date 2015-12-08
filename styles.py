@@ -32,11 +32,7 @@ class Shadow(Style):
     shadow_opacity = NumericProperty(.5)
     attrs = {'offset': AdvancedIntEditor, 'shadow_opacity': FloatEditor}
 
-class Rotated(Style):
-    kvname = 'rotated'
-    rotation = NumericProperty(0)
-    attrs = {'rotation': AdvancedIntEditor}
-	
+
 class StyleList(EventDispatcher):
     styles = DictProperty()
 

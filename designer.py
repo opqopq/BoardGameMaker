@@ -186,7 +186,7 @@ class BGDesigner(FloatLayout):
         child.target = target
         return child
 
-    def display_field_attributes(self, target):
+    def display_field_attributes(self, target, force_refresh = False):
         #Create Nodes based on the menu info of the fields
         nodes_done = set()
         nodes_done.add('styles')
@@ -200,7 +200,7 @@ class BGDesigner(FloatLayout):
         params.root.nodes = [] # as clear widgets does not works
         params.root.text = "%s: %s"%(target.Type,target.name)
 
-        if target in self.params_cache:
+        if target in self.params_cache and not force_refresh:
             params.root.nodes = self.params_cache[target]
             params._trigger_layout()
             return
@@ -257,13 +257,11 @@ class BGDesigner(FloatLayout):
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
     def load(self, templateName):
-        print 'designer lad', templateName
         #First clean a little
         self.clear()
         if '@' in templateName:
             #load from file:
             from template import BGTemplate
-            print '[Designer] Load Template:',
             template = BGTemplate.FromFile(templateName)[-1]
         else:
             template = templateList[templateName]
@@ -271,14 +269,11 @@ class BGDesigner(FloatLayout):
         #Create a copy
         self.current_template = template
         ##self.insert_field(template, is_root=True)
-
-        print 'loading template', self.current_template.template_name
         #Have to do that, as chilndre is in the wrong way  !
         ordered_child = [c for c in template.children if isinstance(c, BaseField)]
         ordered_child.sort(key=lambda x:x.z)
         for target in ordered_child:
             template.remove_widget(target)
-            print 'inserting field ', target
             self.insert_field(target)
 
     def clear(self):

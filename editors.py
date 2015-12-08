@@ -259,6 +259,29 @@ class ListEditor(Editor):
         t.target_attr = name
         return t
 
+class DirectivesEditor(Editor):
+    def getWidgets(self, name, keyname, **kwargs):
+        t = Button(text="Define")
+        def cblist(value):
+            try:
+                setattr(self.target, keyname, value)
+                t.stored_value = value
+            except ValueError, E:
+                log(E)
+        def button_callback(instance):
+            from kivy.core.window import Window
+            size = Vector(Window.size)*.9
+            title = 'Choose Values for %s'%name
+            popup = DirectivesValueChoiceEditorPopup(title=title, name=name, size=size, pos=(0,0), cb=cblist, keyname=getattr(self.target, keyname))
+            popup.load_items({'set':'set name value', 'import': 'import name from module.name', 'include': 'include filepath'})
+            popup.load_choices(getattr(self.target, keyname))
+            popup.open()
+        t.bind(on_press=button_callback)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
 
 class TransfoListEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
@@ -970,9 +993,10 @@ class StyleEditor(Editor):
         t=Button(text="Define")
         def cbimg(value):
             try:
-                #print 'attr', self.target, keyname, value, type(value)
                 setattr(self.target, keyname, value)
                 t.stored_value = value
+                #also trigger that the designer force a refresh on this
+                self.target.designer.display_field_attributes(self.target,force_refresh=True)
             except ValueError,E:
 
                 log(E)
@@ -1101,6 +1125,7 @@ class DictChoiceEditorPopup(Popup):
     name = StringProperty()
     cb = ObjectProperty()
     items = DictProperty()
+    num_cols = NumericProperty(2)
 
     def load_items(self, items):
         self.items = items.copy()
@@ -1138,10 +1163,10 @@ class DictChoiceEditorPopup(Popup):
         grid = self.ids.picker
         cs = list(reversed(grid.children[:]))
         to_remove = list()
-        for i in reversed(range((len(grid.children)-2)/2)):
-            cb = cs[i*2+2]
+        for i in reversed(range((len(grid.children)-self.num_cols)/self.num_cols)):
+            cb = cs[i*self.num_cols+self.num_cols]
             if cb.active:
-                to_remove.extend(cs[i*2+2:i*2+4])
+                to_remove.extend(cs[i*self.num_cols+self.num_cols:i*self.num_cols+2*self.num_cols])
         for elt in to_remove:
             grid.remove_widget(elt)
 
@@ -1149,10 +1174,54 @@ class DictChoiceEditorPopup(Popup):
         choices = list()
         grid = self.ids.picker
         cs = list(reversed(grid.children[:]))
-        for i in reversed(range((len(grid.children)-2)/2)):
-            name = cs[i*2+3].text
+        for i in reversed(range((len(grid.children)-self.num_cols)/self.num_cols)):
+            name = cs[i*self.num_cols+self.num_cols+1].text
             choices.append(name)
         self.cb([self.items[x] for x in choices])
+
+
+class DirectivesValueChoiceEditorPopup(DictChoiceEditorPopup):
+    num_cols = NumericProperty(3)
+
+    def compute(self):
+        choices = list()
+        grid = self.ids.picker
+        cs = list(reversed(grid.children[:]))
+        for i in reversed(range((len(grid.children)-self.num_cols)/self.num_cols)):
+            directives = cs[i*self.num_cols+self.num_cols+2].text
+            choices.append(directives)
+        self.cb(choices)
+
+
+    def __init__(self, **kwargs):
+        super(DirectivesValueChoiceEditorPopup, self).__init__(**kwargs)
+        from kivy.uix.label import Label
+        self.ids.picker.add_widget(Label(text='Directive', size_hint=(2,None), height=30))
+        print 'done for that'
+
+    def add_item(self):
+        from kivy.uix.label import Label
+        from kivy.uix.checkbox import CheckBox
+        from kivy.uix.textinput import TextInput
+        selection = self.ids.chooser.selected_node
+        picker = self.ids.picker
+        if selection:
+            name = selection.text
+            picker.add_widget(CheckBox(size_hint=(.1,None), height= 30))
+            picker.add_widget(Label(text=name, size_hint=(.9, None), height=30))
+            picker.add_widget(TextInput(text=self.items[name], size_hint=(2, None), height=30, multiline=False))
+
+    def load_choices(self, choices):
+        from kivy.uix.label import Label
+        from kivy.uix.checkbox import CheckBox
+        from kivy.uix.textinput import TextInput
+        picker = self.ids.picker
+        # choice item are item from self.item dict. convert this to key, to find string
+        for c in choices:
+            name = c.split()[0]
+            picker.add_widget(CheckBox(size_hint=(.2,None), height=30))
+            picker.add_widget(Label(text=name, size_hint=(.2, None), height=30))
+            picker.add_widget(TextInput(text=c, size_hint=(.6, None), height=30, multiline=False))
 
 
 class ImageChoiceEditorPopup(Popup):

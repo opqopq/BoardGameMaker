@@ -5,7 +5,6 @@ VERSION = 0,2
 todos = [
     'P3: change virtual screen stack...',
     "P3: browser v2 - file & links",
-    "redo styles in designer switching to a popup with all style params",
     "add custom klass import in designer ?????: when defining a klasss in kv or py it could nbe loaded in designer",
     "P1: fix SubTemplate Export KV: in here, it is the template content that is put in the KV, not the templat eitself",
     "Create a base parameter for template: all source will be read and save as realpath(base). If base is none, then base is the path of the template file once loaded",

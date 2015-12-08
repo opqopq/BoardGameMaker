@@ -222,6 +222,8 @@ class BaseField(FocusBehavior):
         self.cls = [x.lower() for x in styles]
         #do not do full apply through Builder.apply(self): this will trigger full consumption
 
+        #it should be noted that, if rule are suppressed from styles, then the widget will not diretly reflect that
+
     def on_designed(self,instance, designed):
         if designed:
             drule = [x for x in Builder.rules if x[0].key == 'designed'][0][1]
@@ -1170,7 +1172,7 @@ class BorderField(RectangleField):
 class GridField(ShapeField):
     cols = NumericProperty(5)
     rows = NumericProperty(5)
-    attrs = {'cols': AdvancedIntEditor, 'rows': AdvancedIntEditor, 'images': ImageChoiceEditor}
+    attrs = {'cols': AdvancedIntEditor, 'rows': AdvancedIntEditor} #, 'images': ImageChoiceEditor}
     points = ListProperty()
     images = DictProperty()
     not_exported = ['points']
