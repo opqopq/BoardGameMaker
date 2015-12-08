@@ -81,6 +81,18 @@ from kivy.app import App
 class BGMApp(App):
     title = "Board Game Maker"
 
+    def load_file(self, window, filepath):
+        if filepath.endswith('.kv'):
+            self.set_screen('Designer')
+            self.root.ids['designer'].load("@%s"%filepath)
+        elif filepath.endswith('.xlsx'):
+            self.set_screen('Deck')
+            self.root.ids['deck'].load_file(filepath)
+        elif filepath.endswith('.csv'):
+            self.set_screen('Deck')
+            self.root.ids['deck'].load_file_csv(filepath)
+
+
     def build(self):
         from conf import CP, gamepath
         from utils import path_reader
@@ -114,6 +126,10 @@ class BGMApp(App):
                     elif TARGET.endswith('.csv'):
                         root.ids.deck.load_file_csv(TARGET)
             Clock.schedule_once(launcher,.2)
+        #Dropfile Mngt
+        from kivy.core.window import Window
+        Window.bind(on_dropfile=self.load_file)
+
         return root
 
     def alert(self, text="", status_color=(0, 0, 0, 1), keep = False):
