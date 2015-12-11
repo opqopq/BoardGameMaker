@@ -20,52 +20,6 @@ from kivy.uix.widget import WidgetMetaclass
 from kivy.uix.relativelayout import RelativeLayout
 from styles import getStyle # Pre-import styles to register them all
 
-
-####################################################################
-# Enhance AsyncImage to capture the file path of the cached image  #
-####################################################################
-
-class MyAsyncImage(AsyncImage):
-    url = StringProperty()
-
-    def __init__(self, **kwargs):
-        super(MyAsyncImage,self).__init__(**kwargs)
-        self.bind(url= self._load_source)
-        if self.url:
-            self._load_source()
-
-    def on_url(self, instance, value):
-
-        print 'on url', instance, value,
-        #self._load_source()
-        print 'done'
-
-    def _load_source(self, *args):
-        from kivy.resources import resource_find
-        from kivy.uix.image import Loader
-        from kivy.network.urlrequest import UrlRequest
-        from tempfile import mktemp
-
-        source = self.url
-        if not source:
-            if self._coreimage is not None:
-                self._coreimage.unbind(on_texture=self._on_tex_change)
-            self.texture = None
-            self._coreimage = None
-        else:
-            if not self.is_uri(source):
-                self.source = resource_find(source)
-            else:
-                #downlaod file to temp file then save source
-                source = mktemp()
-                UrlRequest(self.url,file_path = source, on_success = self._on_source_load)
-                print 'creating source', source
-                self._source = source
-
-    def _on_source_load(self, *args):
-        print '_onsrouce called', self, self.source, args
-        self.source = self._source
-
 ###############################################
 #        Field                                #
 ###############################################
@@ -811,8 +765,13 @@ class SymbolField(SymbolLabel, TextField):
     attrs = {'symbols': ImageChoiceEditor}
 
 
-class ImageField(Image, FloatField):
-    attrs = OrderedDict([('source', FileEditor), ('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
+class ImageField(AsyncImage, FloatField):
+    attrs = OrderedDict([
+        ('source', FileEditor),
+        ('url',AdvancedTextEditor),
+        ('allow_stretch', BooleanEditor),
+        ('keep_ratio', BooleanEditor)
+    ])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
     source_filters = ['*.jpg','*.gif','*.jpeg','*.bmp','*.png']
@@ -970,6 +929,7 @@ class ColorField(Field):
     rgba=ListProperty((1,1,1,1))
     attrs={'rgba': ColorEditor}
     default_attr = 'rgba'
+
 
 class ColorChoiceField(Field):
     "This widget will display an image base on a choice, helds in choices dict"
@@ -1159,6 +1119,10 @@ class BorderField(RectangleField):
 
     def on_source(self,instance, source):
         super(BorderField,self).on_source(instance,source)
+        #Replace fg color by transparent color
+        Logger.debug('Change FG color to trnasparent when adding source in %s'%self)
+        r,g,b,a = self.fg_color
+        self.fg_color = r,g,b,0
         self.on_auto_color(self,self.auto_color)
 
     def on_auto_color(self,instance, value):
@@ -1168,6 +1132,7 @@ class BorderField(RectangleField):
                 res = colorz(self.source, n=1)
                 from kivy.utils import get_color_from_hex
                 self.line_color = get_color_from_hex(res[0])
+
 
 class GridField(ShapeField):
     cols = NumericProperty(5)

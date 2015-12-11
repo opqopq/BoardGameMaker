@@ -13,14 +13,14 @@ todos = [
     "add a layout section editor in the edit of stackpart: at the bottom left for template. When editing that, this will issue value for layout",
     'P2: change font edit popup',
     "repair subimgafield",
-    "how to record that a script has been pushed on an image? like splitter, or "
+    "how to record that a script has been pushed on an image? like splitter, or ",
 ]
 
 for i, todo in enumerate(todos):
     print i, todo
 
 from kivy.logger import Logger
-Logger.setLevel('WARNING')
+#Logger.setLevel('WARNING')
 
 ##############################################
 from kivy.lang import Builder

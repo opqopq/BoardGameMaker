@@ -400,7 +400,7 @@ class BGGeekBrowser(BoxLayout):
             # ~ 3. create subfolders: rule, img, old , export
             os.mkdir(os.path.join(path, 'rules'))
             os.mkdir(os.path.join(path, 'img'))
-            os.mkdir(os.path.join(path, 'old'))
+            os.mkdir(os.path.join(path, 'download'))
             os.mkdir(os.path.join(path, 'export-%s'%gameName))
         output = file(os.path.join(path, 'description.txt'),'wb')
         output.write('Game Description:\n')

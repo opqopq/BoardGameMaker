@@ -166,12 +166,13 @@
     canvas:
         Color:
             rgba: get_color(self.fg_color)
-        RoundedRectangle:
+        #RoundedRectangle:
+        Rectangle:
             #pos: self.pos
             size: self.size
             source: self.source
             texture: self.texture
-            radius: [self.corner_radius]
+            #radius: [self.corner_radius]
 
 <GridField>:
     canvas.after:

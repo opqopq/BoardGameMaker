@@ -23,9 +23,27 @@ rtoh = lambda rgb: '#%s' % ''.join(('%02x' % p for p in rgb))
 
 def colorz(filename, n=3):
     img = Image.open(filename)
+    return magic_color(img,n)
+
+def colorz_texture(texture, n=3):
+    img = Image.frombytes("RGBA", texture.size, texture.pixels, 'raw', 'RGBA', 0, 1)
+    return magic_color(img, n)
+
+def colorz_pil(pilimg, n=3):
+    return magic_color(pilimg,n)
+
+def get_significant_color(obj):
+    if isinstance(obj, basestring):
+        return colorz(obj,1)[0]
+    if isinstance(obj, Image.Image):
+        return colorz_pil(obj,1)[0]
+    res = colorz_texture(obj,1)[0]
+    print 'get color', res
+    return res
+
+def magic_color(img,n):
     img.thumbnail((200, 200))
     w, h = img.size
-
     points = get_points(img)
     clusters = kmeans(points, n, 1)
     rgbs = [map(int, c.center.coords) for c in clusters]

@@ -54,8 +54,9 @@ class BGTemplate(Field, RelativeLayout):
 
     @classmethod
     def FromFile(cls, filename, use_cache = False):
+        Logger.info('From File with ' + str(filename))
         if not use_cache:
-            Logger.info('From File with ' + str(filename) + ' without cache')
+            Logger.info(' From File without cache')
         from os.path import split
         from kivy.resources import resource_add_path
         resource_add_path(split(filename)[0])

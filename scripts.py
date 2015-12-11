@@ -283,6 +283,19 @@ class Pocketer(Script):
         from kivy.clock import Clock
         Clock.schedule_once(inner,-1)
 
+class Quantity(Script):
+    name = 'Quantity'
+    help = 'Set quantity for each stack element'
+
+    qt = NumericProperty(1)
+
+    vars = {'qt': AdvancedIntEditor}
+
+    def execute(self):
+        for s in self.stack.children:
+            s.qt = self.qt
+
+
 scripts = [x for x in globals().values() if type(x) == type(Script) and issubclass(x, Script) and x is not Script]
 for s in scripts:
     scriptList.register(s())

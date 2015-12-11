@@ -248,6 +248,7 @@ class StackPart(ButtonBehavior, BoxLayout):
 
 
     def realise(self,withValue = False, use_cache=False):
+        Logger.info('Calling realisze on %s (with Value %s / use_cache %s'%(self,withValue,use_cache))
         #Force the creation of an image from self.template, thourhg real display
         #Skipt of computed image exists
         if self.image:
@@ -258,7 +259,7 @@ class StackPart(ButtonBehavior, BoxLayout):
         if not self.template:
             return
         try:
-            if not use_cache: Logger.info( '[SGM]Realize StackPart calling from file')
+            if not use_cache: Logger.info('[SGM]Realize StackPart calling from file')
             tmpl = BGTemplate.FromFile(self.template, use_cache)[-1]
         except IndexError:
             Logger.warn( 'Warning: template file %s contains no Template !!'%self.template)

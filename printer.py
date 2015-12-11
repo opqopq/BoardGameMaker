@@ -85,8 +85,8 @@ class PDFBook:
             if face == 'F':
                 x, y = col * self.x + left, height-(1+row)*self.y - top
             else:
-                #x, y = width - (1+col)*self.x - left - right, height-(1+row)*self.y - top
-                x, y = width - (1+col)*self.x - right, height-(1+row)*self.y - top
+                x, y = width - (1+col)*self.x - left - right, height-(1+row)*self.y - top
+                #x, y = width - (1+col)*self.x - right, height-(1+row)*self.y - top
             #self.x & slef.y has already been setp by calculate_size
             #Check is there is a layout that could be used, just for the angle
             if getattr(item, 'layout',0):
