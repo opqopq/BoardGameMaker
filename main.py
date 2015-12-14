@@ -14,6 +14,8 @@ todos = [
     'P2: change font edit popup',
     "repair subimgafield",
     "how to record that a script has been pushed on an image? like splitter, or ",
+    "add register function for field, script, template",
+    'add a way to load & write multiple template / kv file'
 ]
 
 for i, todo in enumerate(todos):
@@ -128,6 +130,10 @@ class BGMApp(App):
         #Dropfile Mngt
         from kivy.core.window import Window
         Window.bind(on_dropfile=self.load_file)
+        #Filling ENV Global Variable
+        from conf import fill_env
+        Clock.schedule_once(fill_env,1)
+
 
         return root
 

@@ -768,7 +768,6 @@ class SymbolField(SymbolLabel, TextField):
 class ImageField(AsyncImage, FloatField):
     attrs = OrderedDict([
         ('source', FileEditor),
-        ('url',AdvancedTextEditor),
         ('allow_stretch', BooleanEditor),
         ('keep_ratio', BooleanEditor)
     ])

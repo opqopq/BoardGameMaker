@@ -234,6 +234,27 @@ class Stack(GridLayout):
                 return False
         Clock.schedule_interval(inner, .1)
 
+    def promote(self, child):
+        if child not in self.children:
+            Logger.warn('Child promoted not in stack (%s). Aborting'%child)
+            return
+        index = self.children.index(child)
+        newindex = min(index+1, len(self.children))
+        self.remove_widget(child)
+        self.add_widget(child, index=newindex)
+        #Scroll the view
+        self.parent.scroll_to(child)
+
+    def demote(self, child):
+        if child not in self.children:
+            Logger.warn('Child demoted not in stack (%s). Abordting'%child)
+            return
+        index = self.children.index(child)
+        newindex = max(index-1,0)
+        self.remove_widget(child)
+        self.add_widget(child, index=newindex)
+        self.parent.scroll_to(child)
+
 
 class StackPart(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
@@ -294,15 +315,13 @@ class StackPart(ButtonBehavior, BoxLayout):
             self.realise(True)
         if self.selected:
             from kivy.uix.boxlayout import BoxLayout
-
-            BOX = BoxLayout(size_hint=(None, None), orientation = 'vertical', spacing=10)
+            BOX = BoxLayout(size_hint=(None, None), orientation='vertical', spacing=10)
+            W = 90
             #Add Remove Button
-            b = Factory.get('HiddenRemoveButton')(icon='trash')
+            b = Factory.get('HiddenRemoveButton')(icon='trash', width= W)
             b.bind(on_press=lambda x: self.parent.remove_widget(self))
             #self.add_widget(b)
-            from kivy.animation import Animation
-            W = 90
-            be = Factory.get('HiddenRemoveButton')(icon='edit')
+            be = Factory.get('HiddenRemoveButton')(icon='edit', width= W)
             if self.template:#it is a template: add edit & export buttons
                 def inner(*args):
                     p = Factory.get('TemplateEditPopup')()
@@ -359,20 +378,25 @@ class StackPart(ButtonBehavior, BoxLayout):
             be.bind(on_press = inner)
             #self.add_widget(be)
             BOX.add_widget(be)
-            anim = Animation(width=W, duration=.1)
-            anim.start(be)
             #Img Export button
-            bx = Factory.get('HiddenRemoveButton')(icon='export')
+            bx = Factory.get('HiddenRemoveButton')(icon='export', width= W)
             bx.bind(on_press=lambda x: self.img_export())
             BOX.add_widget(bx)
-            anim = Animation(width=W, duration=.1)
-            anim.start(bx)
             BOX.add_widget(b)
             self.add_widget(BOX)
-            anim = Animation(width=W, duration=.1)
-            anim.start(b)
+            #Now Also Add a second box, with Up & Down !!!
+            BOX = BoxLayout(size_hint=(None, None), orientation = 'vertical', spacing=0,width=30)
+            bx = Factory.get('HiddenRemoveButton')(icon='up-big')
+            bx.bind(on_press=lambda x: self.parent.promote(self))
+            BOX.add_widget(bx)
+            bx = Factory.get('HiddenRemoveButton')(icon='down-big')
+            bx.bind(on_press=lambda x: self.parent.demote(self))
+            BOX.add_widget(bx)
+            self.add_widget(BOX)
         else:
             self.remove_widget(self.children[0])
+            self.remove_widget(self.children[0])
+
             #if self.template:
             #    self.remove_widget(self.children[0])
 

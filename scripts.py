@@ -8,19 +8,18 @@ from kivy._event import EventDispatcher
 from kivy.properties import *
 from editors import *
 from sgm import StackPart
-from conf import ENV
 from utils import alert, start_file
-from collections import OrderedDict
-from kivy.lang import Observable
 from fields import Field
 
-BANNER = """#Available Globals are:
+BANNER = """
+#Available Globals are:
 # root: Root Window
 # stack: Current Stack
 # StackPart: item of stack
 # os, os.path
 # alert & log: debug
-# prepare_pdf()->test.pdf"""
+# prepare_pdf()->test.pdf
+"""
 
 
 class Script(Field):
@@ -36,17 +35,6 @@ class Script(Field):
 
     def execute(self):
         pass
-
-class FileScript(Script):
-    source = StringProperty()
-    vars = {'source': FileEditor}
-    name = "File Loader"
-
-    def execute(self):
-        from conf import ENV, fill_env
-        fill_env()
-        if self.source:
-            execfile(self.source, ENV)
 
 class BGScriptEditor(BoxLayout):
     modified = BooleanProperty(False)
@@ -122,18 +110,6 @@ class ScriptList(EventDispatcher):
         self[scr.name] = scr
 
 scriptList = ScriptList()
-
-class Idle(Script):
-    name = "IDLE"
-    help = "Does nothing"
-
-    tst_param = StringProperty('toto')
-    num_param = NumericProperty(0)
-
-    vars = {'tst_param': AdvancedTextEditor, 'num_param': IntEditor}
-
-    def execute(self):
-        print 'idle executed'
 
 class SplitMaker(Script):
     name = "SplitMaker"
@@ -260,13 +236,13 @@ class Pocketer(Script):
         from template import BGTemplate
         tmpl = BGTemplate.FromFile('templates/pocketmode.kv')[0]
         from sgm import StackPart
-        pim = tmpl.toPILImage()
         pm = StackPart()
         for i in range(1,9):
             name = 'page%d'%i
             imgfield = tmpl.ids[name]
             pilimage = imgs[i-1]
             flip = pilimage.transpose(FLIP_TOP_BOTTOM)
+            flip = flip.convert('RGBA')
             ktext = Texture.create(size=flip.size)
             ktext.blit_buffer(flip.tobytes(), colorfmt=img_modes[flip.mode])
             imgfield.texture = ktext
@@ -274,7 +250,7 @@ class Pocketer(Script):
             #Here is hould loop on the template to apply them on values
             from kivy.base import EventLoop
             EventLoop.idle()
-            pim = tmpl.toPILImage().rotate(90)
+            pim = tmpl.toPILImage(for_print = True).rotate(90)
             pm.setImage(pim)
             self.stack.add_widget(pm)
         if self.replace:

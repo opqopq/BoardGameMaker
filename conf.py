@@ -103,9 +103,6 @@ def fill_env(*args):
     #ENV['prepare_pdf'] = prepare_pdf
 
 
-from kivy.clock import Clock
-Clock.schedule_once(fill_env,1)
-
 def CreateConfigPanel():
     from kivy.uix.settings import SettingsWithTabbedPanel as Settings
     settings = Settings(name='Settings')

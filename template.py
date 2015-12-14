@@ -223,6 +223,7 @@ class BGTemplate(Field, RelativeLayout):
         return FromFieldTemplate()
 
     def toImage(self, bg_color=(1,1,1,0), for_print = False):
+        print 'toImage with bg_color', self, bg_color
         #create image widget with texture == to a snapshot of me
         from kivy.graphics import Translate, Fbo, ClearColor, ClearBuffers, Scale
         from kivy.core.image import Image as CoreImage
@@ -240,6 +241,7 @@ class BGTemplate(Field, RelativeLayout):
                     continue
                 if children.printed:
                     continue
+                Logger.debug('Hiding item not printed %s'%children)
                 disappear.add((children, children.opacity))
                 children.opacity = 0
 
@@ -266,9 +268,9 @@ class BGTemplate(Field, RelativeLayout):
             self.parent.canvas.insert(canvas_parent_index, self.canvas)
         return cim
 
-    def toPILImage(self):
+    def toPILImage(self,bg_color=(1,1,1,0), for_print = False):
         from PIL.Image import frombuffer
-        cim = self.toImage()
+        cim = self.toImage(bg_color, for_print)
         return frombuffer('RGBA', cim.size, cim._texture.pixels, 'raw', 'RGBA', 0, 1)
 
     def blank(self):
