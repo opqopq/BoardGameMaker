@@ -11,11 +11,11 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from fields import BaseField
 from template import BGTemplate, templateList
-from conf import card_format
 from deck import TreeViewField
 from os.path import isfile
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeView
+from kivy.uix.relativelayout import RelativeLayout
 
 
 class RuledScatter(ScatterLayout):
@@ -36,15 +36,23 @@ class RuledScatter(ScatterLayout):
             self.vtick = [Line(points=(-10, y*cm(1),+5, y*cm(1))) for y in range(2+int(self.height/cm(1)))]
 
     def on_touch_up(self, touch):
-        if self.collide_point(*touch.pos):
-            if self == touch.grab_current:
+        #clear only if we clicked in the stencil view
+        CLEAR = self.parent.collide_point(*touch.pos)
+        for widget in self.designer.current_template.children:
+            if widget.collide_point(*widget.parent.to_widget(*touch.pos)):
+                CLEAR = False
+        if CLEAR:
                 self.designer.selections = dict()
                 self.designer.last_selected = None
-
         return ScatterLayout.on_touch_up(self, touch)
 
 
 class TreeFieldEntry(TreeViewNode, BoxLayout):
+    target = ObjectProperty(None)
+    designer = ObjectProperty()
+
+
+class TreeTmplFieldEntry(TreeViewNode, BoxLayout):
     target = ObjectProperty(None)
     designer = ObjectProperty()
 
@@ -54,7 +62,7 @@ class TmplChoicePopup(Popup):
 
 
 class BGDesigner(FloatLayout):
-    current_template = ObjectProperty(BGTemplate(size=card_format.size), rebind= True)
+    current_template = ObjectProperty(None, rebind=True)
     selections = DictProperty(rebind=True)
     last_selected = ObjectProperty(rebind = True, allownone = True)
     nodes = DictProperty()
@@ -62,6 +70,8 @@ class BGDesigner(FloatLayout):
     _do_copy = None
     #String for holding the path at which template will be saved in the form name@path
     tmplPath = StringProperty()
+
+    templates = ListProperty()
 
     def __init__(self, **kwargs):
         super(BGDesigner,self).__init__(**kwargs)
@@ -99,37 +109,12 @@ class BGDesigner(FloatLayout):
         Clock.schedule_once(build)
         self.params_cache = dict()
 
-    def add_parent_field(self, field):
-        "Just like add field, but this parent field will surround the current selection"
-        if not self.selections:
-            from utils import alert
-            alert('Choose a field first', status_color=(1, .43,0.01))
-            return
-        from fields import fieldDict
-        klass = fieldDict.get(field.text, None)
-        target = klass()
-        child = self.selections[-1]
-        #Remove it from me
-        self.ids.content.remove_widget(child)
-        child_node = self.nodes[child]
-        self.ids.fields.remove_node(self.nodes[child])
-        #Add new field to me
-        parent_node = self.insert_field(target)
-        self.ids.fields.add_node(child_node, parent_node)
-        target.size = child.size
-        target.pos = child.pos
-        child.pos = 0,0 # move it at parent's origin
-        #Now add child back
-        target.add_widget(child)
-        self.selections = [target, ]
-        print 'here i should insert field info BELOW parent ! '
-
-    def add_template(self):
+    def add_template_field(self):
         from kivy.core.window import Window
         cp_width = min(Window.size)*.8
         cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
         from editors import TemplateFileEditorPopup
-        tcp = TemplateFileEditorPopup(pos= cp_pos, size= (cp_width,cp_width))
+        tcp = TemplateFileEditorPopup(pos=cp_pos, size=(cp_width, cp_width))
         tcp.name =' New Template Field'
         def cb(instance):
             s = instance.ids.fpicker.selection
@@ -142,9 +127,8 @@ class BGDesigner(FloatLayout):
                 from template import BGTemplate
                 print '[Designer] Add Template within template'
                 tmpl = BGTemplate.FromFile(tmplname).pop()
-                childrens = tmpl.ids.values()
                 node = self.insert_field(tmpl)
-                self.selections = {tmpl:None}
+                self.selections = {tmpl: None}
                 self.last_selected = tmpl
 
             else:
@@ -157,36 +141,30 @@ class BGDesigner(FloatLayout):
         from fields import fieldDict
         klass = fieldDict.get(field.text, None)
         target = klass(size=(100,100))
+
+        self.current_template.add_widget(target)
         self.insert_field(target)
-        #Select the new field
-        self.selections = {target:None}
+        #Select the new field on only this
+
+        self.selections = {target: None}
         self.last_selected = target
-        #Ensure it is put on top of the canvas
 
-        # somz add/remove to change layout
-        parent = self.ids.content
-        parent.remove_widget(target)
-        parent.add_widget(target)
-
-    def insert_field(self, target, parent = None, is_root=False):
-        #First add it so that poshint/size hint are respected
-        #why index as a second element: to ensure the order is not reversed
-        if parent is None:
-            self.ids.content.add_widget(target, len(self.ids.content.content.children))
-        else:
-            parent.add_widget(target)
+    def insert_field(self, target, parent=None, is_root=False):
         #Make Them designer still
         if not is_root:
             target.designed = True
         target.designer = self
         target.template = self.current_template
-        child = self.ids.fields.add_node(TreeFieldEntry(target=target, designer = self), parent)
+        if parent is None:
+            #print 'nodes is', self.nodes, id(self.current_template), [id(x) for x in self.nodes.keys()]
+            parent = self.nodes[self.current_template]
+        child = self.ids.fields.add_node(TreeFieldEntry(target=target, designer=self), parent)
         self.nodes[target] = child
         #Way to come back
         child.target = target
         return child
 
-    def display_field_attributes(self, target, force_refresh = False):
+    def display_field_attributes(self, target, force_refresh=False):
         #Create Nodes based on the menu info of the fields
         nodes_done = set()
         nodes_done.add('styles')
@@ -256,37 +234,55 @@ class BGDesigner(FloatLayout):
                 for param, editor in sklass.attrs.items():
                     self.ids.params.add_node(TreeViewField(name=param, editor=editor(target),size_hint_y= None, height=30), s_node)
 
+    def on_current_template(self, instance, value):
+        if value:
+            self.ids.content.clear_widgets()
+            self.ids.content.add_widget(value)
+
     def load(self, templateName):
         #First clean a little
         self.clear()
         if '@' in templateName:
             #load from file:
             from template import BGTemplate
-            template = BGTemplate.FromFile(templateName)[-1]
+            tmpls = BGTemplate.FromFile(templateName)
         else:
-            template = templateList[templateName]
+            tmpls= [templateList[templateName]]
         self.tmplPath = templateName
-        #Create a copy
-        self.current_template = template
-        ##self.insert_field(template, is_root=True)
+        for template in tmpls:
+            print 'adding template', template, template.name, template.template_name
+            self.add_template(template)
+
+    def add_template(self, tmpl=None):
+        if tmpl is None:
+            tmpl = BGTemplate()
+            tmpl.template_name = 'Tmpl%d'%(len(self.templates)+1)
+        self.templates.append(tmpl)
+        tmpl_node = self.ids.fields.add_node(TreeTmplFieldEntry(target=tmpl, designer=self))
+        self.nodes[tmpl] = tmpl_node
+        #This add the tmpl to content
+        self.current_template = tmpl
         #Have to do that, as chilndre is in the wrong way  !
-        ordered_child = [c for c in template.children if isinstance(c, BaseField)]
-        ordered_child.sort(key=lambda x:x.z)
+        ordered_child = [c for c in tmpl.children if isinstance(c, BaseField)]
+        ordered_child.sort(key=lambda x: x.z)
+        self.ids.fields.toggle_node(tmpl_node)
         for target in ordered_child:
-            template.remove_widget(target)
-            self.insert_field(target)
+            self.insert_field(target, parent=tmpl_node)
 
     def clear(self):
+        self.templates = list()
         for nodeIndex, node in self.nodes.items():
             self.ids.fields.remove_node(node)
-            self.ids.content.remove_widget(nodeIndex)
+        self.ids.content.clear_widgets()
+        self.nodes = dict()
 
-    def new(self,*args):
+    def new(self, *args):
         self.clear()
-        self.current_template = BGTemplate()
-        ##self.insert_field(self.current_template, is_root=True)
+        tmpl = BGTemplate()
+        tmpl.template_name = 'NewTemplate'
+        self.add_template(tmpl)
 
-    def save(self,PATH=None,*args):
+    def save(self,PATH=None, *args):
         from conf import CP
         from os.path import isfile, split, splitext
         if PATH is not None:
@@ -305,9 +301,9 @@ class BGDesigner(FloatLayout):
                 overwrite = CP.getboolean('Designer','OVERWRITE_SAVED_TMPL')
                 alert('Template Saved in Library as %s.kv'%self.current_template.template_name)
         else:
-            overwrite = CP.getboolean('Designer','OVERWRITE_SAVED_TMPL')
+            overwrite = CP.getboolean('Designer', 'OVERWRITE_SAVED_TMPL')
         exists = isfile(PATH)
-        kv = self.export_kv()
+        kv = self.export_kv(split(PATH)[0])
         if overwrite or not exists:
             file(PATH,'wb').write(kv)
         else:
@@ -329,7 +325,10 @@ class BGDesigner(FloatLayout):
                 child.realise(use_cache=True)
         print 'todo: how do I save pultiple template on a single KV file ? '
 
-    def export_kv(self):
+    def export_kv(self, PATH=None):
+        if PATH is None:
+            from conf import gamepath
+            PATH = gamepath
         from kivy.logger import Logger
         #print " -- EXPORT KV  -- "*10
         from conf import CP
@@ -343,39 +342,54 @@ class BGDesigner(FloatLayout):
         if not self.current_template.template_name:
             print 'Current template as no name: reverting to default'
             self.current_template.template_name = "TMPL"
-        tmpls, imports, directives = self.current_template.export_to_kv(level=1,save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
-        Logger.debug('export these imports to kv: ' + str(imports))
-        for node in self.ids.fields.root.nodes:
-            field = node.target
-            if field == self.current_template: #skip export of the root template: done above
-                continue
-            t, i, d = field.export_field(level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath)
-            tmpls.extend(t)
-            imports.extend(i)
-            directives.extend(d)
-        #Prepend include
-        if imports:
-            tmpls.insert(0, "")
-            for imp in imports:
-                if imp:
-                    tmpls.insert(0,"#:include %s"%imp)
-        Logger.debug("directives at the end" + str(directives))
-        if directives:
-            tmpls.insert(0,"")
-            for directive in directives:
-                tmpls.insert(0, "#:%s"%directive)
+        KV = list()
+        for template in self.templates:
+            tmpls, imports, directives = template.export_to_kv(level=1, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath, RELPATH=PATH)
+            Logger.debug('export these imports to kv: ' + str(imports))
+            print self.nodes, template
+            for node in self.nodes[template].nodes:
+                if not hasattr(node, 'target'):
+                    continue
+                field = node.target
+                if field == template: #skip export of the root template: done above
+                    continue
+                t, i, d = field.export_field(level=2, save_cm=save_cm, relativ=relativ, save_relpath=save_relpath, RELPATH=PATH)
+                tmpls.extend(t)
+                imports.extend(i)
+                directives.extend(d)
+            #Prepend include
+            if imports:
+                tmpls.insert(0, "")
+                for imp in imports:
+                    if imp:
+                        tmpls.insert(0,"#:include %s"%imp)
+            Logger.debug("directives at the end" + str(directives))
+            if directives:
+                tmpls.insert(0,"")
+                for directive in directives:
+                    tmpls.insert(0, "#:%s"%directive)
 
-        from os import linesep
-        return linesep.join(tmpls)
+            from os import linesep
+            KV.append(linesep.join(tmpls))
+            KV.extend('  ')
+        return linesep.join(KV)
 
     def on_last_selected(self, instance, field):
         tasks = self.ids.tasks
         tasks.clear_widgets()
         #Just make sure that the dos are aligned on the widget
-        children = self.ids.content.content.children
+        children = self.current_template.children
         for widget in children:
             widget.selected = widget in self.selections
         if field:
+            if field in self.templates:
+                self.current_template = field
+            else:
+                self.current_template = field.parent
+                #Re add to make it at the top
+                _p = field.parent
+                _p.remove_widget(field)
+                _p.add_widget(field)
             #Add some button around me
             from kivy.factory import Factory
             from kivy.uix.label import Label
@@ -416,7 +430,7 @@ class BGDesigner(FloatLayout):
                 ##self.display_field_attributes(field)
                 self.ids.fields.select_node(self.nodes[field])
 
-    def position_selection(self,*args):
+    def position_selection(self, *args):
         pos= args[1]
         conv ={'Left': 'x', 'Bottom': 'y', 'Cent H': 'center_x', 'Cent V': 'center_y'}
         attr = conv.get(pos, pos.lower())
@@ -439,10 +453,11 @@ class BGDesigner(FloatLayout):
                 alert('Choose target to copy size from')
                 self._do_copy =('size', unit)
 
-    def duplicate_selection(self,*args):
+    def duplicate_selection(self, *args):
         if self.selections:
             unit= self.last_selected
             copy = unit.Copy()
+            unit.parent.add_widget(copy)
             self.insert_field(copy)
             #Select the new field
             self.selections = dict()
@@ -452,7 +467,8 @@ class BGDesigner(FloatLayout):
     def remove_selection(self,*args):
         if self.selections:
             unit = self.last_selected
-            self.ids.content.remove_widget(unit)
+            parent = unit.parent
+            parent.remove_widget(unit)
             self.ids.fields.remove_node(self.nodes[unit])
             #Also tell the properties tree to update
             params = self.ids.params
@@ -461,7 +477,6 @@ class BGDesigner(FloatLayout):
             params.nodes = dict()
             params.root.nodes = [] # as clear widgets does not works
             params.root.text = ""
-
             #unselect all ?
             self.selections = dict()
             self.last_selected = None
@@ -526,16 +541,25 @@ class FieldTreeView(TreeView):
             if hasattr(selected_node,'target'):
                 self.designer.selections[selected_node.target] = None
                 self.designer.last_selected = selected_node.target
-                # somz add/remove to change layout
-                parent = selected_node.target.parent
-                parent.remove_widget(selected_node.target)
-                parent.add_widget(selected_node.target)
                 self.designer.display_field_attributes(selected_node.target)
+                if selected_node.target in self.designer.templates:
+                    self.designer.current_template = selected_node.target
+                else:
+                    self.designer.current_template = selected_node.target.parent
+                # somz add/remove to change layout
+                ##parent = selected_node.target.parent
+                ##parent.remove_widget(selected_node.target)
+                ##parent.add_widget(selected_node.target)
+
             else:# root is selected: get the info of the tempalte
                 #self.designer.selections = [self.designer.current_template]
                 self.designer.selections = dict()
                 self.designer.last_selected = None
-                self.designer.display_field_attributes(self.designer.current_template)
+                if selected_node.target in self.designer.templates:
+                    self.designer.display_field_attributes(selected_node.target)
+                    self.designer.current_template = selected_node.target
+                else:
+                    self.designer.current_template = selected_node.target.parent
 
 
 #Need to put it at the end because klass needed in kv

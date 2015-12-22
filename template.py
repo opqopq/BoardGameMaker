@@ -307,9 +307,9 @@ class BGTemplate(Field, RelativeLayout):
                             child.source = v
                         setattr(child, attrName, v)
 
-    def export_to_kv(self, level = 1, save_cm=True, relativ=True, save_relpath=True):
+    def export_to_kv(self, level = 1, save_cm=True, relativ=True, save_relpath=True, RELPATH = None):
         #Full export, with directives & impacts and bgtemplate
-        t,i,d = self.export_field(level, save_cm, relativ, save_relpath)
+        t,i,d = self.export_field(level, save_cm, relativ, save_relpath, RELPATH)
         #Change the first line
         t[0] =  "%s<%s@BGTemplate>:"%((level-1)*'\t',self.template_name)
         if len(i):

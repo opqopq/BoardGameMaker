@@ -393,6 +393,10 @@
                                         text: 'Empty Img Cache'
                                         icon: 'ccw'
                                         on_press: from kivy.cache import Cache; Cache.remove('kv.image'); Cache.remove('kv.texture')
+                                    Icon:
+                                        text: 'Create Package'
+                                        icon: 'cubes'
+                                        on_press: root.create_package()
                         AccordionItem:
                             title: "Fit Format"
                             GridLayout:

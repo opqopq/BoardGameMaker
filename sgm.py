@@ -192,21 +192,32 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         kvfs = [m for m in members if m.endswith('.kv')]
         csvfs = [m for m in members if m.endswith('.csv')]
         xlsfs = [m for m in members if m.endswith('.xlsx')]
-        #First python
-        for m in pyfs:
-            execfile(m)
         #then template
         for m in kvfs:
+            m = os.path.join(temp_dir,m)
+            Logger.info('Registering Package Template %s'%m)
             from template import templateList
-            Logger.info('[SGM] Extract Package: registering template file')
-            templateList.register_file(os.path.join(temp_dir,m))
+            templateList.register_file(os.path.join(temp_dir, m))
         #then deck
         for m in csvfs:
-            dm.load_file_csv(os.path.join(temp_dir,m))
+            m = os.path.join(temp_dir,m)
+            Logger.info('Loading CSV File %s'%m)
+            dm.load_file_csv(os.path.join(temp_dir, m))
         for m in xlsfs:
-            dm.load_file(os.path.join(temp_dir,m))
+            m = os.path.join(temp_dir,m)
+            Logger.info('Loading XLSX File %s'%m)
+            dm.load_file(os.path.join(temp_dir, m))
+        #Last python
+        from conf import ENV
+        for m in pyfs:
+            m = os.path.join(temp_dir,m)
+            Logger.info('Executing Package file %s'%m)
+            execfile(m, ENV)
+
         from utils import start_file
         start_file(temp_dir)
+        #Ensure the last CSV file is not saved, as it is parts of a package
+        dm.record_last_file('')
 
 
 class SpecialViewItem(FileViewItem):

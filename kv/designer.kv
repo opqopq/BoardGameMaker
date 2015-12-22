@@ -31,6 +31,35 @@
             size: self.size
 
 
+<TreeTmplFieldEntry>:
+#Used on the right tree for root template line
+    padding: 0,0,10,0
+    size_hint_y: None
+    height: 30
+    orientation: 'horizontal'
+    spacing: 15
+    #:import isfile os.path.isfile
+    FontIcon:
+        icon: root.target.Type if root.target else "settings"
+        size_hint: .25,1
+    Label:
+        text: root.target.template_name if root.target else ""
+        size_hint: .5,1
+#    Icon:
+#        disabled: not(root.is_selected)
+#        size_hint: .1,.8
+#        on_press: root.designer.duplicate_selection()
+#        icon: 'duplicate'
+#        font_size: 25
+#    Icon:
+#        disabled: not(root.is_selected)
+#        size_hint: .1,.8
+#        on_press: root.designer.remove_selection()
+#        icon: 'cancel'
+#        font_size: 30
+#        text_size: self.size
+#        valign: 'bottom'
+
 <TreeFieldEntry>:
 #Use on the right tree containing added field
     padding: 10,0,10,0
@@ -90,7 +119,7 @@
     size_hint_y: None
     height: 50
     orientation: 'horizontal'
-    on_press: self.target.add_template() if self.parent else None
+    on_press: self.target.add_template_field() if self.parent else None
     text:"Template"
     canvas.before:
         Color:
@@ -260,7 +289,7 @@
                     do_scale: False
                     pos: background.x+50,100
                     size_hint: None, None
-                    size: root.current_template.size
+                    size: root.current_template.size if root.current_template else CARD.size
                     bgcol: .7,.7,.7,.7
                     canvas.before:
                         Color:
@@ -313,7 +342,7 @@
                 size_hint_x: .2
                 AccordionItem:
                     collapse: False
-                    title: 'Fields'
+                    title: 'Templates'
                     GridLayout:
                         #size_hint_y: None
                         cols: 1
@@ -321,14 +350,15 @@
                             FieldTreeView:
                                 designer: root
                                 indent_level: 0
-                                #hide_root: True
+                                hide_root: True
                                 size_hint_y: None
                                 #size_hint_x: None
                                 width: self.parent.width if self.parent else 200
                                 on_minimum_height: self.height = self.minimum_height
                                 on_minimum_width: self.width= self.minimum_width
                                 id: fields
-                                root_options: {'text': 'Fields' if not root.current_template else root.current_template.template_name}
+                                #root_options: {'text': 'Fields' if not root.current_template else root.current_template.template_name}
+                                root_options: {'text': 'templates:' if not root.tmplPath else root.tmplPath}
                                 canvas.before:
                                     Color:
                                         rgb: .2,.2,.2
@@ -587,6 +617,10 @@
                             icon: "new"
                             on_press: root.new()
                             text: 'New'
+                        Icon:
+                            icon: "add"
+                            on_press: root.add_template()
+                            text: 'Add Template'
                         Icon:
                             text: "Tmpl Preview"
                             icon: 'print'

@@ -18,6 +18,7 @@ from utils import find_path, toImage
 from os.path import relpath
 from kivy.uix.widget import WidgetMetaclass
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.logger import Logger
 from styles import getStyle # Pre-import styles to register them all
 
 ###############################################
@@ -125,22 +126,15 @@ class BaseField(FocusBehavior):
     printed = BooleanProperty(True)
 
     def on_focus(self,instance, focus):
+        ##print 'on focus', self, instance, focus
         if self.designed and focus:
             self.selected = focus
-            try:
-                self._bind_keyboard()
-            except KeyError:
-                pass
-        else:
-            try:
-                self._unbind_keyboard()
-            except KeyError:
-                pass
 
     def on_selected(self, instance, selected):
         self.focused = selected
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        print 'on kb k down', self, window, keycode, text, modifiers
         if self.designed:
             code,text= keycode
             if text in ('left','right','up','down'):
@@ -314,7 +308,7 @@ class BaseField(FocusBehavior):
             ##    self.parent.canvas.remove(c.canvas)
             ##    self.parent.canvas.insert(0,c.canvas)
 
-    def export_field(self, level = 2, save_cm = True, relativ = True, save_relpath = True):
+    def export_field(self, level, save_cm, relativ, save_relpath, RELPATH):
         from types import FunctionType
         from template import BGTemplate
         tmpls = list()
@@ -353,9 +347,9 @@ class BaseField(FocusBehavior):
             #print 'exporting field', attr, vtype
             if attr == 'name':
                 tmpls.append('%sid: %s'%(prepend,value))
-            elif  isinstance(value, basestring):
+            elif isinstance(value, basestring):
                 if isfile(value) and save_relpath:
-                    value = relpath(value, gamepath)
+                    value = relpath(value, RELPATH)
                 tmpls.append('%s%s: "%s"'%(prepend,attr, value))
             elif vtype == type(1.0):
                 tmpls.append('%s%s: %.2f'%(prepend, attr, value))
@@ -366,7 +360,7 @@ class BaseField(FocusBehavior):
                     except TypeError: #can not coerce float in latin -1
                         _uni = unicode(value[_v])
                     if isfile(_uni) and save_relpath:
-                        value[_v] = relpath(value[_v], gamepath)
+                        value[_v] = relpath(value[_v], RELPATH)
                 tmpls.append('%s%s: %s'%(prepend, attr,value))
             elif vtype in (type(tuple()), type(list()), ObservableList, ObservableReferenceList):
                 if attr in ("size","pos"):
@@ -383,7 +377,7 @@ class BaseField(FocusBehavior):
                         sub.append('%.2f'%item)
                     elif isinstance(item, basestring):
                         if isfile(item) and save_relpath:
-                            item = relpath(item, gamepath)
+                            item = relpath(item, RELPATH)
                         sub.append('"%s"'%item)
                     elif isinstance(item, FunctionType): #replace the function by its name without the ""
                         sub.append('%s'%item.func_name)
@@ -408,7 +402,7 @@ class BaseField(FocusBehavior):
         #                 _pcv = '%.2f'%_cv
         #             elif isinstance(_cv, basestring):
         #                 if isfile(_cv) and save_relpath:
-        #                     _pcv = '"%s"'%relpath(_cv, gamepath)
+        #                     _pcv = '"%s"'%relpath(_cv, RELPATH)
         #                 else:
         #                     _pcv = '"%s"'%_cv
         #             elif isinstance(_cv, FunctionType): #replace the function by its name without the ""
@@ -439,6 +433,8 @@ class Field( BaseField, RelativeLayout):
         self.derive_infos()
 
     def on_touch_down(self, touch):
+        ##from template import BGTemplate
+        ##if isinstance(self, BGTemplate): print 'children order', self.children
         if self.designed:
             origin = Vector(*touch.pos)
             #Convert origin to take into account self.angle
@@ -449,7 +445,7 @@ class Field( BaseField, RelativeLayout):
                         deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
                         deltapos = deltapos.rotate(self.angle)
                         VECTOR = deltapos + self.center
-                    if origin.distance(VECTOR) <5:
+                    if origin.distance(VECTOR) < self.sel_radius:
                         touch.ud['do_move'] = False
                         touch.ud['do_resize'] = True
                         touch.grab(self)
@@ -470,32 +466,57 @@ class Field( BaseField, RelativeLayout):
                 #Define if resized is on
                 touch.ud['do_resize'] = False
                 touch.ud['do_move'] = False
-                #Display params if duoble tap
-                if touch.is_double_tap and hasattr(self, 'designer'):
-                    self.designer.display_field_attributes(self)
+                ##Display params if duoble tap
+                #if touch.is_double_tap and hasattr(self, 'designer'):
+                #    self.designer.display_field_attributes(self)
                 return True
-            #else:
-                #self.selected = False
-                #if hasattr(self, 'designer'):
-                #    if self in self.designer.selection: del self.designer.selection[self.designer.selection.index(self)]
-                #    #self.designer.selection = list()
-        return super(Field, self).on_touch_down(touch)
+
+        ret = False
+        touch.push()
+        touch.apply_transform_2d(self.to_local)
+        if self.disabled and self.collide_point(*touch.pos):
+            ret = True
+            if (not self.disabled and self.is_focusable and  ('button' not in touch.profile or not touch.button.startswith('scroll'))):
+                self.focus = True
+                FocusBehavior.ignored_touch.append(touch)
+        for child in reversed(self.children[:]):
+            if child.dispatch('on_touch_down', touch):
+                ret = True
+                break
+        touch.pop()
+        return ret
 
     def on_touch_up(self, touch):
         if self.designed and touch.grab_current == self:
             if getattr(self, "designer", False):
-                if self in self.designer.selections and not(touch.ud['do_resize'] or touch.ud['do_move']):
-                    del self.designer.selections[self]
-                    if self.designer.last_selected == self:
-                        self.designer.last_selected = None
-                else:
-                    self.designer.selections[self] = None
-                    self.designer.last_selected = self
+                ##print 'applying tu', self, self.designer.selections ,touch.ud['do_resize'] , touch.ud['do_move']
+                #if self in self.designer.selections and not(touch.ud['do_resize'] or touch.ud['do_move']):
+                #    del self.designer.selections[self]
+                #    if self.designer.last_selected == self:
+                #        self.designer.last_selected = None
+                #    else:
+                #        self.designer.on_last_selected(self.designer, self.designer.last_selected)
+                #else:
+                self.designer.selections = dict()
+                self.designer.selections[self] = None
+                self.designer.last_selected = self
             touch.ungrab(self)
-        return super(Field, self).on_touch_up(touch)
+            return True
+
+        ret = False
+        touch.push()
+        touch.apply_transform_2d(self.to_local)
+        if not self.disabled:
+            for child in reversed(self.children[:]):
+                if child.dispatch('on_touch_up', touch):
+                    ret =  True
+                    break
+        touch.pop()
+        return ret
 
     def on_touch_move(self, touch):
-        if self.designed and touch.grab_current==self:
+        #print 'TM', self, touch.grab_current
+        if self.designed and touch.grab_current == self:
             if touch.ud['do_resize']: #Resize
                 LEFT = touch.ud['LEFT']
                 DOWN = touch.ud['DOWN']
@@ -594,7 +615,18 @@ class FloatField(BaseField, FloatLayout):
             #     if hasattr(self, 'designer'):
             #         if self in self.designer.selection: del self.designer.selection[self.designer.selection.index(self)]
             #     #    self.designer.selection = list()
-        return super(FloatField, self).on_touch_down(touch)
+
+        ret = False
+        if self.disabled and self.collide_point(*touch.pos):
+            ret = True
+            if (not self.disabled and self.is_focusable and  ('button' not in touch.profile or not touch.button.startswith('scroll'))):
+                self.focus = True
+                FocusBehavior.ignored_touch.append(touch)
+        for child in reversed(self.children[:]):
+            if child.dispatch('on_touch_down', touch):
+                ret = True
+                break
+        return ret
 
     def on_touch_up(self, touch):
         if self.designed and touch.grab_current==self:
@@ -610,7 +642,16 @@ class FloatField(BaseField, FloatLayout):
                 self.layout_maker.selections[self] = None
                 self.layout_maker.selected_ph = self
             touch.ungrab(self)
-        return super(FloatField, self).on_touch_up(touch)
+
+        ret = False
+        if not self.disabled:
+            for child in reversed(self.children[:]):
+                if child.dispatch('on_touch_up', touch):
+                    ret =  True
+                    break
+        return ret
+
+
 
     def on_touch_move(self, touch):
         if self.designed and touch.grab_current == self:
@@ -1118,10 +1159,10 @@ class BorderField(RectangleField):
 
     def on_source(self,instance, source):
         super(BorderField,self).on_source(instance,source)
-        #Replace fg color by transparent color
-        Logger.debug('Change FG color to trnasparent when adding source in %s'%self)
-        r,g,b,a = self.fg_color
-        self.fg_color = r,g,b,0
+        ##Replace fg color by transparent color
+        #Logger.debug('Change FG color to trnasparent when adding source in %s'%self)
+        #r,g,b,a = self.fg_color
+        #self.fg_color = r,g,b,0
         self.on_auto_color(self,self.auto_color)
 
     def on_auto_color(self,instance, value):
@@ -1187,7 +1228,7 @@ class GridField(ShapeField):
                 if not imgs:
                     return
                 img = imgs.pop()
-                self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img], size=(self.width/max(self.cols,1),(self.height/max(self.rows,1))), pos=(self.x+i*self.width/max(1, self.cols),self.y+j*self.height/max(1,self.rows))))
+                self.add_widget(Image(keep_ratio=False, allow_stretch=True,source=self.images[img], size=(self.width/max(self.cols, 1), (self.height/max(self.rows, 1))), pos=(self.x+i*self.width/max(1, self.cols), self.y+j*self.height/max(1, self.rows))))
 
 
 class EllipseField(SourceShapeField):
