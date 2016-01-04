@@ -188,31 +188,29 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         from kivy.app import App
         dm = App.get_running_app().root.ids.deck
 
-        pyfs = [m for m in members if m.endswith('.py')]
-        kvfs = [m for m in members if m.endswith('.kv')]
-        csvfs = [m for m in members if m.endswith('.csv')]
-        xlsfs = [m for m in members if m.endswith('.xlsx')]
-        #then template
-        for m in kvfs:
-            m = os.path.join(temp_dir,m)
-            Logger.info('Registering Package Template %s'%m)
-            from template import templateList
-            templateList.register_file(os.path.join(temp_dir, m))
-        #then deck
-        for m in csvfs:
-            m = os.path.join(temp_dir,m)
-            Logger.info('Loading CSV File %s'%m)
-            dm.load_file_csv(os.path.join(temp_dir, m))
-        for m in xlsfs:
-            m = os.path.join(temp_dir,m)
-            Logger.info('Loading XLSX File %s'%m)
-            dm.load_file(os.path.join(temp_dir, m))
-        #Last python
-        from conf import ENV
-        for m in pyfs:
-            m = os.path.join(temp_dir,m)
-            Logger.info('Executing Package file %s'%m)
-            execfile(m, ENV)
+        #Looping on all mebers, resolving differntly depending on file type
+        for m in members:
+            if m.endsiwth('.kv'):
+                m = os.path.join(temp_dir,m)
+                Logger.info('Registering Package Template %s'%m)
+                from template import templateList
+                templateList.register_file(os.path.join(temp_dir, m))
+            #then deck
+            elif m.endswith('.csv'):
+                m = os.path.join(temp_dir,m)
+                Logger.info('Loading CSV File %s'%m)
+                dm.load_file_csv(os.path.join(temp_dir, m))
+            elif m.endwith('.xlsx'):
+                m = os.path.join(temp_dir,m)
+                Logger.info('Loading XLSX File %s'%m)
+                dm.load_file(os.path.join(temp_dir, m))
+            elif m.endswith('.py'):
+                #First python
+                from imp import load_source
+                m = os.path.join(temp_dir,m)
+                Logger.info('Executing Package file %s'%m)
+                load_source(m[:-3],m)
+
 
         from utils import start_file
         start_file(temp_dir)
@@ -650,6 +648,7 @@ class BGDeckMaker(BoxLayout):
                         from utils import alert
                         alert('Can not have both with and without layout (%s was without)!'%cs)
                         return
+                print 'sizes is ', sizes
                 if cs.template:
                     if cs.tmplWidget:
                         sizes.add(tuple(cs.tmplWidget.size))
@@ -714,7 +713,7 @@ class BGDeckMaker(BoxLayout):
         Clock.schedule_once(inner,.1)
         return True
 
-    def load_template_lib(self, force_reload = False, background_mode = False):
+    def load_template_lib(self, force_reload=False, background_mode=False):
         #Same as load_folder('/templates') but with delay to avoid clash
         progress = self.ids['load_progress']
         pictures = self.ids['pictures']
@@ -791,7 +790,7 @@ class BGDeckMaker(BoxLayout):
                 return False
         Clock.schedule_interval(inner,.025)
 
-    def write_file_popup(self,title,cb, default='export.pdf'):
+    def write_file_popup(self, title, cb, default='export.pdf'):
         from conf import CP
         lf = CP.get('Path','last_file')
         if default.endswith(('.csv','.xlsx')): #try to use last file if exsits
@@ -813,10 +812,10 @@ class BGDeckMaker(BoxLayout):
             fpath = relpath(filepath,gamepath)
         else:
             fpath = filepath
-        CP.set('Path','last_file',fpath)
+        CP.set('Path', 'last_file', fpath)
         CP.write()
 
-    def load_file(self, filepath = 'myxlsfile.xlsx'):
+    def load_file(self, filepath='myxlsfile.xlsx'):
         stack = self.ids['stack']
         from kivy.resources import resource_add_path
         from os.path import split

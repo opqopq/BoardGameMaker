@@ -16,7 +16,8 @@ todos = [
     "how to record that a script has been pushed on an image? like splitter, or ",
     "add register function for field, script, template",
     'add a way to load & write multiple template / kv file',
-    'reintroduce package again with create package'
+    'reintroduce package again with create package',
+    "after exporting to a pdf, the name of the pdf is not saved ??",
 ]
 
 for i, todo in enumerate(todos):

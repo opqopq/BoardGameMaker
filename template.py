@@ -59,7 +59,9 @@ class BGTemplate(Field, RelativeLayout):
             Logger.info(' From File without cache')
         from os.path import split
         from kivy.resources import resource_add_path
+        import sys
         resource_add_path(split(filename)[0])
+        sys.path.append(split(filename)[0])
         name, filename = find_template_path(filename)
         #Add filename dir to ressources folder to facilitate relativ import
         #Load  & return all templates from a file as a list. Take an optionnal filter
