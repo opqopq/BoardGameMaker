@@ -324,8 +324,9 @@
                     #on_canceled: root.dismiss()
             TabbedPanelItem:
                 text: 'Icon'
-                #:import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
-                FileChooserThumbView:
+                #   :import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
+                FileChooserListView
+                #FileChooserThumbView:
                     id: vpicker
                     path: root.path
                     on_path: root.path = args[1]
@@ -536,8 +537,8 @@
         do_default_tab: False
         TabbedPanelItem:
             text: "Source"
-            #FileChooserListView:
-            FileChooserThumbView:
+            FileChooserListView:
+            #FileChooserThumbView:
                 id: fpicker
                 #:import split os.path.split
                 ##path: split(root.dimension[0])[0] if root.dimension[0] else "."

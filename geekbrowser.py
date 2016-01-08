@@ -156,7 +156,7 @@ class BGGeekBrowser(BoxLayout):
         r=UrlRequest(bgg_complete_url%(gameID,_title), on_success=self.get_more_info, on_error=self.cancel_more_info, on_failure=self.cancel_more_info, use_proxy=USE_PROXY, timeout=7)
 
     def get_more_info(self,req,result):
-        bs = BS(result)
+        bs = BS(result, 'html.parser')
         info = self.ids.details.ids.information
         info.text= bs.find(id="module_7").div.get_text()
         #info.remove_widget(info.wait)
@@ -174,7 +174,7 @@ class BGGeekBrowser(BoxLayout):
         elif url == bgg_file_url:
             TYPE = 'FILE'
         target = self.ids.details.ids['nb_%s_page'%TYPE.lower()]
-        bs = BS(result)
+        bs = BS(result, 'html.parser')
         try:
             total=int(bs.findAll('div',{"class":'pages'})[0].contents[0].split('of ')[-1])
         except:
@@ -201,7 +201,7 @@ class BGGeekBrowser(BoxLayout):
                 UrlRequest(url, self.get_links_urls, use_proxy=USE_PROXY)
 
     def get_images_urls(self,req, result):
-        bs = BS(result)
+        bs = BS(result, 'html.parser')
         imgs=[x.get('src') for x in bs.findAll('img', {"class": None})]
         for index, img in enumerate(imgs):
             href = img.replace('_mt.jpg', '.jpg')
@@ -210,7 +210,7 @@ class BGGeekBrowser(BoxLayout):
             self.images.append((img, href))
 
     def get_files_urls(self, req, result):
-        bs= BS(result)
+        bs= BS(result, 'html.parser')
         files_url = [x.get('href') for x in bs.findAll('a') if x.get('href') and x.get('href').startswith('/filepage')]
         files_desc = [x.text.strip() for x in bs.findAll('div', {'class': 'sf', 'style':'margin-top:5px;'})]
         if not len(files_url)==len(files_desc):
@@ -221,7 +221,7 @@ class BGGeekBrowser(BoxLayout):
             self.files.append((u,d))
 
     def get_links_urls(self, req, result):
-        bs = BS(result)
+        bs = BS(result, 'html.parser')
         link_desc = [x.text.strip() for x in bs.findAll('a') if x.get('href') and x.get('href').startswith('/weblink')]
         link_url = [x.get('ng-href') for x in bs.findAll('a', {'target': '_blank'})]
         if not len(link_desc)==len(link_url):
@@ -383,6 +383,16 @@ class BGGeekBrowser(BoxLayout):
         file(join(path, "explore_%s.html" % self.selected_game), 'wb').write(sub.encode('utf-8', 'ignore'))
         from utils import start_file
         start_file(join(path, "explore_%s.html"%self.selected_game))
+
+    def Nprepare_gallery(self):
+        img_sl = self.ids.details.ids.img_sl
+        from kivy.uix.image import AsyncImage
+        for img, href in self.images:
+            IMG = AsyncImage(source=href)
+            IMG.large_src = href.replace('_mt', '')
+            IMG.large_name = img
+            img_sl.add_widget(IMG)
+
 
     def create_game_folder(self):
         from conf import gamepath

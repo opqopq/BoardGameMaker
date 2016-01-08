@@ -89,6 +89,8 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
         if self.last_touch.is_double_tap:#directly add it to the pool
             if self.name.endswith('.bgp'):
                 self.extract_package()
+            elif self.name.endswith('.py'):
+                print 'should I really execute this script ???'
             else:
                 self.add_item("1", 'normal')
 
@@ -127,6 +129,14 @@ class FileViewItem(ToggleButtonBehavior, BoxLayout):
                 App.get_running_app().root.ids.deck.load_file(self.name)
             elif self.name.endswith('.bgp'):
                 self.extract_package()
+            elif self.name.endswith('.py'):
+                print 'should be executing', self.name, self.source, self.is_all_folder
+                from imp import load_source
+                Logger.info('Executing PYScript file %s'%self.name)
+                m = self.name
+                load_source(m[:-3],m)
+
+
             else:
                 box = StackPart()
                 box.name = self.name
@@ -618,13 +628,14 @@ class BGDeckMaker(BoxLayout):
         self.record_last_file("")
 
     def prepare_print(self, dst):
-        "Launch PDF preparation. First determine the best method for placing images"
-
+        """Launch PDF preparation. First determine the best method for placing images"""
         from conf import CP
         from utils import alert
-        if CP.getboolean('Print','AUTOCSV'):
+        if CP.getboolean('Print', 'AUTOCSV'):
             alert('Auto saving XLS deck')
             self.export_file(dst.replace('.pdf','.xlsx'))
+        #Save last pdf file name & path
+        self.record_last_file(dst)
         from printer import prepare_pdf
         from conf import card_format
         FFORMAT = (card_format.width, card_format.height)
@@ -648,7 +659,6 @@ class BGDeckMaker(BoxLayout):
                         from utils import alert
                         alert('Can not have both with and without layout (%s was without)!'%cs)
                         return
-                print 'sizes is ', sizes
                 if cs.template:
                     if cs.tmplWidget:
                         sizes.add(tuple(cs.tmplWidget.size))
@@ -686,7 +696,7 @@ class BGDeckMaker(BoxLayout):
         def inner(*args):
             step_counter.pop()
             progress.value += 1
-            print 'remaninig index', len(book.index)
+            #print 'remaninig index', len(book.index)
             book.generation_step()
             if (not step_counter) or self.cancel_action:
                 self.cancel_action = False
@@ -700,7 +710,7 @@ class BGDeckMaker(BoxLayout):
                 alert('PDF Export completed')
                 return False
             else:
-                Clock.schedule_once(inner,0.01)
+                Clock.schedule_once(inner, 0.01)
 
         def realize_inner(*args):
             s = SS.pop()
@@ -710,7 +720,8 @@ class BGDeckMaker(BoxLayout):
             else:
                 Clock.schedule_once(inner,.1)
 
-        Clock.schedule_once(inner,.1)
+        if step_counter:
+            Clock.schedule_once(inner, .1)
         return True
 
     def load_template_lib(self, force_reload=False, background_mode=False):
@@ -774,7 +785,10 @@ class BGDeckMaker(BoxLayout):
                 if _f.endswith(('.csv','.xlsx')):
                     img = SpecialViewItem(source= 'csv', name=_f)
                 elif _f.endswith('.bgp'):
-                    img = SpecialViewItem(source = 'cubes', name = _f)
+                    img = SpecialViewItem(source='cubes', name=_f)
+                elif _f.endswith('.py'):
+                    _f = os.path.join(folder, _f)
+                    img = SpecialViewItem(source='pyscript', name=_f)
                 else:
                     img = FileViewItem(source=source, name=_f)
                 pictures.add_widget(img)
@@ -792,12 +806,15 @@ class BGDeckMaker(BoxLayout):
 
     def write_file_popup(self, title, cb, default='export.pdf'):
         from conf import CP
-        lf = CP.get('Path','last_file')
-        if default.endswith(('.csv','.xlsx')): #try to use last file if exsits
+        if default.endswith('.pdf'):
+            lf = CP.get('Path', 'last_pdf')
+        else:
+            lf = CP.get('Path', 'last_file')
+        if default.endswith(('.csv', '.xlsx')): #try to use last file if exsits
             default = lf or default
         elif default.endswith('.pdf'):
             if lf:
-                default = lf.replace('.xlsx','.pdf').replace('.csv','.pdf')
+                default = lf.replace('.xlsx', '.pdf').replace('.csv', '.pdf')
         p = Factory.get('WriteFilePopup')()
         p.title = title
         p.cb = cb
@@ -812,8 +829,16 @@ class BGDeckMaker(BoxLayout):
             fpath = relpath(filepath,gamepath)
         else:
             fpath = filepath
-        CP.set('Path', 'last_file', fpath)
-        CP.write()
+        if not(fpath):
+            CP.set('Path','last_pdf',fpath)
+            CP.set('Path', 'last_file', fpath)
+            CP.write()
+        elif fpath.endswith('.pdf'):
+            CP.set('Path','last_pdf',fpath)
+            CP.write()
+        else:
+            CP.set('Path', 'last_file', fpath)
+            CP.write()
 
     def load_file(self, filepath='myxlsfile.xlsx'):
         stack = self.ids['stack']

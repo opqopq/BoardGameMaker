@@ -140,8 +140,7 @@ class BGDesigner(FloatLayout):
     def add_field(self, field):
         from fields import fieldDict
         klass = fieldDict.get(field.text, None)
-        target = klass(size=(100,100))
-
+        target = klass()
         self.current_template.add_widget(target)
         self.insert_field(target)
         #Select the new field on only this

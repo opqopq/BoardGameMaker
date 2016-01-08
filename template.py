@@ -225,7 +225,7 @@ class BGTemplate(Field, RelativeLayout):
         return FromFieldTemplate()
 
     def toImage(self, bg_color=(1,1,1,0), for_print = False):
-        print 'toImage with bg_color', self, bg_color
+        #print 'toImage with bg_color', self, bg_color
         #create image widget with texture == to a snapshot of me
         from kivy.graphics import Translate, Fbo, ClearColor, ClearBuffers, Scale
         from kivy.core.image import Image as CoreImage

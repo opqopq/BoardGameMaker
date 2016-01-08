@@ -40,7 +40,7 @@ USE_PROXY = CP.getboolean('Proxy', 'use_proxy')
 if USE_PROXY:
     Logger.info('Using Proxy')
 
-FILE_FILTER = ('.jpg','.png','.JPG','.gif','.kv', '.csv', '.xlsx', '.jpeg', '.PNG', '.JPEG', '.bgp')
+FILE_FILTER = ('.jpg','.png','.JPG','.gif','.kv', '.csv', '.xlsx', '.jpeg', '.PNG', '.JPEG', '.bgp', '.py')
 
 class CardFormat(EventDispatcher):
     width = NumericProperty(cm(CP.getfloat('Card', 'width')))

@@ -1,6 +1,6 @@
-'Main Entry point for new KIVY bassed BGM'
+'''Main Entry point for new KIVY bassed BGM'''
 
-VERSION = 0,2
+VERSION = 0, 2
 
 todos = [
     'P3: change virtual screen stack...',
@@ -15,9 +15,8 @@ todos = [
     "repair subimgafield",
     "how to record that a script has been pushed on an image? like splitter, or ",
     "add register function for field, script, template",
-    'add a way to load & write multiple template / kv file',
     'reintroduce package again with create package',
-    "after exporting to a pdf, the name of the pdf is not saved ??",
+    'parameter from styles are not saved. ???',
 ]
 
 for i, todo in enumerate(todos):

@@ -55,7 +55,6 @@
 
 <Field>:
     size_hint: None, None
-    size: 100,100
     sel_radius: 0
     canvas.before:
         PushMatrix
@@ -73,7 +72,6 @@
 
 <FloatField>:
     size_hint: None, None
-    size: 100,100
     sel_radius: 0
     canvas.before:
         PushMatrix
@@ -103,6 +101,14 @@
     allow_stretch: True
     keep_ratio: False
     mipmap: True
+    color: get_color(self.fg_color)
+    canvas:
+        Color:
+            rgba: self.color
+        Rectangle:
+            texture: self.texture
+            size: self.size if not self.texture else self.norm_image_size
+            pos: self.center_x - self.norm_image_size[0] / 2., self.center_y - self.norm_image_size[1] / 2.
 
 <ImageChoiceField>:
     source: self.choices[self.selection] if self.selection in self.choices else ""
@@ -166,13 +172,13 @@
     canvas:
         Color:
             rgba: get_color(self.fg_color)
-        #RoundedRectangle:
-        Rectangle:
+        RoundedRectangle:
+        #Rectangle:
             #pos: self.pos
             size: self.size
             source: self.source
             texture: self.texture
-            #radius: [self.corner_radius]
+            radius: [self.corner_radius]
 
 <GridField>:
     canvas.after:

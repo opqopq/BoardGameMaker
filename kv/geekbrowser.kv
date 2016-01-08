@@ -1,5 +1,5 @@
 #:import FontIcon utils.fontello.FontIcon
-
+#:import ScrollLabel kivy.garden.scrolllabel.ScrollLabel
 
 <GamesResults@TreeView>
     on_selected_node: self.browser.game_details(*args)
@@ -83,21 +83,56 @@
         Label:
             text: "-- Pages"
             id: nb_link_page
-    ScrollView:
-        Label:
-            text: "Game Description"
-            id: description
-            size_hint: None, None
-            size: self.texture_size
-    ScrollView:
-        Label:
-            text: "Game Information"
-            id: information
-            size_hint: None, None
-            size: self.texture_size
-            #:import wrap textwrap.wrap
-            #on_size: print "width is ", self.width/self.font_size ; self.text = "\n".join(wrap(self.text, width = 50+int(self.width/self.font_size)))
-            #text_size: self.width, None
+    Label:
+        size_hint_y: None
+        height: 30
+        text: "Game Description"
+    ScrollLabel:
+        id: description
+        size_hint_y: .4
+        halign: 'left'
+        canvas.before:
+            Color:
+                rgba: .1,.1,.1,.1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+    Label:
+        size_hint_y: None
+        height: 30
+        text: "Game Information"
+    ScrollLabel:
+        id: information
+        size_hint_y: .3
+        halign: 'left'
+        padding_x: 30
+        canvas.before:
+            Color:
+                rgba: .1,.1,.1,.1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+#    Label:
+#        size_hint_y: None
+#        height: 30
+#        text: "Game Data"
+#    Splitter:
+#        size_hint_y: None
+#        height: 0
+#        id: gamesdatapanel
+#        min_size: 0
+#        sizable_from: 'top'
+#        TabbedPanel:
+#            do_default_tab: False
+#            TabbedPanelItem:
+#                text: 'Images'
+#                GridLayout:
+#                    id: img_sl
+#                    rows: 1
+#                    spacing: 10
+#            TabbedPanelItem:
+#                text: 'Files'
+
     BoxLayout:
         size_hint_y: None
         height: 30

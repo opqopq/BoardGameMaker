@@ -1,5 +1,6 @@
-hexagon_width = 6.03 # cm
-hexagon_height = 6.77 #cm
+from conf import cm
+hexagon_width = cm(6.03) # cm
+hexagon_height = cm(6.77) #cm
 h_step = 5.94 # step between 2 hex. With my image, it was less than hex_width
 v_step = 5.04 # same as above
 
@@ -25,3 +26,4 @@ def triangle_layout(h,v):
     layout.export_phs()
     alert('Layout done')
 
+hexa_layout()

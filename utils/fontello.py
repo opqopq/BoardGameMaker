@@ -21,7 +21,7 @@ FONTELLO = {
     'icon-Copy': u'\ue810',
     'icon-CopyField': u'\ue810',
     'icon-csv': u'\ue811',
-    'icon-svg': u'\ue812',
+    'icon-pyscript': u'\ue812',
     'icon-Settings': u'\ue813',
     'icon-export': u'\ue814',
     'icon-resize-vertical': u'\ue815',

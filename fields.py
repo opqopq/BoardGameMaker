@@ -694,9 +694,9 @@ class FloatField(BaseField, FloatLayout):
         cs = self.children[:]
         cs.append(widget)
         self.clear_widgets()
-        cs.sort(key= lambda x: getattr(x,'z',0))
+        cs.sort(key=lambda x: getattr(x, 'z', 0))
         for c in cs:
-            FloatLayout.add_widget(self,widget)
+            FloatLayout.add_widget(self, c)
         #self.children = cs
         ##Also reorder canvas
         #for cindex, c in enumerate(self.children):
@@ -810,11 +810,13 @@ class ImageField(AsyncImage, FloatField):
     attrs = OrderedDict([
         ('source', FileEditor),
         ('allow_stretch', BooleanEditor),
-        ('keep_ratio', BooleanEditor)
+        ('keep_ratio', BooleanEditor),
+        ('fg_color', ColorEditor),
     ])
+    fg_color = ListProperty([1,1,1,1])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
-    source_filters = ['*.jpg','*.gif','*.jpeg','*.bmp','*.png']
+    source_filters = ['*.jpg', '*.gif', '*.jpeg', '*.bmp', '*.png']
 
     def on_source(self, instance, source):
         src = find_path(source)
@@ -823,7 +825,7 @@ class ImageField(AsyncImage, FloatField):
 
 
 class ImgChoiceField(AsyncImage, FloatField):
-    "This widget will display an image base on a choice, helds in choices dict"
+    """This widget will display an image base on a choice, helds in choices dict"""
     choices = DictProperty()
     attrs = OrderedDict([('selection',ImgOptionEditor),('choices', ImageChoiceEditor),('allow_stretch', BooleanEditor), ('keep_ratio', BooleanEditor)])
     default_attr = 'selection'
@@ -847,7 +849,7 @@ class ImgChoiceField(AsyncImage, FloatField):
 
     def on_source(self, instance, source):
         src = find_path(source)
-        if src:
+        if src and src != source:
             self.source = src
 
 
@@ -856,7 +858,7 @@ class RepeatField(FloatField):
     allow_stretch = BooleanProperty(True)
     keep_ratio = BooleanProperty(False)
     count = NumericProperty(1)
-    images= DictProperty()
+    images = DictProperty()
     orientation = StringProperty('lr-tb')
     orientation_values = ['lr-tb','tb-lr','bt-lr','lr-bt', 'random']
     x_func = StringProperty()
@@ -869,6 +871,7 @@ class RepeatField(FloatField):
                          ('angle_step', AdvancedIntEditor),
                          ('x_func',AdvancedTextEditor),('y_func',AdvancedTextEditor),
                          ])
+    default_attr = "count"
 
     def on_images(self, instance, value):
         self.update()
@@ -889,7 +892,7 @@ class RepeatField(FloatField):
         self.update()
 
     def add_obj(self):
-        obj = ImageField(allow_stretch = self.allow_stretch, keep_ratio = self.keep_ratio)
+        obj = ImageField(allow_stretch=self.allow_stretch, keep_ratio=self.keep_ratio)
         obj.size_hint = self.target_ratio
         self.add_widget(obj)
         return obj
@@ -923,7 +926,7 @@ class RepeatField(FloatField):
         ANGLE = -self.angle_step # In order to make sure that first pasted image will have an angle of 0
         if self.orientation == 'random':
             from random import random
-            for index,img in zip(range(self.count),cycle(self.images)):
+            for index, img in zip(range(self.count), cycle(self.images)):
                 obj = self.add_obj()
                 obj.pos_hint = {'x': random() * (1-wr), 'y': random() * (1-hr)}
                 ANGLE += self.angle_step
@@ -962,7 +965,6 @@ class RepeatField(FloatField):
                             obj.pos_hint = {'x': wr * i + xf(i, j, index) , 'y': hr * j + yf(i, j, index)}
                         else:
                             obj.pos_hint = {'x': wr*i + xf(i, j, index), 'top': 1-hr*j + yf(i, j, index)}
-
 
 class ColorField(Field):
     "Display a color on a rectangle"
@@ -1009,7 +1011,7 @@ class SubImageField(Field):
             log("Invalid path for source of SubImage %s:%s"%(self,dimension[0]))
             return
             from kivy.graphics.texture import Texture
-            self.texture = Texture.create(size=(100,100))
+            self.texture = Texture.create(size=(100, 100))
         IMG = Image(path).texture
         width, height = IMG.width, IMG.height
         self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)

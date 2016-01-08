@@ -144,7 +144,7 @@ class PDFBook:
 
     def calculate_size(self):
         from utils import alert
-        Logger.warn('Printing with mode %s'%str(self.mode))
+        Logger.info('Printing with mode %s'%str(self.mode))
         alert('Calculating Size for mode %s'%str(self.mode))
         #Create all the necessary steps for while loop in printing
         #populate self.index with line made of i, row, col, face & item

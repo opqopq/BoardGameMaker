@@ -582,6 +582,7 @@ class BGLayoutMaker(FloatLayout):
 
         from kivy.clock import Clock
         self.ids.progress.max = len(fg)
+
         def inner(*args):
             if not fg:
                 Clock.unschedule(inner)
@@ -591,7 +592,7 @@ class BGLayoutMaker(FloatLayout):
             cs, _ = fg.pop()
             vars['cindex'] +=1
             ph = self.add_ph()
-            print 'force fit', FORCE_FIT_FORMAT
+            #print 'force fit', FORCE_FIT_FORMAT
             self.set_ph_img(ph, cs, not(FORCE_FIT_FORMAT))
             ph.x = w * vars['col_index'] + page_format.left
             ph.top = page_format.height - page_format.top - h * vars['row_index']

@@ -18,6 +18,13 @@
     "key": "last_file"
     },
     {
+    "type": "string",
+    "title": "last_pdf",
+    "desc": "Last Exported PDF",
+    "section": "Path",
+    "key": "last_pdf"
+    },
+    {
         "type": "title",
         "title": "Export"
     },
