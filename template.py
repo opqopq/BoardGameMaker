@@ -132,7 +132,9 @@ class BGTemplate(Field, RelativeLayout):
                 #print dclass, rule
                 t = Factory.get(dclass)()
                 t.directives = [x[1] for x in ctx.directives]
+                from kivy.metrics import cm
                 eval_context = dict()
+                eval_context['cm'] = cm
                 eval_context.update(t.ids)
                 for _d in t.directives:
                     if _d.startswith('include'): continue#only doind import at this stage

@@ -1,15 +1,13 @@
 <BGConsole@BoxLayout>:
     orientation: 'vertical'
     ScrollView:
-        size_hint_y: .8
         GridLayout:
             size_hint_y: None
-            on_minimum_height: self.height = self.minimum_height
+            height: self.minimum_height
             cols: 1
             id: console
-    BoxLayout:
+    Button:
         size_hint_y: None
         height: 20
-        Button:
-            text: "clear"
-            on_press: console.clear_widgets()
+        text: "clear"
+        on_press: console.clear_widgets()

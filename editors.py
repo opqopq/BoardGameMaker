@@ -259,6 +259,7 @@ class ListEditor(Editor):
         t.target_attr = name
         return t
 
+
 class DirectivesEditor(Editor):
     def getWidgets(self, name, keyname, **kwargs):
         t = Button(text="Define")
@@ -643,6 +644,48 @@ class SubImageEditor(Editor):
                 popup.ids.img_width.text = str(dimension[3])
                 popup.ids.img_height.text = str(dimension[4])
             Clock.schedule_once(mover,.1)
+            popup.open()
+        t.bind(on_press=button_callback)
+        t.target_key = keyname
+        t.stored_value = None
+        t.target_attr = name
+        return t
+
+
+class CropEditor(Editor):
+    def getWidgets(self, name, keyname, **kwargs):
+        t = Button(text="...", **kwargs)
+        #Create a callback for the modal frame
+        def cbimg(instance):
+            s = instance.ids
+            setattr(self.target, keyname, s.sif_target.crop)
+            t.stored_value = s.sif_target.crop
+            #[s.fpicker.selection[0], float(s.img_x.text),float(s.img_y.text), float(s.img_width.text), float(s.img_height.text)]
+        #Create callback for button that would start a modal
+        def button_callback(instance):
+            from kivy.core.window import Window
+            cp_width = min(Window.size)
+            size = Vector(Window.size)
+            #cp_pos = [(Window.size[0]-cp_width)/2,(Window.size[1]-cp_width)/2]
+            popup = SubImageEditorPopup(name=name, size=size, pos=(0, 0), cb=cbimg, keyname=getattr(self.target, keyname))
+            crop = getattr(self.target, keyname)
+            src = getattr(self.target, 'source')
+            src = find_path(src)
+            if src:
+                from os.path import split
+                popup.path = src
+            from kivy.clock import Clock
+            def mover(*args):
+                overlay = popup.ids.overlay
+                img = popup.ids.img
+                oW,oH = img.norm_image_size
+                overlay.size = crop[2]*oW, crop[3]*oH
+                overlay.pos = crop[0]*oW + img.x + (img.width-oW)/2, crop[1]*oH + img.y + (img.height-oH)/2
+                popup.ids.img_x.text = str(crop[0])
+                popup.ids.img_y.text = str(crop[1])
+                popup.ids.img_width.text = str(crop[2])
+                popup.ids.img_height.text = str(crop[3])
+            Clock.schedule_once(mover, .1)
             popup.open()
         t.bind(on_press=button_callback)
         t.target_key = keyname
@@ -1546,32 +1589,28 @@ class PosHintChoiceEditorPopup(Popup):
 
 class SubImageEditorPopup(Popup):
     name = StringProperty()
-    dimension = ListProperty(['',0,0,1,1])
+    crop = ListProperty([0, 0, 1, 1])
     path = StringProperty()
     cb = ObjectProperty()
 
 
     def update_values(self, *args):
-        #print 'update values called', args, self.ids.fpicker.selection
-        if self.ids.fpicker.selection:
-            path = self.ids.fpicker.selection[0]
-        else:
-            path = self.ids.img.source
-        if not path:
-            return
+        #print 'update values called', args
         overlay = self.ids.overlay
         #remove init pos from overlay.pos
         img = self.ids.img
-        img_original_size = Vector(img.height * img.image_ratio, img.height)
-        if img.height>img.width:
-            img_original_pos = Vector(img.x + (img.width - img_original_size[0])/2 , img.y)
+        oW,oH = img_original_size = img.norm_image_size
+        if img.height > img.width:
+            #img_original_size = Vector(img.width, img.width/img.image_ratio)
+            img_original_pos = Vector(img.x + (img.width - img_original_size[0])/2, img.y)
         else:
+            #img_original_size = Vector(img.height * img.image_ratio, img.height)
             img_original_pos = Vector(img.x, img.y+(img.height - img_original_size[1])/2)
         if img.image_ratio and img.height:
-            self.ids.img_width.text = "%.2f"%(overlay.width/(img.height*img.image_ratio))
-            self.ids.img_height.text = "%.2f"%(overlay.height/img.height)
-            self.ids.img_x.text = "%.2f"%((overlay.x - 2.5*img_original_pos[0])/(img.height*img.image_ratio))
-            self.ids.img_y.text = "%.2f"%((overlay.y - img_original_pos[1])/img.height)
+            self.ids.img_width.text = "%.2f" % (overlay.width/oW)
+            self.ids.img_height.text = "%.2f" % (overlay.height/oH)
+            self.ids.img_x.text = "%.2f" % ((overlay.x - img_original_pos[0])/oW)
+            self.ids.img_y.text = "%.2f" % ((overlay.y - img_original_pos[1])/oH)
 
 editors_map = {
      NumericProperty: FloatEditor,

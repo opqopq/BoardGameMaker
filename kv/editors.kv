@@ -324,9 +324,9 @@
                     #on_canceled: root.dismiss()
             TabbedPanelItem:
                 text: 'Icon'
-                #   :import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
-                FileChooserListView
-                #FileChooserThumbView:
+                #:import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
+                #FileChooserListView
+                FileChooserThumbView:
                     id: vpicker
                     path: root.path
                     on_path: root.path = args[1]
@@ -452,7 +452,7 @@
         cols: 1
         CodeInput:
             id: cpicker
-            text: unicode(root.text,'latin-1')
+            text: unicode(root.text,'latin-1') if not type(root.text) == unicode else root.text
 #:import KivyLexer kivy.extras.highlight.KivyLexer
             lexer: KivyLexer()
         BoxLayout:
@@ -530,127 +530,108 @@
 
 <SubImageEditorPopup@Popup>:
     size_hint: None, None
-    #size: 400,250
     title: 'Choose Image Part for %s'%self.name
-    TabbedPanel:
-        id: tabpanel
-        do_default_tab: False
-        TabbedPanelItem:
-            text: "Source"
-            FileChooserListView:
-            #FileChooserThumbView:
-                id: fpicker
-                #:import split os.path.split
-                ##path: split(root.dimension[0])[0] if root.dimension[0] else "."
-                ##selection: [split(root.dimension[0])[1]] or ""
-                filters: ['*.jpg', '*.png','*.jpeg','*.gif']
-                #:import isfile os.path.isfile
-                on_selection: if self.selection and isfile(self.selection[0]): self.parent.parent.switch_to(content); restore_button.on_press()
-        TabbedPanelItem:
-            text: "Part Editor"
-            id: content
-            FloatLayout:
-            #SubImage Filter
-                #size_hint: 1,1
-                id: fl
-                BoxLayout:
+    FloatLayout:
+    #SubImage Filter
+        #size_hint: 1,1
+        id: fl
+        BoxLayout:
+            canvas.before:
+                Color:
+                    rgb: 1,1,0
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+            id: sie
+            pos: fl.pos
+            #size: content.size
+            orientation: "vertical"
+            BoxLayout:
+                size_hint_y: .5
+                orientation: 'horizontal'
+                id: bl
+                Image:
+                    source: root.path
+                    id: img
+                    size_hint_x: .5
+                    allow_stretch: False
+                    keep_ratio: True
+                ImageField:
+                    id: sif_target
+                    bg_color: 1,1,1,1
+                    size: fl.width/2, fl.height/2
+                    pos: fl.width/2, fl.y
+                    source: img.source
+                    crop: (float(img_x.text), float(img_y.text), float(img_width.text), float(img_height.text) ) if img.source else [0,0,1,1]
+            GridLayout:
+                size_hint_y: None
+                height: 60
+                rows: 2
+                Label:
+                    text: "X Ratio:"
                     canvas.before:
                         Color:
-                            rgb: 1,1,0
-                            Rectangle:
-                                size: self.size
-                                pos: self.pos
-                    id: sie
-                    pos: fl.pos
-                    #size: content.size
-                    orientation: "vertical"
-                    BoxLayout:
-                        size_hint_y: .5
-                        orientation: 'horizontal'
-                        id: bl
-                        Image:
-                            source: fpicker.selection[0] if fpicker.selection else ""
-                            id: img
-                            size_hint_x: .5
-                            allow_stretch: False
-                            keep_ratio: True
-                        SubImageField:
-                            id: sif_target
-                            #width: bl.width/2
-                            #height: bl.height
-                            #height: {'right':1}
-                            bg_color: 1,1,1,1
-                            size: fl.width/2, fl.height/2
-                            pos: fl.width/2, fl.y
-                            dimension: (img.source, float(img_x.text), float(img_y.text), float(img_width.text), float(img_height.text) ) if img.source else ["",0,0,1,1]
-                    GridLayout:
-                        size_hint_y: None
-                        height: 60
-                        rows: 2
-                        Label:
-                            text: "X Ratio:"
-                            canvas.before:
-                                Color:
-                                    rgb: 0,0,1
-                                Rectangle:
-                                    size: self.size
-                                    pos: self.pos
-                        TextInput:
-                            id: img_x
-                            text: str(root.dimension[1])
-                            #on_text: root.dimension[1] = float(self.text)
-                            multiline: False
-                        Label:
-                            text: "Width Ratio:"
-                        TextInput:
-                            id: img_width
-                            text: str(root.dimension[3])
-                            #on_text: root.dimension[3] = float(self.text)
-                        CheckBox:
-                            text: "Keep Image Ratio"
-                            id: ratio_img
-                        Label:
-                            text: "Y Ratio:"
-                        TextInput:
-                            id: img_y
-                            text: str(root.dimension[2])
-                            #on_text: root.dimension[2] = float(self.text)
-                            multiline: False
-                        Label:
-                            text: "Height Ratio:"
-                        TextInput:
-                            id: img_height
-                            text: str(root.dimension[4])
-                            #on_text: root.dimension[4] = float(self.text)
-                            multiline: False
-                        Button:
-                            text: "Reset"
-                            id: restore_button
-                            on_press:
-                                overlay.scale = 1,1
-                                overlay.size =img.height * img.image_ratio, img.height
-                                #overlay.pos = img.x + (img.width-overlay.width)/2, img.y
-                                img_x.text= "0.0"
-                                img_y.text= "0.0"
-                                img_width.text= "1.0"
-                                img_height.text='1.0'
-                    BoxLayout:
-                        orientation: "horizontal"
-                        size_hint_y: None
-                        height: 40
-                        Button:
-                            text: "Ok"
-                            on_press: root.dismiss(); root.cb(root)
-                        Button:
-                            text: "Cancel"
-                            on_press: root.dismiss()
-                OverlayField:
-                    fg_color: 0,0,0,0
-                    corner_radius: 5
-                    designed: True
-                    selected: True
-                    id: overlay
-                    name: "Overlay"
-                    line_width: 4
-                    on_pos: root.update_values()
-                    on_size: root.update_values()
+                            rgb: 0,0,1
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                TextInput:
+                    id: img_x
+                    text: str(root.crop[0])
+                    #on_text: root.dimension[1] = float(self.text)
+                    multiline: False
+                Label:
+                    text: "Width Ratio:"
+                TextInput:
+                    id: img_width
+                    text: str(root.crop[2])
+                    #on_text: root.dimension[3] = float(self.text)
+                CheckBox:
+                    text: "Keep Image Ratio"
+                    id: ratio_img
+                Label:
+                    text: "Y Ratio:"
+                TextInput:
+                    id: img_y
+                    text: str(root.crop[1])
+                    #on_text: root.dimension[2] = float(self.text)
+                    multiline: False
+                Label:
+                    text: "Height Ratio:"
+                TextInput:
+                    id: img_height
+                    text: str(root.crop[3])
+                    #on_text: root.dimension[4] = float(self.text)
+                    multiline: False
+                Button:
+                    text: "Reset"
+                    id: restore_button
+                    on_press:
+                        overlay.scale = 1,1
+                        overlay.size =img.height * img.image_ratio, img.height
+                        overlay.pos = img.x + (img.width-overlay.width)/2, img.y
+                        img_x.text= "0.0"
+                        img_y.text= "0.0"
+                        img_width.text= "1.0"
+                        img_height.text='1.0'
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: 40
+                Button:
+                    text: "Ok"
+                    on_press: root.dismiss(); root.cb(root)
+                Button:
+                    text: "Cancel"
+                    on_press: root.dismiss()
+        OverlayField:
+            fg_color: 0,0,0,0
+            corner_radius: 5
+            designed: True
+            selected: True
+            id: overlay
+            name: "Overlay"
+            line_width: 4
+            on_pos: root.update_values()
+            on_size: root.update_values()
+            sel_radius: 12

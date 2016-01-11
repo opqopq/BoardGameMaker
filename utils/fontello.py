@@ -42,7 +42,7 @@ FONTELLO = {
     'icon-right-big': u'\ue822',
     'icon-up-big': u'\ue823',
     'icon-GridField': u'\ue824',
-    'icon-SubImageField': u'\ue825',
+    'icon-crop': u'\ue825',
     'icon-TemplateField': u'\ue826',
     'icon-list-alt': u'\ue827',
     'icon-book': u'\ue828',

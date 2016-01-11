@@ -49,6 +49,8 @@ def find_path(path):
     from os.path import isfile
     from kivy.resources import resource_find
     from conf import gamepath
+    if not path:
+        return path
     if path.startswith('http'):
         return path
     r = resource_find(path)

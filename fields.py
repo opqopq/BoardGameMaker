@@ -433,13 +433,11 @@ class Field( BaseField, RelativeLayout):
         self.derive_infos()
 
     def on_touch_down(self, touch):
-        ##from template import BGTemplate
-        ##if isinstance(self, BGTemplate): print 'children order', self.children
         if self.designed:
             origin = Vector(*touch.pos)
             #Convert origin to take into account self.angle
-            for pos in [(self.center_x,self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
-                if self.selected:
+            if self.selected:
+                for pos in [(self.center_x, self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
                     VECTOR = Vector(*pos)
                     if self.angle:
                         deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
@@ -579,14 +577,14 @@ class FloatField(BaseField, FloatLayout):
         if self.designed:
             origin = Vector(*touch.pos)
             #Convert origin to take into account self.angle
-            for pos in [(self.center_x,self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
-                if self.selected:
+            if self.selected:
+                for pos in [(self.center_x,self.y+self.sel_radius), (self.center_x, self.top-self.sel_radius),(self.x+self.sel_radius, self.center_y),(self.right-self.sel_radius,self.center_y),(self.right-self.sel_radius, self.top-self.sel_radius),(self.x+self.sel_radius,self.y+self.sel_radius),(self.x+self.sel_radius,self.top-self.sel_radius),(self.right-self.sel_radius,self.y+self.sel_radius)]:
                     VECTOR = Vector(*pos)
                     if self.angle:
                         deltapos = Vector(pos[0] - self.center[0], pos[1] - self.center[1])
-                        deltapos =  deltapos.rotate(self.angle)
+                        deltapos = deltapos.rotate(self.angle)
                         VECTOR = deltapos + self.center
-                    if origin.distance(VECTOR) < 5:
+                    if origin.distance(VECTOR) <= self.sel_radius:
                         touch.ud['do_resize'] = True
                         touch.grab(self)
                         #Calculate the mode of resizing
@@ -650,8 +648,6 @@ class FloatField(BaseField, FloatLayout):
                     ret =  True
                     break
         return ret
-
-
 
     def on_touch_move(self, touch):
         if self.designed and touch.grab_current == self:
@@ -807,11 +803,16 @@ class SymbolField(SymbolLabel, TextField):
 
 
 class ImageField(AsyncImage, FloatField):
+    crop = ListProperty([0,0,1,1])
+
+    _menu = {'Image':['allow_stretch','keep_ratio','fg_color','crop']}
+
     attrs = OrderedDict([
         ('source', FileEditor),
         ('allow_stretch', BooleanEditor),
         ('keep_ratio', BooleanEditor),
         ('fg_color', ColorEditor),
+        ('crop', CropEditor),
     ])
     fg_color = ListProperty([1,1,1,1])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
@@ -822,6 +823,24 @@ class ImageField(AsyncImage, FloatField):
         src = find_path(source)
         if src and src != source:
             self.source = src
+            return
+        if self.crop and self.source:
+            self.on_crop(self, self.crop)
+
+    def on_crop(self, instance, crop):
+        if not self.source:
+            return
+        if len(crop) != 4:
+            return
+        if not crop:
+            self.texture = None
+            self.reload()
+            return
+        from kivy.core.image import Image
+        IMG = Image(find_path(self.source))
+        width, height = IMG.texture.width, IMG.texture.height
+        self.texture = IMG.texture.get_region(self.crop[0]*width, self.crop[1]*height,
+                                              self.crop[2]*width, self.crop[3]*height)
 
 
 class ImgChoiceField(AsyncImage, FloatField):
@@ -993,28 +1012,6 @@ class ColorChoiceField(Field):
             self.selection = choices.keys()[0]
         else:
             self.on_selection(instance, self.selection)
-
-
-class SubImageField(Field):
-    default_attr = 'dimension'
-    attrs = {"dimension": SubImageEditor}
-    #Dimension is: source, x, y, width, height
-    dimension = ListProperty(["", 0, 0, 1, 1])
-    texture = ObjectProperty(None)
-    not_exported = ['texture']
-
-    def on_dimension(self, instance, dimension):
-        from kivy.core.image import Image
-        path = find_path(dimension[0])
-        if not path:
-            from utils import log
-            log("Invalid path for source of SubImage %s:%s"%(self,dimension[0]))
-            return
-            from kivy.graphics.texture import Texture
-            self.texture = Texture.create(size=(100, 100))
-        IMG = Image(path).texture
-        width, height = IMG.width, IMG.height
-        self.texture = Image(path).texture.get_region(self.dimension[1]*width,self.dimension[2]*height, self.dimension[3]*width,self.dimension[4]*height)
 
 
 class TransfoField(Field):#, Image):
@@ -1481,34 +1478,6 @@ def textured(widget):
 # Special case used only for SubImageEditor
 class OverlayField(RectangleField):
     skip_designer = True
-
-    def on_touch_down(self, touch):
-        if self.designed:
-            origin = Vector(*touch.pos)
-            for pos in [(self.center_x,self.y+5), (self.center_x, self.right-5),(self.x+5, self.center_y),(self.right-5,self.center_y),(self.right-5, self.top-5),(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5,self.y+5)]:
-                if self.selected and origin.distance(Vector(*pos)) <5:
-                    touch.ud['do_resize'] = True
-                    touch.grab(self)
-                    #Calculate the mode of resizing
-                    ox, oy = touch.opos
-                    cx, cy = self.center
-                    touch.ud['LEFT'] = ox<cx
-                    touch.ud['DOWN'] = oy<cy
-                    if pos in [(self.center_x, self.y+5), (self.center_x, self.top-5)]:
-                        touch.ud['movement'] = 'y'
-                    if pos in [(self.x+5, self.center_y), (self.right-5,self.center_y)]:
-                        touch.ud['movement'] = 'x'
-                    if pos in [(self.x+5,self.y+5),(self.x+5,self.top-5),(self.right-5, self.top-5), (self.right-5,self.y+5)]:
-                        touch.ud['movement'] = 'xy'
-                    return True
-            if self.collide_point(*touch.pos):
-                touch.grab(self)
-                #Define if resized is on
-                touch.ud['do_resize'] = False
-                #Here I should watch if shift is set, then it would be an append.
-                return True
-        return super(Field, self).on_touch_down(touch)
-
     def on_touch_up(self, touch):
         if self.designed  and touch.grab_current==self:
             # Here I should watch if shift is set, then it would be an append.
