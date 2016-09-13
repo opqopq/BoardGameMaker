@@ -149,7 +149,7 @@ def get_color(color, with_a=True):
             named = name_to_hex(color)
         except ValueError,E:
             from utils import log
-            log('Unkwon color name %s'%color)
+            log('Unkwon color name "%s"'%color)
             return [0, 0, 0, 1] if with_a else [0, 0, 0]
         r, g, b, a = get_color_from_hex(named)
         if with_a:

@@ -68,6 +68,11 @@
             size: self.size
             pos: 0,0 #self.pos if floatlayout
     canvas.after:
+        Color:
+            rgba: get_color(self.fg_color)
+        Rectangle:
+            size: self.size
+            pos: 0,0
         PopMatrix
 
 <FloatField>:
@@ -85,6 +90,11 @@
             size: self.size
             pos: self.pos
     canvas.after:
+        Color:
+            rgba: get_color(self.fg_color)
+        Rectangle:
+            size: self.size
+            pos: self.pos
         PopMatrix
 
 <BGTemplate>:
@@ -114,7 +124,7 @@
     source: self.choices[self.selection] if self.selection in self.choices else ""
     allow_stretch: True
     keep_ratio: False
-    mipmap: True
+    mipmap: False
 
 <ColorField>:
     canvas:
@@ -149,6 +159,14 @@
         Rectangle:
             size: self.size
             texture: self.texture
+
+#:import NoRatioScatter utils.noratio_scatter.NoRatioScatter
+
+<SvgField>:
+    NoRatioScatter:
+        id: inside_nrs
+        pos: 0,0
+        size: root.size
 
 <RectangleField>:
     canvas.after:

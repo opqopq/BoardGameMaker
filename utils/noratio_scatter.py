@@ -232,6 +232,8 @@ class NoRatioScatter(Scatter):
 
         return True
 
+from kivy.factory import Factory
+Factory.register('NoRatioScatter', NoRatioScatter)
 
 if __name__ == '__main__':
     from kivy.logger import Logger

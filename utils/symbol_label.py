@@ -8,14 +8,13 @@ from kivy.logger import Logger
 import re
 from copy import copy
 from kivy.properties import StringProperty
-from math import ceil
-from kivy.core.text.text_layout import layout_text, LayoutWord, LayoutLine
+from kivy.core.text.text_layout import layout_text, LayoutWord
 from kivy.properties import DictProperty
 
 
 class SymbolCoreLabel(MarkupLabel):
         
-    def _render_image(self,src,x,y,image_part=None):
+    def _render_image(self,src, x, y, image_part=None):
         from utils import find_path
         from PIL import Image
         from img_xfos import img_modes
@@ -23,10 +22,12 @@ class SymbolCoreLabel(MarkupLabel):
         src = find_path(src)
         image = Image.open(src)
         mode = image.mode
-        W, H =self.get_extents("__")
+        W, H = self.get_extents("W")
+        W1, H1 = self.get_extents("_")
+        W,H = max(W,H,W1,H1), max(W,H, W1, H1)
         image = image.resize((W, H))
-        #print W,H
-        self.texture.blit_buffer(image.tobytes(), colorfmt=img_modes[mode], size = (W,H), pos = (x,y))
+        #print 'extent calculted', W,H
+        self.texture.blit_buffer(image.tobytes(), colorfmt=img_modes[mode], size=(W,H), pos=(x,y))
 
     def __init__(self, *largs, **kwargs):
         super(SymbolCoreLabel, self).__init__(*largs, **kwargs)
@@ -45,7 +46,7 @@ class SymbolCoreLabel(MarkupLabel):
         s = [x for x in s if x != '']
         return s
 
-    def _real_render(self):
+    def _render_real(self):
         lines = self._cached_lines
         options = None
         for line in lines:
@@ -113,11 +114,11 @@ class SymbolCoreLabel(MarkupLabel):
 
                 if not options.get('symbol',False):
                     if len(word.text):
-                        #print 'rendering text', word.text, 'at', x,y+script_pos
+                        #print 'rendering symbotext', word.text, 'at', x,y+script_pos
                         render_text(word.text, x, y + script_pos)
                 else:
                     try:
-                        #print 'renderinf img', options['symbol_src'], 'at', x, y+script_pos
+                        #print 'renderinf symbol img', options['symbol_src'], 'at', x, y+script_pos
                         pasted_imgs.append((options.get('symbol_src'), x ,y + script_pos))
                     except Exception,_exc:
                         Logger.warning('Not able to load symbol: %s'%_exc)
@@ -150,6 +151,7 @@ class SymbolCoreLabel(MarkupLabel):
             self.texture.blit_data(data)
             #Now render all symbol images
             for args in pasted_imgs:
+                #print 'here !! ', args
                 render_image(*args)
 
     def _pre_render(self):

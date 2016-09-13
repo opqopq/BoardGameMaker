@@ -18,3 +18,6 @@ class KeyboardSpinner(FocusBehavior, Spinner):
         else:
             self.text = self.values[find_char(keycode[1], self.values) or self.values.index(self.text)]
         return True
+
+from kivy.factory import Factory
+Factory.register('KeyboardSpinner', KeyboardSpinner)

@@ -249,7 +249,6 @@ class BGDesigner(FloatLayout):
             tmpls= [templateList[templateName]]
         self.tmplPath = templateName
         for template in tmpls:
-            print 'adding template', template, template.name, template.template_name
             self.add_template(template)
 
     def add_template(self, tmpl=None):

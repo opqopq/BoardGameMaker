@@ -263,6 +263,8 @@ class VirtualScreenManagerGrid(VirtualScreenManagerBase):
             super(VirtualScreenManagerBase, self).add_widget(wrapper, index)
             self.current_screen = widget
 
+from kivy.factory import Factory
+Factory.register('VirtualScreenManagerGrid',VirtualScreenManagerGrid)
 
 class MagicLabel(Label):
     target = ObjectProperty()

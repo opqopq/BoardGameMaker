@@ -2,10 +2,7 @@
 from collections import namedtuple
 from math import sqrt
 import random
-try:
-    import Image
-except ImportError:
-    from PIL import Image
+from PIL import Image
 
 Point = namedtuple('Point', ('coords', 'n', 'ct'))
 Cluster = namedtuple('Cluster', ('points', 'center', 'n'))
@@ -22,6 +19,10 @@ rtoh = lambda rgb: '#%s' % ''.join(('%02x' % p for p in rgb))
 
 
 def colorz(filename, n=3):
+    from os.path import isfile
+    if not isfile(filename):
+        print 'Filename does not exist for kmeans.colorz %s'%filename
+        return ['#000000']
     img = Image.open(filename)
     return magic_color(img,n)
 
@@ -33,11 +34,13 @@ def colorz_pil(pilimg, n=3):
     return magic_color(pilimg,n)
 
 def get_significant_color(obj):
+    if obj is None:
+        return None
     if isinstance(obj, basestring):
-        return colorz(obj,1)[0]
+        return colorz(obj, 1)[0]
     if isinstance(obj, Image.Image):
-        return colorz_pil(obj,1)[0]
-    res = colorz_texture(obj,1)[0]
+        return colorz_pil(obj, 1)[0]
+    res = colorz_texture(obj, 1)[0]
     print 'get color', res
     return res
 

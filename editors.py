@@ -211,8 +211,7 @@ class AdvancedCodeEditor(AdvancedTextEditor):
                 return
             code = CodeWrapper(value,self.target)
             try:
-                print self.target.template.ids.keys()
-                setattr(self.target,keyname, code.execute() or value)
+                setattr(self.target, keyname, code.execute() or value)
             except NameError, e:
                 print "erreur while evaluating code behind %s of %s:"%(keyname, self.target), e
             self.target.code_behind[keyname] = code.code

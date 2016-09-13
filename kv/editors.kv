@@ -7,7 +7,7 @@
 #                            Popups                                          #
 ##############################################################################
 
-#:import KeyboardSpinner utils.keyboard_spinner.KeyboardSpinner
+# :import KeyboardSpinner utils.keyboard_spinner.KeyboardSpinner
 
 <FontEditorPopup@Popup>:
     #size_hint: None, None
@@ -324,7 +324,6 @@
                     #on_canceled: root.dismiss()
             TabbedPanelItem:
                 text: 'Icon'
-                #:import FCTV kivy.garden.filechooserthumbview.FileChooserThumbView
                 #FileChooserListView
                 FileChooserThumbView:
                     id: vpicker

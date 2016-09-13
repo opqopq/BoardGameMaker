@@ -78,12 +78,13 @@ class BaseField(FocusBehavior):
 
     #angle of rotation, centered on my center
     angle = NumericProperty(0)
-    bg_color= ListProperty([0, 0, 0, 0])
+    bg_color = ListProperty([0, 0, 0, 0])
+    fg_color = ListProperty([1,1,1, 0])
     name = StringProperty()
     #Attributes that are only used in designed mode
     attrs=OrderedDict([
             ("name",TextEditor), ('x', MetricEditor), ('y', MetricEditor), ('z', AdvancedIntEditor), ('width', MetricEditor),('height',MetricEditor), ('size_hint', SizeHintEditor), ('pos_hint', PosHintEditor),
-            ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor),('editable', BooleanEditor), ('printed', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
+            ('opacity', AdvancedRangeEditor), ('angle',AdvancedIntEditor), ('bg_color',ColorEditor), ('fg_color', ColorEditor), ('editable', BooleanEditor), ('printed', BooleanEditor), ('default_attr', ChoiceEditor), ("styles", StyleEditor)
     ])
     #Default Attr is the name of the attribute that souhld be editable in the deck editor (vs all in designer). Several one, if a list
     default_attr = ""
@@ -109,7 +110,7 @@ class BaseField(FocusBehavior):
     #Menu is an ordered dict  listing which attributes needs to be in which sub tree for editors
     #_menu work for current instance
     # menu aggregate parent info
-    _menu = OrderedDict([('Object',['name','editable','printed','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color'])])
+    _menu = OrderedDict([('Object',['name','editable','printed','default_attr']),("Shape",['x','y','z','width','height','size_hint', 'pos_hint','opacity','angle','bg_color', 'fg_color' ])])
 
     Type = 'Field'
 
@@ -716,13 +717,13 @@ class TextField(Label, FloatField):
     multiline = BooleanProperty(True)
     max_font_size = NumericProperty()
     min_font_size = NumericProperty()
-    font_color = ListProperty([1,1,1,1])
-    halign_values = ['left','center','right','justify']
-    valign_values = ['bottom','middle','top']
+    font_color = ListProperty([1, 1, 1, 1])
+    halign_values = ['left', 'center', 'right', 'justify']
+    valign_values = ['bottom', 'middle', 'top']
     attrs = OrderedDict([
         ('text', RichTextEditor), ('autofit', BooleanEditor), ('multiline', BooleanEditor),
         ('font_color', ColorEditor),
-        ('halign',ChoiceEditor), ('valign', ChoiceEditor),
+        ('halign', ChoiceEditor), ('valign', ChoiceEditor),
         ('font', FontChoiceEditor) , ('markup', BooleanEditor),
         ('max_font_size', IntEditor), ('min_font_size', IntEditor),
         ('padding_x', IntEditor), ('padding_y', IntEditor)
@@ -733,12 +734,12 @@ class TextField(Label, FloatField):
     default_attr = "text"
     _single_line_text = StringProperty()
 
-    not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text', 'max_lines']
-    font = ListProperty(['default', 8,False, False])
+    not_exported = ['static_font_size', 'font', 'text_size', '_single_line_text', 'max_lines', 'color']
+    font = ListProperty(['default', 8, False, False])
 
     _menu = {'Font': ['font', 'font_color', 'autofit', 'max_font_size', 'min_font_size', 'padding_x', 'padding_y']}
 
-    def on_size(self,instance, size):
+    def on_size(self, instance, size):
         self.text_size = size
         self.on_text(instance,self.text)
 
@@ -805,26 +806,28 @@ class SymbolField(SymbolLabel, TextField):
 class ImageField(AsyncImage, FloatField):
     crop = ListProperty([0,0,1,1])
 
-    _menu = {'Image':['allow_stretch','keep_ratio','fg_color','crop']}
+    _menu = {'Image':['allow_stretch','keep_ratio','crop']}
 
     attrs = OrderedDict([
         ('source', FileEditor),
         ('allow_stretch', BooleanEditor),
         ('keep_ratio', BooleanEditor),
-        ('fg_color', ColorEditor),
         ('crop', CropEditor),
     ])
-    fg_color = ListProperty([1,1,1,1])
+    fg_color = ListProperty([1, 1, 1, 0])
     not_exported = ['image_ratio', 'texture', 'norm_image_size', 'scale', 'texture_size']
     default_attr = 'source'
     source_filters = ['*.jpg', '*.gif', '*.jpeg', '*.bmp', '*.png']
 
     def on_source(self, instance, source):
         src = find_path(source)
+        if src:
+            if self.fg_color[-1] == 0:
+                self.fg_color[-1] = 1
         if src and src != source:
             self.source = src
             return
-        if self.crop and self.source:
+        if self.crop != [0,0,1,1] and self.source:
             self.on_crop(self, self.crop)
 
     def on_crop(self, instance, crop):
@@ -837,10 +840,13 @@ class ImageField(AsyncImage, FloatField):
             self.reload()
             return
         from kivy.core.image import Image
-        IMG = Image(find_path(self.source))
-        width, height = IMG.texture.width, IMG.texture.height
-        self.texture = IMG.texture.get_region(self.crop[0]*width, self.crop[1]*height,
-                                              self.crop[2]*width, self.crop[3]*height)
+        print 'loading core image with', self.source, find_path(self.source)
+        path = find_path(self.source)
+        if path:
+            IMG = Image(path)
+            width, height = IMG.texture.width, IMG.texture.height
+            self.texture = IMG.texture.get_region(self.crop[0]*width, self.crop[1]*height,
+                                                  self.crop[2]*width, self.crop[3]*height)
 
 
 class ImgChoiceField(AsyncImage, FloatField):
@@ -868,6 +874,9 @@ class ImgChoiceField(AsyncImage, FloatField):
 
     def on_source(self, instance, source):
         src = find_path(source)
+        if src:
+            if self.fg_color[-1] == 0:
+                self.fg_color[0] = 1
         if src and src != source:
             self.source = src
 
@@ -880,12 +889,14 @@ class RepeatField(FloatField):
     images = DictProperty()
     orientation = StringProperty('lr-tb')
     orientation_values = ['lr-tb','tb-lr','bt-lr','lr-bt', 'random']
+    auto_fill = BooleanProperty(True)
     x_func = StringProperty()
     y_func = StringProperty()
     target_ratio = ListProperty([1,1])
     angle_step = NumericProperty()
     attrs = OrderedDict([('count',AdvancedIntEditor),('images',ImageChoiceEditor),
                          ('orientation',ChoiceEditor),('target_ratio',SizeHintEditor),
+                         ('auto_fill', BooleanEditor),
                          ('allow_stretch',BooleanEditor), ('keep_ratio',BooleanEditor),
                          ('angle_step', AdvancedIntEditor),
                          ('x_func',AdvancedTextEditor),('y_func',AdvancedTextEditor),
@@ -910,9 +921,9 @@ class RepeatField(FloatField):
     def on_size(self,instance,value):
         self.update()
 
-    def add_obj(self):
+    def add_obj(self, target_ratio=None):
         obj = ImageField(allow_stretch=self.allow_stretch, keep_ratio=self.keep_ratio)
-        obj.size_hint = self.target_ratio
+        obj.size_hint = target_ratio
         self.add_widget(obj)
         return obj
 
@@ -920,6 +931,9 @@ class RepeatField(FloatField):
         self.update()
 
     def on_target_ratio(self,instance,value):
+        self.update()
+
+    def on_auto_fill(self, instance, value):
         self.update()
 
     def update(self):
@@ -942,11 +956,23 @@ class RepeatField(FloatField):
                 return eval(self.y_func)
 
         wr,hr = self.target_ratio
+        if self.auto_fill:
+            #divide the current surface by the number wanted. it create a target surface
+            #if filling is random, put that on bth side. If not, depending of the first way forward, adapt wr or hr
+            num_pieces = self.width*self.height/self.count
+            if self.orientation == 'random':
+                pass
+            elif self.orientation.startswith('lr'):
+                hr = 1
+                wr = 1/float(self.count)
+            else:
+                wr = 1
+                hr = 1/float(self.count)
         ANGLE = -self.angle_step # In order to make sure that first pasted image will have an angle of 0
         if self.orientation == 'random':
             from random import random
             for index, img in zip(range(self.count), cycle(self.images)):
-                obj = self.add_obj()
+                obj = self.add_obj((wr,hr))
                 obj.pos_hint = {'x': random() * (1-wr), 'y': random() * (1-hr)}
                 ANGLE += self.angle_step
                 obj.angle = ANGLE%360
@@ -962,7 +988,7 @@ class RepeatField(FloatField):
                         index += 1
                         if index>self.count:
                             break
-                        obj = self.add_obj()
+                        obj = self.add_obj((wr,hr))
                         obj.source = self.images[cyc.next()]
                         ANGLE += self.angle_step
                         obj.angle = ANGLE%360
@@ -976,7 +1002,7 @@ class RepeatField(FloatField):
                         index += 1
                         if index>self.count:
                             break
-                        obj = self.add_obj()
+                        obj = self.add_obj((wr,hr))
                         obj.source = self.images[cyc.next()]
                         ANGLE += self.angle_step
                         obj.angle = ANGLE%360
@@ -1080,13 +1106,30 @@ class SvgField(Field):
     source_filters = ['*.svg']
     attrs = {'source': FileEditor}
     default_attr = 'source'
+    svg = ObjectProperty()
+
 
     def on_source(self,instance, source):
         source = find_path(source)
         if source:
-            with self.canvas:
+            inside_nrs = self.ids.inside_nrs
+            with inside_nrs.canvas:
                 from kivy.graphics.svg import Svg
-                Svg(source)
+                self.svg = svg = Svg(source)
+
+            self.size = inside_nrs.size = svg.width, svg.height
+
+    def on_size(self, instance, size):
+        #if size changed, then apply a ratio on each internal scatter axes to change the contanined s
+        w,h = self.size
+        sw, sh = self.svg.width, self.svg.height
+        #print 'sizes: ', self.size, self.ids.inside_nrs.size
+        #print 'ratio NRS', self.ids.inside_nrs.scale_x, self.ids.inside_nrs.scale_y
+        self.ids.inside_nrs.scale_x = float(w)/sw
+        self.ids.inside_nrs.scale_y = float(h)/sh
+        self.ids.inside_nrs.pos = 0, 0
+
+
 
 
 class ShapeField(Field):
@@ -1145,9 +1188,7 @@ class RectangleField(SourceShapeField):
     corner_radius = NumericProperty(0)
     #inside_border: set to True if you want the border to be drawned inside the rectangle
     inside_border = BooleanProperty(False)
-    attrs = {'corner_radius': AdvancedIntEditor, 'inside_border': BooleanEditor, 'fg_color': ColorEditor}
-    fg_color = ListProperty([1,1,1,1])
-
+    attrs = {'corner_radius': AdvancedIntEditor, 'inside_border': BooleanEditor}
 
 class BorderField(RectangleField):
     "Draw 4 lines around parent"
@@ -1233,9 +1274,11 @@ class GridField(ShapeField):
 class EllipseField(SourceShapeField):
     angle_start = NumericProperty(0)
     angle_end = NumericProperty(360)
-    fg_color = ListProperty([1,1,1,1])
-    attrs = OrderedDict([('fg_color', ColorEditor), ('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor)])
+    attrs = OrderedDict([(('angle_start', AdvancedIntEditor), ('angle_end', AdvancedIntEditor))])
 
+    def __init__(self, **kwargs):
+        super(EllipseField,self).__init__(**kwargs)
+        self.fg_color[-1] = 1
 
 class WireField(ShapeField):
     attrs = {'points': PointListEditor}
@@ -1360,7 +1403,7 @@ class LinkedField(Field):
 #                 continue
 #             kw = {attr: self.callback_setter(attr=attr, src=self, dst=blank)}
 #             try:
-#                 self.unbind(**kw)
+#                 self.ubind(**kw)
 #             except KeyError:  # binding does not exists
 #                 pass
 #             # Copy value

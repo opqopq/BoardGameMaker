@@ -26,6 +26,11 @@ from kivy.logger import Logger
 #Logger.setLevel('WARNING')
 
 ##############################################
+#Force load of FCTV
+from kivy.garden.filechooserthumbview import FileChooserThumbView
+##############################################
+
+from utils import virtual_screen #to register VSMG
 from kivy.lang import Builder
 Builder.load_file('kv/bgm.kv')
 ##############################################
@@ -65,6 +70,7 @@ class RootWidget(BoxLayout):
             self.ids.content.set_screen(name)
 
     def log(self, text, stack=None):
+        print 'printer of log, do i get an error ? ', text, stack
         if not 'bgconsole' in self.ids:
             try:
                 self.on_screen_name(self, 'Console', False)
@@ -128,12 +134,13 @@ class BGMApp(App):
                     elif TARGET.endswith('.csv'):
                         root.ids.deck.load_file_csv(TARGET)
             Clock.schedule_once(launcher,.2)
+            #Filling ENV Global Variable
+            from conf import fill_env
+            Clock.schedule_once(fill_env, 1)
+
         #Dropfile Mngt
         from kivy.core.window import Window
         Window.bind(on_dropfile=self.load_file)
-        #Filling ENV Global Variable
-        from conf import fill_env
-        Clock.schedule_once(fill_env,1)
 
 
         return root
